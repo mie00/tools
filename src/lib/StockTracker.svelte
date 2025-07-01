@@ -466,12 +466,12 @@
 						</a>
 					</div>
 
-					          <div>
-            <label for="api-key" class="mb-2 block text-sm font-medium text-gray-700">
-              Enter your API key:
-            </label>
-            <input
-              id="api-key"
+					<div>
+						<label for="api-key" class="mb-2 block text-sm font-medium text-gray-700">
+							Enter your API key:
+						</label>
+						<input
+							id="api-key"
 							type="text"
 							bind:value={apiKeyInput}
 							placeholder="Your Alpha Vantage API key"
@@ -672,14 +672,14 @@
 					<p class="text-sm text-gray-400">Search and pin stocks to track their prices</p>
 				</div>
 			{:else}
-				        <div class="grid gap-4">
-          {#each pinnedStocks as stock (stock.symbol)}
-            <div
-              class="cursor-pointer rounded-lg border border-gray-200 p-4 transition-colors hover:bg-gray-50"
-              role="button"
-              tabindex="0"
-              on:click={() => selectStock(stock)}
-              on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && selectStock(stock)}
+				<div class="grid gap-4">
+					{#each pinnedStocks as stock (stock.symbol)}
+						<div
+							class="cursor-pointer rounded-lg border border-gray-200 p-4 transition-colors hover:bg-gray-50"
+							role="button"
+							tabindex="0"
+							on:click={() => selectStock(stock)}
+							on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && selectStock(stock)}
 						>
 							<div class="flex items-center justify-between">
 								<div class="flex-1">
@@ -710,10 +710,10 @@
 									{/if}
 								</div>
 
-								                <button
-                  on:click|stopPropagation={() => unpinStock(stock.symbol)}
-                  aria-label="Unpin {stock.symbol}"
-                  class="ml-4 p-1 text-gray-400 transition-colors hover:text-red-600"
+								<button
+									on:click|stopPropagation={() => unpinStock(stock.symbol)}
+									aria-label="Unpin {stock.symbol}"
+									class="ml-4 p-1 text-gray-400 transition-colors hover:text-red-600"
 									title="Unpin stock"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

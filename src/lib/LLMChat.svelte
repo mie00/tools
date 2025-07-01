@@ -60,7 +60,7 @@
 			const { FilesetResolver, LlmInference } = await import('@mediapipe/tasks-genai');
 
 			loadingProgress = 'Loading WASM files...';
-			
+
 			// Initialize the fileset resolver
 			const genai = await FilesetResolver.forGenAiTasks(
 				'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@latest/wasm'
@@ -81,15 +81,15 @@
 
 			loadingProgress = 'Model loaded successfully!';
 			isModelLoaded = true;
-			
+
 			// Add welcome message
 			const welcomeMessage: Message = {
 				role: 'assistant',
-				content: 'Hello! I\'m Gemma 3n running locally in your browser using MediaPipe. How can I help you today?',
+				content:
+					"Hello! I'm Gemma 3n running locally in your browser using MediaPipe. How can I help you today?",
 				timestamp: new Date()
 			};
 			messages = [welcomeMessage];
-
 		} catch (error) {
 			console.error('Failed to initialize model:', error);
 			loadingProgress = `Error: ${error instanceof Error ? error.message : 'Failed to initialize model'}`;
@@ -115,7 +115,7 @@
 		try {
 			// Generate response using MediaPipe
 			const response = await llmInference.generateResponse(userInput);
-			
+
 			const assistantMessage: Message = {
 				role: 'assistant',
 				content: response,
@@ -162,12 +162,10 @@
 			// Use streaming response
 			await llmInference.generateResponse(userInput, (partialResult: string, done: boolean) => {
 				// Update the last message with streaming content
-				messages = messages.map((msg, index) => 
-					index === messages.length - 1 
-						? { ...msg, content: msg.content + partialResult }
-						: msg
+				messages = messages.map((msg, index) =>
+					index === messages.length - 1 ? { ...msg, content: msg.content + partialResult } : msg
 				);
-				
+
 				if (done) {
 					isLoading = false;
 				}
@@ -175,9 +173,12 @@
 			});
 		} catch (error) {
 			// Replace the last message with error
-			messages = messages.map((msg, index) => 
-				index === messages.length - 1 
-					? { ...msg, content: `Error: ${error instanceof Error ? error.message : 'Failed to generate response'}` }
+			messages = messages.map((msg, index) =>
+				index === messages.length - 1
+					? {
+							...msg,
+							content: `Error: ${error instanceof Error ? error.message : 'Failed to generate response'}`
+						}
 					: msg
 			);
 			isLoading = false;
@@ -223,7 +224,7 @@
 <div class="mx-auto max-w-4xl">
 	<div class="mb-6 rounded-lg bg-gray-50 p-4">
 		<h2 class="mb-4 text-xl font-semibold text-gray-800">Local LLM Chat (MediaPipe)</h2>
-		
+
 		<!-- Status Information -->
 		<div class="mb-4 flex flex-wrap items-center gap-4">
 			<div class="flex items-center gap-2">
@@ -235,7 +236,9 @@
 
 			{#if webGpuSupported}
 				<div class="flex items-center gap-2">
-					<div class="h-3 w-3 rounded-full {shaderF16Supported ? 'bg-green-500' : 'bg-orange-400'}"></div>
+					<div
+						class="h-3 w-3 rounded-full {shaderF16Supported ? 'bg-green-500' : 'bg-orange-400'}"
+					></div>
 					<span class="text-sm {shaderF16Supported ? 'text-green-700' : 'text-orange-600'}">
 						{shaderF16Supported ? 'FP16 Supported' : 'FP16 Recommended'}
 					</span>
@@ -265,7 +268,9 @@
 					Your browser doesn't support WebGPU, which is required for local AI inference.
 				</p>
 				<div class="text-sm text-red-600">
-					<p class="mb-1"><strong>Chrome/Edge:</strong> Enable WebGPU in chrome://flags/#enable-unsafe-webgpu</p>
+					<p class="mb-1">
+						<strong>Chrome/Edge:</strong> Enable WebGPU in chrome://flags/#enable-unsafe-webgpu
+					</p>
 					<p class="mb-1"><strong>Firefox:</strong> WebGPU support is limited</p>
 					<p><strong>Safari:</strong> WebGPU is supported in recent versions</p>
 				</div>
@@ -284,8 +289,13 @@
 					Without FP16, the model requires significantly more memory and may fail to load.
 				</p>
 				<div class="text-sm text-orange-600">
-					<p class="mb-1"><strong>For Chrome/Edge on Linux:</strong> Ensure Vulkan is enabled by checking <code>chrome://flags/#enable-vulkan</code>.</p>
-					<p>Please ensure you are using a modern browser and your graphics drivers are up to date.</p>
+					<p class="mb-1">
+						<strong>For Chrome/Edge on Linux:</strong> Ensure Vulkan is enabled by checking
+						<code>chrome://flags/#enable-vulkan</code>.
+					</p>
+					<p>
+						Please ensure you are using a modern browser and your graphics drivers are up to date.
+					</p>
 				</div>
 			</div>
 		{/if}
@@ -294,7 +304,9 @@
 		{#if isLoading && !isModelLoaded}
 			<div class="rounded-lg bg-blue-50 p-4">
 				<div class="flex items-center gap-3">
-					<div class="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+					<div
+						class="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+					></div>
 					<div>
 						<p class="font-semibold text-blue-800">Loading Model</p>
 						<p class="text-sm text-blue-600">{loadingProgress}</p>
@@ -334,10 +346,7 @@
 	</div>
 
 	<!-- Chat Messages -->
-	<div
-		bind:this={chatContainer}
-		class="mb-4 h-96 overflow-y-auto rounded-lg border bg-white p-4"
-	>
+	<div bind:this={chatContainer} class="mb-4 h-96 overflow-y-auto rounded-lg border bg-white p-4">
 		{#if messages.length === 0 && !isLoading}
 			<div class="flex h-full items-center justify-center text-gray-500">
 				<div class="text-center">
@@ -355,11 +364,11 @@
 
 		{#each messages as message}
 			<div class="mb-4 {message.role === 'user' ? 'text-right' : 'text-left'}">
-				<div class="inline-block max-w-[80%] rounded-lg p-3 {
-					message.role === 'user' 
-						? 'bg-blue-500 text-white' 
-						: 'bg-gray-100 text-gray-800'
-				}">
+				<div
+					class="inline-block max-w-[80%] rounded-lg p-3 {message.role === 'user'
+						? 'bg-blue-500 text-white'
+						: 'bg-gray-100 text-gray-800'}"
+				>
 					<div class="whitespace-pre-wrap">{message.content}</div>
 					<div class="mt-1 text-xs opacity-70">
 						{formatTime(message.timestamp)}
@@ -373,8 +382,14 @@
 				<div class="inline-block rounded-lg bg-gray-100 p-3">
 					<div class="flex items-center gap-2">
 						<div class="h-2 w-2 animate-bounce rounded-full bg-gray-500"></div>
-						<div class="h-2 w-2 animate-bounce rounded-full bg-gray-500" style="animation-delay: 0.1s"></div>
-						<div class="h-2 w-2 animate-bounce rounded-full bg-gray-500" style="animation-delay: 0.2s"></div>
+						<div
+							class="h-2 w-2 animate-bounce rounded-full bg-gray-500"
+							style="animation-delay: 0.1s"
+						></div>
+						<div
+							class="h-2 w-2 animate-bounce rounded-full bg-gray-500"
+							style="animation-delay: 0.2s"
+						></div>
 						<span class="ml-2 text-sm text-gray-600">Thinking...</span>
 					</div>
 				</div>
@@ -408,4 +423,4 @@
 			<p class="mt-1 text-green-600">✅ Model loaded and ready for inference</p>
 		{/if}
 	</div>
-</div> 
+</div>

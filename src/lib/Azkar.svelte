@@ -5,14 +5,14 @@
 	// Process the JSON data to organize by categories
 	function processAzkarData() {
 		const categories: Record<string, any[]> = {};
-		
+
 		// The JSON has a 'rows' array where each row is: [category, zekr, description, count, reference, search]
 		azkarJsonData.rows.forEach((row: any[], index: number) => {
 			const [category, zekr, description, count, reference] = row;
-			
+
 			// Skip entries with empty category or zekr
 			if (!category || !zekr) return;
-			
+
 			const azkarItem = {
 				id: index + 1,
 				text: zekr,
@@ -20,13 +20,13 @@
 				count: parseInt(count) || 1,
 				reference: reference || ''
 			};
-			
+
 			if (!categories[category]) {
 				categories[category] = [];
 			}
 			categories[category].push(azkarItem);
 		});
-		
+
 		// Filter out categories with less than 3 azkar
 		const filteredCategories: Record<string, any[]> = {};
 		Object.entries(categories).forEach(([category, azkarList]) => {
@@ -34,7 +34,7 @@
 				filteredCategories[category] = azkarList;
 			}
 		});
-		
+
 		return filteredCategories;
 	}
 
@@ -45,11 +45,13 @@
 	const availableCategories = Object.entries(azkarData)
 		.sort(([, a], [, b]) => b.length - a.length)
 		.map(([category]) => category);
-	
+
 	// State for showing categories
 	let showAllCategories = false;
-	$: displayedCategories = showAllCategories ? availableCategories : availableCategories.slice(0, 7);
-	
+	$: displayedCategories = showAllCategories
+		? availableCategories
+		: availableCategories.slice(0, 7);
+
 	let activeCategory: string = availableCategories[0] || 'أذكار الصباح';
 	let progress: Record<number, number> = {};
 	let focusedAzkarId: number | null = null;
@@ -89,7 +91,7 @@
 
 	// Reset all counters in a category
 	function resetCategory(category: string) {
-		azkarData[category as keyof typeof azkarData].forEach(azkar => {
+		azkarData[category as keyof typeof azkarData].forEach((azkar) => {
 			progress[azkar.id] = 0;
 		});
 		saveProgress();
@@ -97,7 +99,7 @@
 
 	// Reset all counters
 	function resetAll() {
-		Object.keys(progress).forEach(key => {
+		Object.keys(progress).forEach((key) => {
 			progress[parseInt(key)] = 0;
 		});
 		saveProgress();
@@ -107,7 +109,7 @@
 	function getCategoryProgress(category: string) {
 		const categoryAzkar = azkarData[category as keyof typeof azkarData];
 		if (!categoryAzkar) return 0;
-		
+
 		const totalRequired = categoryAzkar.reduce((sum: number, azkar: any) => sum + azkar.count, 0);
 		const totalCompleted = categoryAzkar.reduce((sum: number, azkar: any) => {
 			const current = Math.min(progress[azkar.id] || 0, azkar.count);
@@ -156,9 +158,7 @@
 
 	<!-- Reset All Button -->
 	<div class="reset-all-container">
-		<button on:click={resetAll} class="reset-all-btn">
-			إعادة تعيين جميع العدادات
-		</button>
+		<button on:click={resetAll} class="reset-all-btn"> إعادة تعيين جميع العدادات </button>
 	</div>
 
 	<!-- Category Tabs -->
@@ -177,12 +177,14 @@
 				</button>
 			{/each}
 		</div>
-		
+
 		<!-- Show More/Less Button -->
 		{#if availableCategories.length > 6}
 			<div class="show-more-container">
 				<button on:click={toggleShowAllCategories} class="show-more-btn">
-					{showAllCategories ? 'إخفاء الفئات الإضافية' : `عرض ${availableCategories.length - 6} فئات أخرى`}
+					{showAllCategories
+						? 'إخفاء الفئات الإضافية'
+						: `عرض ${availableCategories.length - 6} فئات أخرى`}
 					<span class="toggle-icon">{showAllCategories ? '↑' : '↓'}</span>
 				</button>
 			</div>
@@ -191,10 +193,7 @@
 
 	<!-- Category Reset Button -->
 	<div class="category-reset-container">
-		<button
-			on:click={() => resetCategory(activeCategory)}
-			class="category-reset-btn"
-		>
+		<button on:click={() => resetCategory(activeCategory)} class="category-reset-btn">
 			إعادة تعيين {activeCategory}
 		</button>
 	</div>
@@ -202,31 +201,26 @@
 	<!-- Category Progress Bar -->
 	<div class="category-progress">
 		<div class="progress-bar">
-			<div 
-				class="progress-fill" 
-				style="width: {getCategoryProgress(activeCategory)}%"
-			></div>
+			<div class="progress-fill" style="width: {getCategoryProgress(activeCategory)}%"></div>
 		</div>
 		<div class="progress-actions">
 			{#if focusedAzkarId !== null}
-				<button class="reset-btn focus-clear" on:click={() => focusedAzkarId = null}>
+				<button class="reset-btn focus-clear" on:click={() => (focusedAzkarId = null)}>
 					إلغاء التركيز
 				</button>
 			{/if}
 			<button class="reset-btn category-reset" on:click={() => resetCategory(activeCategory)}>
 				إعادة تعيين الفئة
 			</button>
-			<button class="reset-btn global-reset" on:click={resetAll}>
-				إعادة تعيين الكل
-			</button>
+			<button class="reset-btn global-reset" on:click={resetAll}> إعادة تعيين الكل </button>
 		</div>
 	</div>
 
 	<!-- Azkar List -->
 	<div class="azkar-list">
 		{#each azkarData[activeCategory as keyof typeof azkarData] || [] as azkar (azkar.id)}
-			<div 
-				class="azkar-card" 
+			<div
+				class="azkar-card"
 				class:completed={isCompleted(azkar)}
 				class:focused={focusedAzkarId === azkar.id}
 				on:click={() => focusAzkar(azkar.id)}
@@ -243,7 +237,7 @@
 						<span class="focus-indicator">👁️ محور الانتباه</span>
 					{/if}
 				</div>
-				
+
 				<div class="azkar-content">
 					<p class="azkar-text">{azkar.text}</p>
 					{#if azkar.description}
@@ -258,32 +252,35 @@
 							<span class="separator">/</span>
 							<span class="target-count">{azkar.count}</span>
 						</div>
-						
+
 						<div class="counter-controls">
-							<button 
-								class="counter-btn increment" 
+							<button
+								class="counter-btn increment"
 								on:click|stopPropagation={() => incrementCounter(azkar.id)}
 								disabled={isCompleted(azkar)}
 							>
 								{isCompleted(azkar) ? '✓' : '+'}
 							</button>
-							<button 
-								class="counter-btn reset" 
+							<button
+								class="counter-btn reset"
 								on:click|stopPropagation={() => resetCounter(azkar.id)}
 							>
 								↺
 							</button>
 						</div>
 					</div>
-					
+
 					<div class="progress-indicator">
 						<div class="progress-circle">
-							<div 
-								class="progress-circle-fill" 
-								style="--progress: {Math.min((progress[azkar.id] || 0) / azkar.count * 100, 100)}%"
+							<div
+								class="progress-circle-fill"
+								style="--progress: {Math.min(
+									((progress[azkar.id] || 0) / azkar.count) * 100,
+									100
+								)}%"
 							></div>
 							<span class="progress-text">
-								{Math.round(Math.min((progress[azkar.id] || 0) / azkar.count * 100, 100))}%
+								{Math.round(Math.min(((progress[azkar.id] || 0) / azkar.count) * 100, 100))}%
 							</span>
 						</div>
 					</div>
@@ -484,7 +481,9 @@
 	.azkar-card.focused {
 		border-right-color: #f59e0b;
 		background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-		box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3), 0 8px 25px -5px rgba(0, 0, 0, 0.2);
+		box-shadow:
+			0 0 0 3px rgba(245, 158, 11, 0.3),
+			0 8px 25px -5px rgba(0, 0, 0, 0.2);
 		transform: scale(1.02);
 		z-index: 10;
 	}
@@ -526,7 +525,8 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% {
+		0%,
+		100% {
 			opacity: 1;
 		}
 		50% {
@@ -611,8 +611,6 @@
 	.counter-btn.increment:hover:not(.disabled) {
 		background: #059669;
 	}
-
-
 
 	.counter-btn.reset {
 		background: #6b7280;
@@ -707,19 +705,19 @@
 		.azkar-container {
 			padding: 0 1rem;
 		}
-		
+
 		.counter-section {
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
 		}
-		
+
 		.counter-controls {
 			justify-content: center;
 		}
-		
+
 		.tabs-wrapper {
 			justify-content: center;
 		}
 	}
-</style> 
+</style>

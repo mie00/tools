@@ -67,11 +67,27 @@
 				selectedCities = JSON.parse(savedCities);
 			} catch (e) {
 				// If parsing fails, use default cities
-				selectedCities = ['Africa/Cairo', 'Asia/Dubai', 'Asia/Riyadh', 'Europe/Amsterdam', 'Europe/Dublin', 'America/New_York', 'America/Los_Angeles'];
+				selectedCities = [
+					'Africa/Cairo',
+					'Asia/Dubai',
+					'Asia/Riyadh',
+					'Europe/Amsterdam',
+					'Europe/Dublin',
+					'America/New_York',
+					'America/Los_Angeles'
+				];
 			}
 		} else {
 			// Default cities for first time users
-			selectedCities = ['Africa/Cairo', 'Asia/Dubai', 'Asia/Riyadh', 'Europe/Amsterdam', 'Europe/Dublin', 'America/New_York', 'America/Los_Angeles'];
+			selectedCities = [
+				'Africa/Cairo',
+				'Asia/Dubai',
+				'Asia/Riyadh',
+				'Europe/Amsterdam',
+				'Europe/Dublin',
+				'America/New_York',
+				'America/Los_Angeles'
+			];
 		}
 
 		// Update time every second
@@ -110,7 +126,7 @@
 
 	function getTimeInTimezone(timezone: string): TimeInfo {
 		const date = new Date();
-		
+
 		const timeFormatter = new Intl.DateTimeFormat('en-US', {
 			timeZone: timezone,
 			hour12: true,
@@ -118,7 +134,7 @@
 			minute: '2-digit',
 			second: '2-digit'
 		});
-		
+
 		const dateFormatter = new Intl.DateTimeFormat('en-US', {
 			timeZone: timezone,
 			weekday: 'long',
@@ -132,7 +148,8 @@
 			timeZone: timezone,
 			timeZoneName: 'shortOffset'
 		});
-		const offset = offsetFormatter.formatToParts(date).find(part => part.type === 'timeZoneName')?.value || '';
+		const offset =
+			offsetFormatter.formatToParts(date).find((part) => part.type === 'timeZoneName')?.value || '';
 
 		return {
 			time: timeFormatter.format(date),
@@ -142,7 +159,7 @@
 	}
 
 	function getCityName(timezone: string): string {
-		const city = availableCities.find(c => c.timezone === timezone);
+		const city = availableCities.find((c) => c.timezone === timezone);
 		return city ? city.name : timezone.split('/').pop()?.replace(/_/g, ' ') || timezone;
 	}
 
@@ -158,7 +175,7 @@
 	}
 
 	function removeCity(timezone: string) {
-		selectedCities = selectedCities.filter(tz => tz !== timezone);
+		selectedCities = selectedCities.filter((tz) => tz !== timezone);
 		// Save to localStorage
 		localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
 	}
@@ -172,8 +189,8 @@
 				timeZoneName: 'shortGeneric'
 			});
 			const parts = formatter.formatToParts(now);
-			const timeZoneName = parts.find(part => part.type === 'timeZoneName');
-			
+			const timeZoneName = parts.find((part) => part.type === 'timeZoneName');
+
 			// If shortGeneric doesn't work well, try short
 			if (!timeZoneName || timeZoneName.value.includes('GMT')) {
 				const shortFormatter = new Intl.DateTimeFormat('en-US', {
@@ -181,10 +198,10 @@
 					timeZoneName: 'short'
 				});
 				const shortParts = shortFormatter.formatToParts(now);
-				const shortTimeZoneName = shortParts.find(part => part.type === 'timeZoneName');
+				const shortTimeZoneName = shortParts.find((part) => part.type === 'timeZoneName');
 				return shortTimeZoneName ? shortTimeZoneName.value : '';
 			}
-			
+
 			return timeZoneName ? timeZoneName.value : '';
 		} catch (e) {
 			return '';
@@ -206,14 +223,20 @@
 			// Get today's date for the time conversion
 			const today = new Date();
 			const [hours, minutes] = timezoneConvertInput.split(':');
-			
+
 			if (!hours || !minutes) {
 				throw new Error('Invalid time format');
 			}
 
 			// Create a date object with today's date and the input time
-			const inputDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes));
-			
+			const inputDate = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate(),
+				parseInt(hours),
+				parseInt(minutes)
+			);
+
 			if (isNaN(inputDate.getTime())) {
 				throw new Error('Invalid time format');
 			}
@@ -258,7 +281,9 @@
 				timeZone: targetTimezoneName,
 				timeZoneName: 'shortOffset'
 			});
-			const offset = offsetFormatter.formatToParts(sourceDate).find(part => part.type === 'timeZoneName')?.value || '';
+			const offset =
+				offsetFormatter.formatToParts(sourceDate).find((part) => part.type === 'timeZoneName')
+					?.value || '';
 
 			const timeResult = resultTimeFormatter.format(sourceDate);
 			const dateResult = resultDateFormatter.format(sourceDate);
@@ -275,8 +300,8 @@
 		const localTime = date.getTime();
 		const localOffset = date.getTimezoneOffset() * 60000;
 		const utc = localTime + localOffset;
-		
-		const targetDate = new Date(utc + (0)); // UTC
+
+		const targetDate = new Date(utc + 0); // UTC
 		const targetTime = new Intl.DateTimeFormat('sv-SE', {
 			timeZone: timezone,
 			year: 'numeric',
@@ -286,7 +311,7 @@
 			minute: '2-digit',
 			second: '2-digit'
 		}).format(targetDate);
-		
+
 		const parsed = new Date(targetTime);
 		return (parsed.getTime() - targetDate.getTime()) / 60000;
 	}
@@ -424,7 +449,7 @@
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
 					>
 						<option value="">Select a city to add...</option>
-						{#each availableCities.filter(city => !selectedCities.includes(city.timezone)) as city}
+						{#each availableCities.filter((city) => !selectedCities.includes(city.timezone)) as city}
 							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
 						{/each}
 					</select>
@@ -435,19 +460,24 @@
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each selectedCities as timezone}
 					{@const timeInfo = getTimeInTimezone(timezone)}
-					          <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 relative">
-            <button
-              on:click={() => removeCity(timezone)}
-              aria-label="Remove {timezone}"
-              class="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+					<div class="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
+						<button
+							on:click={() => removeCity(timezone)}
+							aria-label="Remove {timezone}"
+							class="absolute top-2 right-2 text-gray-400 transition-colors hover:text-red-500"
 							title="Remove city"
 						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								></path>
 							</svg>
 						</button>
-						
-						<h3 class="mb-2 font-semibold text-gray-800 pr-6">{getCityName(timezone)}</h3>
+
+						<h3 class="mb-2 pr-6 font-semibold text-gray-800">{getCityName(timezone)}</h3>
 						<div class="mb-1 font-mono text-xl font-bold text-blue-600">{timeInfo.time}</div>
 						<div class="mb-1 text-sm text-gray-600">{timeInfo.date}</div>
 						<div class="text-xs text-gray-500">{timezone} ({timeInfo.offset})</div>
@@ -456,7 +486,7 @@
 			</div>
 
 			{#if selectedCities.length === 0}
-				<div class="text-center py-8 text-gray-500">
+				<div class="py-8 text-center text-gray-500">
 					<p>No cities selected. Add some cities to see their current time.</p>
 				</div>
 			{/if}
@@ -538,7 +568,7 @@
 				<!-- Result Section -->
 				<div class="space-y-4">
 					<h3 class="text-lg font-semibold text-gray-800">Converted Time</h3>
-					
+
 					{#if timezoneConvertResult}
 						<div class="rounded-md border border-green-200 bg-green-50 p-4">
 							<div class="mb-2 text-sm font-medium text-green-800">
@@ -551,7 +581,12 @@
 					{#if timezoneConvertError}
 						<div class="rounded-md border border-red-200 bg-red-50 p-4">
 							<div class="text-sm text-red-800">
-								<svg class="mr-1 inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg
+									class="mr-1 inline h-4 w-4"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
 									<path
 										stroke-linecap="round"
 										stroke-linejoin="round"

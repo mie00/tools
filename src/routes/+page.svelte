@@ -123,7 +123,7 @@
 			{#each tools as tool (tool.id)}
 				<a
 					href="/{tool.id}"
-					class="relative transform rounded-2xl border border-gray-100 bg-white p-6 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl block text-center"
+					class="relative block transform rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
 				>
 					{#if tool.usesAPI}
 						<div

@@ -22,8 +22,9 @@
 			case 'lowercase':
 				return text.toLowerCase();
 			case 'capitalize':
-				return text.replace(/\w\S*/g, (txt) => 
-					txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+				return text.replace(
+					/\w\S*/g,
+					(txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
 				);
 			case 'reverse':
 				return text.split('').reverse().join('');
@@ -54,8 +55,8 @@
 		const characters = text.length;
 		const charactersNoSpaces = text.replace(/\s/g, '').length;
 		const lines = text.split('\n').length;
-		const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim()).length;
-		
+		const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim()).length;
+
 		return { words, characters, charactersNoSpaces, lines, paragraphs };
 	}
 
@@ -84,20 +85,19 @@ Paragraphs: ${stats.paragraphs}`;
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="text-2xl font-bold text-gray-800 mb-2">Text Tools</h2>
+		<h2 class="mb-2 text-2xl font-bold text-gray-800">Text Tools</h2>
 		<p class="text-gray-600">Transform and analyze your text with various utilities</p>
 	</div>
 
 	<!-- Operation Selection -->
-	<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+	<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
 		{#each operations as operation}
 			<button
-				on:click={() => activeOperation = operation.id}
-				class="p-3 rounded-lg border text-sm transition-all duration-200 {
-					activeOperation === operation.id
-						? 'bg-blue-500 text-white border-blue-500 shadow-lg'
-						: 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-				}"
+				on:click={() => (activeOperation = operation.id)}
+				class="rounded-lg border p-3 text-sm transition-all duration-200 {activeOperation ===
+				operation.id
+					? 'border-blue-500 bg-blue-500 text-white shadow-lg'
+					: 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'}"
 			>
 				<div class="font-medium">{operation.name}</div>
 				<div class="text-xs opacity-80">{operation.description}</div>
@@ -106,16 +106,16 @@ Paragraphs: ${stats.paragraphs}`;
 	</div>
 
 	<!-- Input Area -->
-	  <div class="space-y-4">
-    <div>
-      <label for="input-text" class="block text-sm font-medium text-gray-700 mb-2">
-        Input Text
-      </label>
-      <textarea
-        id="input-text"
+	<div class="space-y-4">
+		<div>
+			<label for="input-text" class="mb-2 block text-sm font-medium text-gray-700">
+				Input Text
+			</label>
+			<textarea
+				id="input-text"
 				bind:value={inputText}
 				placeholder="Enter your text here..."
-				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+				class="h-32 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 			></textarea>
 		</div>
 
@@ -124,32 +124,35 @@ Paragraphs: ${stats.paragraphs}`;
 			<button
 				on:click={copyToClipboard}
 				disabled={!outputText}
-				class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+				class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				Copy Result
 			</button>
 			<button
 				on:click={clearText}
-				class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+				class="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 			>
 				Clear
 			</button>
 		</div>
 
-		    <!-- Output Area -->
-    <div>
-      <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
-        Result {activeOperation === 'wordCount' ? '(Statistics)' : `(${operations.find(op => op.id === activeOperation)?.name})`}
-      </label>
-      <textarea
-        id="output-text"
+		<!-- Output Area -->
+		<div>
+			<label for="output-text" class="mb-2 block text-sm font-medium text-gray-700">
+				Result {activeOperation === 'wordCount'
+					? '(Statistics)'
+					: `(${operations.find((op) => op.id === activeOperation)?.name})`}
+			</label>
+			<textarea
+				id="output-text"
 				value={outputText}
 				readonly
-				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none {
-					activeOperation === 'wordCount' ? 'font-mono text-sm' : ''
-				}"
+				class="h-32 w-full resize-none rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 {activeOperation ===
+				'wordCount'
+					? 'font-mono text-sm'
+					: ''}"
 				placeholder="Transformed text will appear here..."
 			></textarea>
 		</div>
 	</div>
-</div> 
+</div>

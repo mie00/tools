@@ -57,11 +57,16 @@
 	function handleFileUpload(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
-		
+
 		if (file) {
 			const reader = new FileReader();
-			
-			if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.json') || file.name.endsWith('.xml')) {
+
+			if (
+				file.type.startsWith('text/') ||
+				file.name.endsWith('.txt') ||
+				file.name.endsWith('.json') ||
+				file.name.endsWith('.xml')
+			) {
 				// For text files, read as text
 				reader.onload = (e) => {
 					const result = e.target?.result as string;
@@ -106,30 +111,32 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="text-2xl font-bold text-gray-800 mb-2">Base64 Encoder/Decoder</h2>
+		<h2 class="mb-2 text-2xl font-bold text-gray-800">Base64 Encoder/Decoder</h2>
 		<p class="text-gray-600">Encode and decode Base64 strings with support for files</p>
 	</div>
 
 	<!-- Mode Toggle -->
 	<div class="flex justify-center">
-		<div class="bg-gray-100 p-1 rounded-lg">
+		<div class="rounded-lg bg-gray-100 p-1">
 			<button
-				on:click={() => {mode = 'encode'; processText();}}
-				class="px-4 py-2 rounded-md transition-all {
-					mode === 'encode' 
-						? 'bg-blue-500 text-white shadow' 
-						: 'text-gray-600 hover:text-gray-800'
-				}"
+				on:click={() => {
+					mode = 'encode';
+					processText();
+				}}
+				class="rounded-md px-4 py-2 transition-all {mode === 'encode'
+					? 'bg-blue-500 text-white shadow'
+					: 'text-gray-600 hover:text-gray-800'}"
 			>
 				Encode
 			</button>
 			<button
-				on:click={() => {mode = 'decode'; processText();}}
-				class="px-4 py-2 rounded-md transition-all {
-					mode === 'decode' 
-						? 'bg-blue-500 text-white shadow' 
-						: 'text-gray-600 hover:text-gray-800'
-				}"
+				on:click={() => {
+					mode = 'decode';
+					processText();
+				}}
+				class="rounded-md px-4 py-2 transition-all {mode === 'decode'
+					? 'bg-blue-500 text-white shadow'
+					: 'text-gray-600 hover:text-gray-800'}"
 			>
 				Decode
 			</button>
@@ -137,19 +144,21 @@
 	</div>
 
 	<!-- File Upload -->
-	<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-		<input
-			type="file"
-			bind:this={fileInput}
-			on:change={handleFileUpload}
-			class="hidden"
-		/>
+	<div
+		class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-gray-400"
+	>
+		<input type="file" bind:this={fileInput} on:change={handleFileUpload} class="hidden" />
 		<button
 			on:click={() => fileInput.click()}
-			class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+			class="inline-flex items-center rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 		>
-			<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+			<svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+				></path>
 			</svg>
 			Upload File
 		</button>
@@ -160,43 +169,42 @@
 
 	<!-- Input Area -->
 	<div class="space-y-4">
-		<div class="flex justify-between items-center">
+		<div class="flex items-center justify-between">
 			<label for="input-text" class="block text-sm font-medium text-gray-700">
 				{mode === 'encode' ? 'Text to Encode' : 'Base64 to Decode'}
 			</label>
-			<button
-				on:click={loadSample}
-				class="text-sm text-blue-600 hover:text-blue-800 underline"
-			>
+			<button on:click={loadSample} class="text-sm text-blue-600 underline hover:text-blue-800">
 				Load Sample
 			</button>
 		</div>
-		
+
 		<textarea
 			id="input-text"
 			bind:value={inputText}
-			placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 string to decode...'}
-			class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm"
+			placeholder={mode === 'encode'
+				? 'Enter text to encode...'
+				: 'Enter Base64 string to decode...'}
+			class="h-32 w-full resize-none rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 		></textarea>
 
 		<!-- Action Buttons -->
-		<div class="flex gap-2 flex-wrap">
+		<div class="flex flex-wrap gap-2">
 			<button
 				on:click={switchMode}
-				class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+				class="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600"
 			>
 				↕️ Switch & Process
 			</button>
 			<button
 				on:click={copyToClipboard}
 				disabled={!outputText}
-				class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+				class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				📋 Copy Result
 			</button>
 			<button
 				on:click={clearAll}
-				class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+				class="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 			>
 				🗑️ Clear All
 			</button>
@@ -204,29 +212,31 @@
 
 		<!-- Error Message -->
 		{#if errorMessage}
-			<div class="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700">
+			<div class="rounded-lg border border-red-300 bg-red-100 p-3 text-red-700">
 				⚠️ {errorMessage}
 			</div>
 		{/if}
 
-		    <!-- Output Area -->
-    <div>
-      <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
-        {mode === 'encode' ? 'Encoded Base64' : 'Decoded Text'}
-      </label>
-      <textarea
-        id="output-text"
+		<!-- Output Area -->
+		<div>
+			<label for="output-text" class="mb-2 block text-sm font-medium text-gray-700">
+				{mode === 'encode' ? 'Encoded Base64' : 'Decoded Text'}
+			</label>
+			<textarea
+				id="output-text"
 				value={outputText}
 				readonly
-				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none font-mono text-sm"
-				placeholder={mode === 'encode' ? 'Base64 encoded result will appear here...' : 'Decoded text will appear here...'}
+				class="h-32 w-full resize-none rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm"
+				placeholder={mode === 'encode'
+					? 'Base64 encoded result will appear here...'
+					: 'Decoded text will appear here...'}
 			></textarea>
 		</div>
 
 		<!-- Info -->
-		<div class="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-			<h4 class="font-medium mb-1">ℹ️ Tips:</h4>
-			<ul class="list-disc list-inside space-y-1">
+		<div class="rounded-lg bg-blue-50 p-3 text-sm text-gray-600">
+			<h4 class="mb-1 font-medium">ℹ️ Tips:</h4>
+			<ul class="list-inside list-disc space-y-1">
 				<li>Base64 encoding increases size by approximately 33%</li>
 				<li>Upload text files to encode their content</li>
 				<li>Upload binary files (images, documents) to get their Base64 representation</li>
@@ -234,4 +244,4 @@
 			</ul>
 		</div>
 	</div>
-</div> 
+</div>

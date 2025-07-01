@@ -173,12 +173,12 @@
 
 	<!-- Converter Interface -->
 	<div class="grid gap-6">
-		    <!-- Amount Input -->
-    <div class="space-y-2">
-      <label for="amount-input" class="block text-sm font-medium text-gray-700">Amount</label>
-      <input
-        id="amount-input"
-        type="number"
+		<!-- Amount Input -->
+		<div class="space-y-2">
+			<label for="amount-input" class="block text-sm font-medium text-gray-700">Amount</label>
+			<input
+				id="amount-input"
+				type="number"
 				bind:value={amount}
 				min="0"
 				step="0.01"
@@ -189,12 +189,12 @@
 
 		<!-- Currency Selectors -->
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2">
-			      <!-- From Currency -->
-      <div class="space-y-2">
-        <label for="from-currency" class="block text-sm font-medium text-gray-700">From</label>
-        <select
-          id="from-currency"
-          bind:value={fromCurrency}
+			<!-- From Currency -->
+			<div class="space-y-2">
+				<label for="from-currency" class="block text-sm font-medium text-gray-700">From</label>
+				<select
+					id="from-currency"
+					bind:value={fromCurrency}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}
@@ -203,12 +203,12 @@
 				</select>
 			</div>
 
-			      <!-- Swap Button -->
-      <div class="flex justify-center md:justify-start">
-        <button
-          on:click={swapCurrencies}
-          aria-label="Swap currencies"
-          class="rounded-lg bg-gray-100 p-3 transition-colors hover:bg-gray-200"
+			<!-- Swap Button -->
+			<div class="flex justify-center md:justify-start">
+				<button
+					on:click={swapCurrencies}
+					aria-label="Swap currencies"
+					class="rounded-lg bg-gray-100 p-3 transition-colors hover:bg-gray-200"
 					title="Swap currencies"
 				>
 					<svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,12 +222,12 @@
 				</button>
 			</div>
 
-			      <!-- To Currency -->
-      <div class="space-y-2">
-        <label for="to-currency" class="block text-sm font-medium text-gray-700">To</label>
-        <select
-          id="to-currency"
-          bind:value={toCurrency}
+			<!-- To Currency -->
+			<div class="space-y-2">
+				<label for="to-currency" class="block text-sm font-medium text-gray-700">To</label>
+				<select
+					id="to-currency"
+					bind:value={toCurrency}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}

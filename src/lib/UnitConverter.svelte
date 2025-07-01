@@ -282,12 +282,12 @@
 		<div class="lg:col-span-2">
 			<div class="rounded-xl bg-gray-50 p-6">
 				<div class="mb-4 grid gap-4 md:grid-cols-2">
-					          <!-- From Unit -->
-          <div>
-            <label for="from-unit" class="mb-2 block text-sm font-medium text-gray-700">From</label>
-            <select
-              id="from-unit"
-              bind:value={fromUnit}
+					<!-- From Unit -->
+					<div>
+						<label for="from-unit" class="mb-2 block text-sm font-medium text-gray-700">From</label>
+						<select
+							id="from-unit"
+							bind:value={fromUnit}
 							class="w-full rounded-lg border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
 						>
 							{#each Object.entries(categories[selectedCategory].units) as [key, unit] (key)}
@@ -302,12 +302,12 @@
 						/>
 					</div>
 
-					          <!-- Swap Button -->
-          <div class="flex items-center justify-center md:flex-col">
-            <button
-              on:click={swapUnits}
-              aria-label="Swap units"
-              class="p-3 text-gray-500 transition-colors duration-200 hover:text-blue-500"
+					<!-- Swap Button -->
+					<div class="flex items-center justify-center md:flex-col">
+						<button
+							on:click={swapUnits}
+							aria-label="Swap units"
+							class="p-3 text-gray-500 transition-colors duration-200 hover:text-blue-500"
 							title="Swap units"
 						>
 							<svg
@@ -326,12 +326,12 @@
 						</button>
 					</div>
 
-					          <!-- To Unit -->
-          <div>
-            <label for="to-unit" class="mb-2 block text-sm font-medium text-gray-700">To</label>
-            <select
-              id="to-unit"
-              bind:value={toUnit}
+					<!-- To Unit -->
+					<div>
+						<label for="to-unit" class="mb-2 block text-sm font-medium text-gray-700">To</label>
+						<select
+							id="to-unit"
+							bind:value={toUnit}
 							class="w-full rounded-lg border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
 						>
 							{#each Object.entries(categories[selectedCategory].units) as [key, unit] (key)}
