@@ -12,6 +12,7 @@
 	import JsonFormatter from '$lib/JsonFormatter.svelte';
 	import Azkar from '$lib/Azkar.svelte';
 	import LLMChat from '$lib/LLMChat.svelte';
+	import UrlExaminer from '$lib/UrlExaminer.svelte';
 
 	let selectedTool: string | null = null;
 
@@ -95,6 +96,12 @@
 			name: 'LLM Chat',
 			icon: '🤖',
 			description: 'Chat with local Gemma AI using MediaPipe (WebGPU)'
+		},
+		{
+			id: 'urlexaminer',
+			name: 'URL Examiner',
+			icon: '🔗',
+			description: 'Analyze and break down URLs into components'
 		}
 	];
 
