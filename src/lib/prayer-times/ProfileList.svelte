@@ -1,0 +1,109 @@
+<script lang="ts">
+	import { createEventDispatcher } from 'svelte';
+	import type { Profile, PrayerTimes } from './types';
+	import { calculationMethods } from './constants';
+	import { getNextPrayerForProfile, formatTime } from './utils';
+
+	export let profiles: Profile[] = [];
+	export let profilePrayerTimes: Map<string, PrayerTimes> = new Map();
+
+	const dispatch = createEventDispatcher<{
+		activate: Profile;
+		edit: Profile;
+		delete: string;
+		'create-new': void;
+	}>();
+
+	function handleActivate(profile: Profile) {
+		if (!profile.isActive) {
+			dispatch('activate', profile);
+		}
+	}
+
+	function handleEdit(event: MouseEvent, profile: Profile) {
+		event.stopPropagation();
+		dispatch('edit', profile);
+	}
+
+	function handleDelete(event: MouseEvent, profileId: string) {
+		event.stopPropagation();
+		if (confirm('Are you sure you want to delete this profile?')) {
+			dispatch('delete', profileId);
+		}
+	}
+
+	function handleCreateNew() {
+		dispatch('create-new');
+	}
+</script>
+
+<div class="rounded-xl bg-white p-6 shadow-lg">
+	<div class="flex items-center justify-between mb-4">
+		<h3 class="text-xl font-bold text-gray-800">Prayer Profiles</h3>
+		<button
+			on:click={handleCreateNew}
+			class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+		>
+			Add Profile
+		</button>
+	</div>
+	
+	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+		{#each profiles as profile (profile.id)}
+			<div 
+				class="rounded-lg border p-4 transition-all duration-200 cursor-pointer {profile.isActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
+				on:click={() => handleActivate(profile)}
+				role="button"
+				tabindex="0"
+				on:keydown={(e) => e.key === 'Enter' && handleActivate(profile)}
+			>
+				<div class="flex items-start justify-between">
+					<div class="flex-1">
+						<div class="flex items-center gap-2 mb-2">
+							<h4 class="font-semibold {profile.isActive ? 'text-blue-800' : 'text-gray-800'}">{profile.name}</h4>
+							{#if profile.isActive}
+								<span class="px-2 py-1 text-xs bg-blue-600 text-white rounded-full">Active</span>
+							{/if}
+						</div>
+						<p class="text-sm text-gray-600">
+							{calculationMethods[profile.calculationMethod]?.name || profile.calculationMethod}
+						</p>
+						<p class="text-xs text-gray-500 mt-1">
+							{profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
+						</p>
+						
+						{#if profilePrayerTimes.get(profile.id)}
+							{@const profileTimes = profilePrayerTimes.get(profile.id)!}
+							{@const nextPrayerForThisProfile = getNextPrayerForProfile(profile, profileTimes)}
+							{#if nextPrayerForThisProfile}
+								<div class="mt-2 text-xs {profile.isActive ? 'text-blue-700' : 'text-gray-600'}">
+									<span class="font-medium">Next: {nextPrayerForThisProfile.name}</span>
+									<span class="ml-1">{formatTime(nextPrayerForThisProfile.time)}</span>
+									{#if nextPrayerForThisProfile.timeRemaining}
+										<span class="ml-1 opacity-75">({nextPrayerForThisProfile.timeRemaining})</span>
+									{/if}
+								</div>
+							{/if}
+						{/if}
+					</div>
+					<div class="flex items-center space-x-2">
+						<button
+							on:click={(e) => handleEdit(e, profile)}
+							class="text-sm text-blue-600 hover:text-blue-700 p-1"
+							title="Edit Profile"
+						>
+							✏️
+						</button>
+						<button
+							on:click={(e) => handleDelete(e, profile.id)}
+							class="text-sm text-red-600 hover:text-red-700 p-1"
+							title="Delete Profile"
+						>
+							🗑️
+						</button>
+					</div>
+				</div>
+			</div>
+		{/each}
+	</div>
+</div> 

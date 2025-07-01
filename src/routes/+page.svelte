@@ -102,6 +102,12 @@
 			name: 'URL Examiner',
 			icon: '🔗',
 			description: 'Analyze and break down URLs into components'
+		},
+		{
+			id: 'prayertimes',
+			name: 'Prayer Times',
+			icon: '🕌',
+			description: 'Islamic prayer times with location-based calculation methods'
 		}
 	];
 

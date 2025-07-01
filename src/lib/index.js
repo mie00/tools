@@ -13,3 +13,7 @@ export { default as JsonFormatter } from './JsonFormatter.svelte';
 export { default as Azkar } from './Azkar.svelte';
 export { default as LLMChat } from './LLMChat.svelte';
 export { default as UrlExaminer } from './UrlExaminer.svelte';
+export { default as PrayerTimes } from './PrayerTimes.svelte';
+
+// Export prayer times components and utilities
+export * from './prayer-times';

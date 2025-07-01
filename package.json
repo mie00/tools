@@ -49,6 +49,7 @@
 		"wait-on": "^8.0.3"
 	},
 	"dependencies": {
-		"@mediapipe/tasks-genai": "^0.10.23"
+		"@mediapipe/tasks-genai": "^0.10.23",
+		"adhan": "^4.4.3"
 	}
 }
