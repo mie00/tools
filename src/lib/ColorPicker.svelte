@@ -255,7 +255,7 @@
 
 	  <!-- Color Palette -->
   <div class="space-y-2">
-    <label class="block text-sm font-medium text-gray-700">Quick Colors</label>
+    <span class="block text-sm font-medium text-gray-700">Quick Colors</span>
     <div class="grid grid-cols-8 gap-2">
       {#each colorPalette as color}
         <button

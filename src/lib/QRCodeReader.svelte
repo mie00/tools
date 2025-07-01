@@ -1,53 +1,62 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 
-	let fileInput;
-	let videoElement;
-	let canvasElement;
-	let result = '';
-	let error = '';
-	let isScanning = false;
-	let stream = null;
-	let jsQR = null;
+	// Type definitions
+	interface JSQRResult {
+		data: string;
+		location: any;
+	}
+
+	let fileInput: HTMLInputElement;
+	let videoElement: HTMLVideoElement;
+	let canvasElement: HTMLCanvasElement;
+	let result: string = '';
+	let error: string = '';
+	let loading: boolean = false;
+	let isScanning: boolean = false;
+	let stream: MediaStream | null = null;
+	let jsQRLib: any = null;
 
 	onMount(async () => {
-		// Load jsQR library dynamically
 		try {
+			// @ts-ignore - External CDN module
 			const module = await import('https://cdn.skypack.dev/jsqr');
-			jsQR = module.default;
-		} catch {
-			error = 'Failed to load QR code scanner library';
+			jsQRLib = module.default;
+		} catch (err: unknown) {
+			console.error('Failed to load QR scanner library:', err);
+			error = 'Failed to load QR scanner library';
 		}
 	});
 
 	async function startCamera() {
-		try {
-			error = '';
-			result = '';
+		loading = true;
+		error = '';
 
-			if (!jsQR) {
+		try {
+			if (!jsQRLib) {
 				error = 'QR scanner library not loaded yet';
 				return;
 			}
 
 			stream = await navigator.mediaDevices.getUserMedia({
-				video: { facingMode: 'environment' } // Prefer back camera
+				video: { facingMode: 'environment' }
 			});
 
 			videoElement.srcObject = stream;
 			videoElement.play();
 			isScanning = true;
-
-			// Start scanning loop
 			scanQRCode();
-		} catch {
+		} catch (err: unknown) {
 			error = 'Camera access denied or not available';
+			console.error('Camera error:', err);
+		} finally {
+			loading = false;
 		}
 	}
 
 	function stopCamera() {
 		if (stream) {
-			stream.getTracks().forEach((track) => track.stop());
+			stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
 			stream = null;
 		}
 		isScanning = false;
@@ -55,7 +64,7 @@
 	}
 
 	function scanQRCode() {
-		if (!isScanning || !jsQR) return;
+		if (!isScanning || !jsQRLib) return;
 
 		if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
 			const canvas = canvasElement;
@@ -64,56 +73,65 @@
 			canvas.width = videoElement.videoWidth;
 			canvas.height = videoElement.videoHeight;
 
-			context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+			context?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+			const imageData = context?.getImageData(0, 0, canvas.width, canvas.height);
 
-			const code = jsQR(imageData.data, imageData.width, imageData.height);
+			if (imageData) {
+				const code = jsQRLib(imageData.data, imageData.width, imageData.height);
 
-			if (code) {
-				result = code.data;
-				stopCamera();
-				return;
+				if (code) {
+					result = code.data;
+					stopCamera();
+					return;
+				}
 			}
 		}
 
 		requestAnimationFrame(scanQRCode);
 	}
 
-	function handleFileUpload(event) {
-		const file = event.target.files[0];
+	function handleFileUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target?.files?.[0];
 		if (!file) return;
 
+		loading = true;
 		error = '';
-		result = '';
 
-		if (!jsQR) {
+		if (!jsQRLib) {
 			error = 'QR scanner library not loaded yet';
+			loading = false;
 			return;
 		}
 
 		const reader = new FileReader();
-		reader.onload = function (e) {
+		reader.onload = (e) => {
 			const img = new Image();
-			img.onload = function () {
+			img.onload = () => {
 				const canvas = document.createElement('canvas');
 				const context = canvas.getContext('2d');
-
 				canvas.width = img.width;
 				canvas.height = img.height;
-				context.drawImage(img, 0, 0);
+				context?.drawImage(img, 0, 0);
 
-				const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-				const code = jsQR(imageData.data, imageData.width, imageData.height);
+				const imageData = context?.getImageData(0, 0, canvas.width, canvas.height);
+				if (imageData) {
+					const code = jsQRLib(imageData.data, imageData.width, imageData.height);
 
-				if (code) {
-					result = code.data;
-				} else {
-					error = 'No QR code found in the image';
+					if (code) {
+						result = code.data;
+					} else {
+						error = 'No QR code found in the image';
+					}
 				}
+				loading = false;
 			};
-			img.src = e.target.result;
+			img.src = e.target?.result as string;
 		};
 		reader.readAsDataURL(file);
+
+		// Reset file input
+		target.value = '';
 	}
 
 	function copyToClipboard() {
@@ -128,7 +146,7 @@
 		}
 	}
 
-	function isUrl(text) {
+	function isUrl(text: string): boolean {
 		return text.startsWith('http://') || text.startsWith('https://');
 	}
 </script>

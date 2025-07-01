@@ -1,16 +1,37 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 
-	let selectedCategory = 'length';
-	let fromUnit = 'meter';
-	let toUnit = 'feet';
-	let inputValue = '';
-	let result = '';
-	let history = [];
-	let isLoaded = false;
+	// Type definitions
+	interface UnitInfo {
+		name: string;
+		symbol: string;
+		factor?: number; // Optional for temperature units
+	}
+
+	interface CategoryInfo {
+		name: string;
+		icon: string;
+		baseUnit: string;
+		units: Record<string, UnitInfo>;
+	}
+
+	interface HistoryItem {
+		input: string;
+		output: string;
+		conversion: string;
+		timestamp: string;
+	}
+
+	let inputValue: string = '1';
+	let fromUnit: string = 'meter';
+	let toUnit: string = 'kilometer';
+	let selectedCategory: string = 'length';
+	let result: string = '';
+	let history: HistoryItem[] = [];
+	let isLoaded: boolean = false;
 
 	// Unit definitions with conversion factors to base units
-	const categories = {
+	const categories: Record<string, CategoryInfo> = {
 		length: {
 			name: 'Length',
 			icon: '📏',
@@ -80,7 +101,7 @@
 	};
 
 	// Temperature conversion functions
-	function convertTemperature(value, from, to) {
+	function convertTemperature(value: number, from: string, to: string): number {
 		if (from === to) return value;
 
 		// Convert to Celsius first
@@ -102,7 +123,7 @@
 	}
 
 	// General unit conversion
-	function convertUnits(value, from, to, category) {
+	function convertUnits(value: number, from: string, to: string, category: string): number {
 		if (from === to) return value;
 
 		if (category === 'temperature') {
@@ -113,12 +134,16 @@
 		const fromFactor = categoryData.units[from].factor;
 		const toFactor = categoryData.units[to].factor;
 
+		if (fromFactor === undefined || toFactor === undefined) {
+			return value; // Fallback for units without factor
+		}
+
 		// Convert to base unit, then to target unit
 		const baseValue = value * fromFactor;
 		return baseValue / toFactor;
 	}
 
-	function formatResult(value) {
+	function formatResult(value: number): string {
 		if (isNaN(value)) return 'Invalid input';
 
 		// Format numbers with appropriate precision
@@ -202,7 +227,7 @@
 		}
 	}
 
-	function selectCategory(category) {
+	function selectCategory(category: string) {
 		selectedCategory = category;
 		// Set default units for the category
 		const units = Object.keys(categories[category].units);

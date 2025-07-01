@@ -1,18 +1,25 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 
-	let amount = 1;
-	let fromCurrency = 'USD';
-	let toCurrency = 'EUR';
-	let result = '';
-	let loading = false;
-	let error = '';
-	let exchangeRate = null;
-	let lastUpdated = '';
-	let recentConversions = [];
+	// Type definitions
+	interface CurrencyInfo {
+		code: string;
+		name: string;
+		flag: string;
+	}
+
+	let fromCurrency: string = 'USD';
+	let toCurrency: string = 'EUR';
+	let amount: string = '1';
+	let result: string = '';
+	let loading: boolean = false;
+	let error: string = '';
+	let exchangeRate: number | null = null;
+	let lastUpdated: string = '';
+	let recentConversions: string[] = [];
 
 	// Popular currencies list
-	const popularCurrencies = [
+	const popularCurrencies: CurrencyInfo[] = [
 		{ code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
 		{ code: 'EUR', name: 'Euro', flag: '🇪🇺' },
 		{ code: 'EGP', name: 'Egyptian Pound', flag: '🇪🇬' },
@@ -52,7 +59,7 @@
 		}
 	}
 
-	function saveRecentConversion(from, to) {
+	function saveRecentConversion(from: string, to: string) {
 		const conversionPair = `${from}-${to}`;
 		recentConversions = recentConversions.filter((item) => item !== conversionPair);
 		recentConversions.unshift(conversionPair);
@@ -60,13 +67,14 @@
 
 		try {
 			localStorage.setItem('recentCurrencyConversions', JSON.stringify(recentConversions));
-		} catch (err) {
+		} catch (err: unknown) {
 			console.warn('Failed to save recent conversions:', err);
 		}
 	}
 
 	async function convertCurrency() {
-		if (!amount || amount <= 0 || fromCurrency === toCurrency) {
+		const numAmount = parseFloat(amount);
+		if (!amount || numAmount <= 0 || fromCurrency === toCurrency) {
 			result = '';
 			return;
 		}
@@ -89,14 +97,16 @@
 			}
 
 			exchangeRate = data.rates[toCurrency];
-			const convertedAmount = (amount * exchangeRate).toFixed(2);
-			result = convertedAmount;
+			if (exchangeRate) {
+				const convertedAmount = (numAmount * exchangeRate).toFixed(2);
+				result = convertedAmount;
+			}
 			lastUpdated = new Date(data.time_last_updated || Date.now()).toLocaleString();
 
 			// Save this conversion pair to recent
 			saveRecentConversion(fromCurrency, toCurrency);
-		} catch (err) {
-			error = err.message || 'Failed to fetch exchange rates';
+		} catch (err: unknown) {
+			error = (err as Error).message || 'Failed to fetch exchange rates';
 			result = '';
 			exchangeRate = null;
 		} finally {
@@ -109,14 +119,14 @@
 		convertCurrency();
 	}
 
-	function useRecentConversion(conversionPair) {
+	function useRecentConversion(conversionPair: string) {
 		const [from, to] = conversionPair.split('-');
 		fromCurrency = from;
 		toCurrency = to;
 		convertCurrency();
 	}
 
-	function getCurrencyDisplay(code) {
+	function getCurrencyDisplay(code: string): string {
 		const currency = popularCurrencies.find((c) => c.code === code);
 		return currency ? `${currency.flag} ${currency.code}` : code;
 	}

@@ -1,24 +1,36 @@
-<script>
+<script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 
-	let currentTime = new Date();
-	let timeInterval;
-	let epochInput = '';
-	let humanInput = '';
-	let epochResult = '';
-	let humanResult = '';
-	let errorMessage = '';
+	// Type definitions
+	interface AvailableCity {
+		name: string;
+		timezone: string;
+	}
+
+	interface TimeInfo {
+		time: string;
+		date: string;
+		offset: string;
+	}
+
+	let currentTime: Date = new Date();
+	let timeInterval: ReturnType<typeof setInterval> | undefined;
+	let epochInput: string = '';
+	let humanInput: string = '';
+	let epochResult: string = '';
+	let humanResult: string = '';
+	let errorMessage: string = '';
 
 	// Timezone conversion variables
-	let timezoneConvertInput = '';
-	let fromTimezone = 'Local';
-	let toTimezone = 'America/New_York';
-	let timezoneConvertResult = '';
-	let timezoneConvertError = '';
+	let timezoneConvertInput: string = '';
+	let fromTimezone: string = 'Local';
+	let toTimezone: string = 'America/New_York';
+	let timezoneConvertResult: string = '';
+	let timezoneConvertError: string = '';
 
 	// Selected cities for display - with persistence
-	let selectedCities = [];
-	let availableCities = [
+	let selectedCities: string[] = [];
+	let availableCities: AvailableCity[] = [
 		// User's preferred cities at the top
 		{ name: 'Cairo', timezone: 'Africa/Cairo' },
 		{ name: 'Dubai', timezone: 'Asia/Dubai' },
@@ -74,7 +86,7 @@
 		}
 	});
 
-	function formatTime(date) {
+	function formatTime(date: Date) {
 		return date.toLocaleTimeString('en-US', {
 			hour12: true,
 			hour: '2-digit',
@@ -83,7 +95,7 @@
 		});
 	}
 
-	function formatDate(date) {
+	function formatDate(date: Date) {
 		return date.toLocaleDateString('en-US', {
 			weekday: 'long',
 			year: 'numeric',
@@ -92,11 +104,11 @@
 		});
 	}
 
-	function formatISO(date) {
+	function formatISO(date: Date) {
 		return date.toISOString();
 	}
 
-	function getTimeInTimezone(timezone) {
+	function getTimeInTimezone(timezone: string): TimeInfo {
 		const date = new Date();
 		
 		const timeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -129,13 +141,13 @@
 		};
 	}
 
-	function getCityName(timezone) {
+	function getCityName(timezone: string): string {
 		const city = availableCities.find(c => c.timezone === timezone);
 		return city ? city.name : timezone.split('/').pop()?.replace(/_/g, ' ') || timezone;
 	}
 
-	function addCity(event) {
-		const select = event.target;
+	function addCity(event: Event) {
+		const select = event.target as HTMLSelectElement;
 		const timezone = select.value;
 		if (timezone && !selectedCities.includes(timezone)) {
 			selectedCities = [...selectedCities, timezone];
@@ -145,13 +157,13 @@
 		select.value = '';
 	}
 
-	function removeCity(timezone) {
+	function removeCity(timezone: string) {
 		selectedCities = selectedCities.filter(tz => tz !== timezone);
 		// Save to localStorage
 		localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
 	}
 
-	function getTimezoneAbbreviation(timezone) {
+	function getTimezoneAbbreviation(timezone: string): string {
 		try {
 			// Use current time to get the correct seasonal abbreviation
 			const now = new Date();
@@ -179,7 +191,7 @@
 		}
 	}
 
-	function getCityWithTimezone(city) {
+	function getCityWithTimezone(city: AvailableCity): string {
 		const abbreviation = getTimezoneAbbreviation(city.timezone);
 		return abbreviation ? `${city.name} (${abbreviation})` : city.name;
 	}
@@ -206,7 +218,7 @@
 				throw new Error('Invalid time format');
 			}
 
-			let sourceDate;
+			let sourceDate: Date;
 			let sourceTimezoneName = fromTimezone;
 			let targetTimezoneName = toTimezone;
 
@@ -258,7 +270,7 @@
 		}
 	}
 
-	function getTimezoneOffset(timezone) {
+	function getTimezoneOffset(timezone: string): number {
 		const date = new Date();
 		const localTime = date.getTime();
 		const localOffset = date.getTimezoneOffset() * 60000;

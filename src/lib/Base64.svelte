@@ -161,7 +161,7 @@
 	<!-- Input Area -->
 	<div class="space-y-4">
 		<div class="flex justify-between items-center">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for="input-text" class="block text-sm font-medium text-gray-700">
 				{mode === 'encode' ? 'Text to Encode' : 'Base64 to Decode'}
 			</label>
 			<button
@@ -173,6 +173,7 @@
 		</div>
 		
 		<textarea
+			id="input-text"
 			bind:value={inputText}
 			placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 string to decode...'}
 			class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm"

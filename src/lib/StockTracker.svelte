@@ -1,26 +1,73 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 
-	let searchQuery = '';
-	let searchResults = [];
-	let pinnedStocks = [];
-	let selectedStock = null;
-	let stockChart = null;
-	let loading = false;
-	let error = '';
-	let priceRefreshInterval;
-	let searchTimeout;
-	let apiKey = '';
-	let showApiKeyPrompt = false;
-	let apiKeyInput = '';
-	let apiKeyError = '';
-	let selectedTimeWindow = '1M';
+	// Type definitions
+	interface SearchResult {
+		'1. symbol': string;
+		'2. name': string;
+		'3. type': string;
+		'4. region': string;
+		'5. marketOpen': string;
+		'6. marketClose': string;
+		'7. timezone': string;
+		'8. currency': string;
+		'9. matchScore': string;
+	}
+
+	interface StockQuote {
+		symbol: string;
+		price: number;
+		change: number;
+		changePercent: number;
+		high: number;
+		low: number;
+		volume: number;
+		previousClose: number;
+		lastUpdate: string;
+		marketCap?: number;
+	}
+
+	interface PinnedStock extends StockQuote {
+		name: string;
+	}
+
+	interface ChartPoint {
+		date: string;
+		fullDate: string;
+		price: number;
+		high: number;
+		low: number;
+		volume: number;
+	}
+
+	interface TimeWindow {
+		id: string;
+		label: string;
+		function: string;
+		interval?: string;
+		days: number;
+	}
+
+	let searchQuery: string = '';
+	let searchResults: SearchResult[] = [];
+	let pinnedStocks: PinnedStock[] = [];
+	let selectedStock: PinnedStock | null = null;
+	let stockChart: ChartPoint[] | null = null;
+	let loading: boolean = false;
+	let error: string = '';
+	let priceRefreshInterval: ReturnType<typeof setInterval> | undefined;
+	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+	let apiKey: string = '';
+	let showApiKeyPrompt: boolean = false;
+	let apiKeyInput: string = '';
+	let apiKeyError: string = '';
+	let selectedTimeWindow: string = '1M';
 
 	// Using Alpha Vantage API (free tier allows 5 API requests per minute)
 	const BASE_URL = 'https://www.alphavantage.co/query';
 
 	// Time window options
-	const timeWindows = [
+	const timeWindows: TimeWindow[] = [
 		{ id: '1D', label: '1 Day', function: 'TIME_SERIES_INTRADAY', interval: '60min', days: 1 },
 		{ id: '5D', label: '5 Days', function: 'TIME_SERIES_INTRADAY', interval: '60min', days: 5 },
 		{ id: '1M', label: '1 Month', function: 'TIME_SERIES_DAILY', days: 30 },
@@ -158,15 +205,15 @@
 			}
 
 			searchResults = data.bestMatches?.slice(0, 10) || [];
-		} catch (err) {
-			error = err.message || 'Failed to search stocks';
+		} catch (err: unknown) {
+			error = (err as Error).message || 'Failed to search stocks';
 			searchResults = [];
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function getStockQuote(symbol) {
+	async function getStockQuote(symbol: string): Promise<StockQuote | null> {
 		if (!apiKey) {
 			return null;
 		}
@@ -200,7 +247,11 @@
 				price: parseFloat(quote['05. price']),
 				change: parseFloat(quote['09. change']),
 				changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
-				lastUpdate: quote['07. latest trading day']
+				lastUpdate: quote['07. latest trading day'],
+				high: parseFloat(quote['02. high']),
+				low: parseFloat(quote['03. low']),
+				volume: parseInt(quote['06. volume']),
+				previousClose: parseFloat(quote['08. previous close'])
 			};
 		} catch (err) {
 			console.error(`Failed to get quote for ${symbol}:`, err);
@@ -222,7 +273,7 @@
 		savePinnedStocks();
 	}
 
-	function pinStock(stockInfo) {
+	function pinStock(stockInfo: SearchResult) {
 		const symbol = stockInfo['1. symbol'];
 		const name = stockInfo['2. name'];
 
@@ -231,13 +282,17 @@
 			return;
 		}
 
-		const newStock = {
+		const newStock: PinnedStock = {
 			symbol: symbol,
 			name: name,
 			price: 0,
 			change: 0,
 			changePercent: 0,
-			lastUpdate: ''
+			lastUpdate: '',
+			high: 0,
+			low: 0,
+			volume: 0,
+			previousClose: 0
 		};
 
 		pinnedStocks = [...pinnedStocks, newStock];
@@ -260,7 +315,7 @@
 		searchResults = [];
 	}
 
-	function unpinStock(symbol) {
+	function unpinStock(symbol: string) {
 		pinnedStocks = pinnedStocks.filter((stock) => stock.symbol !== symbol);
 		savePinnedStocks();
 		if (selectedStock?.symbol === symbol) {
@@ -268,7 +323,7 @@
 		}
 	}
 
-	async function selectStock(stock) {
+	async function selectStock(stock: PinnedStock) {
 		selectedStock = stock;
 		await loadChartData();
 	}
@@ -315,7 +370,7 @@
 			}
 
 			// Extract time series data based on function type
-			let timeSeries;
+			let timeSeries: Record<string, Record<string, string>> | undefined;
 			if (timeWindow.function === 'TIME_SERIES_INTRADAY') {
 				const intervalKey = `Time Series (${timeWindow.interval})`;
 				timeSeries = data[intervalKey];
@@ -328,7 +383,7 @@
 			}
 
 			// Convert to chart format and limit by days
-			const chartData = Object.entries(timeSeries)
+			const chartData: ChartPoint[] = Object.entries(timeSeries)
 				.slice(0, timeWindow.days * (timeWindow.interval ? 8 : 1)) // Rough estimate for intraday points
 				.reverse()
 				.map(([date, values]) => ({
@@ -341,22 +396,22 @@
 				}));
 
 			stockChart = chartData;
-		} catch (err) {
-			error = err.message || 'Failed to load chart data';
+		} catch (err: unknown) {
+			error = (err as Error).message || 'Failed to load chart data';
 			stockChart = null;
 		} finally {
 			loading = false;
 		}
 	}
 
-	function changeTimeWindow(windowId) {
+	function changeTimeWindow(windowId: string) {
 		selectedTimeWindow = windowId;
 		if (selectedStock) {
 			loadChartData();
 		}
 	}
 
-	function formatCurrency(value) {
+	function formatCurrency(value: number) {
 		return new Intl.NumberFormat('en-US', {
 			style: 'currency',
 			currency: 'USD',
@@ -365,7 +420,7 @@
 		}).format(value);
 	}
 
-	function formatPercent(value) {
+	function formatPercent(value: number) {
 		const sign = value >= 0 ? '+' : '';
 		return `${sign}${value.toFixed(2)}%`;
 	}

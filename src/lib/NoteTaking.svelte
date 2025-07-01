@@ -1,28 +1,52 @@
-<script>
+<script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 
-	let notes = [];
-	let topics = ['Main'];
-	let selectedTopic = 'Main';
-	let newNoteText = '';
-	let editingNote = null;
-	let draggedNote = null;
-	let newTopicName = '';
-	let showNewTopicInput = false;
-	let focusedNote = null;
-	let mediaRecorder = null;
-	let isRecording = false;
-	let recordingType = null; // 'audio' or 'video'
-	let recordedChunks = [];
-	let showMediaControls = false;
-	let currentStream = null;
-	let videoPreview = null;
-	let audioContext = null;
-	let analyser = null;
-	let audioLevelArray = null;
-	let animationFrame = null;
-	let storageInfo = { used: 0, quota: 0, available: 0 };
-	let showStorageWarning = false;
+	// Type definitions
+	interface MediaData {
+		type: string;
+		name: string;
+		size: number;
+		data: string;
+		mimeType: string;
+	}
+
+	interface Note {
+		id: number;
+		text: string;
+		topic: string;
+		timestamp: string;
+		order: number;
+		media?: MediaData;
+	}
+
+	interface StorageInfo {
+		used: number;
+		quota: number;
+		available: number;
+	}
+
+	let notes: Note[] = [];
+	let topics: string[] = ['Main'];
+	let selectedTopic: string = 'Main';
+	let newNoteText: string = '';
+	let editingNote: Note | null = null;
+	let draggedNote: Note | null = null;
+	let newTopicName: string = '';
+	let showNewTopicInput: boolean = false;
+	let focusedNote: number | null = null;
+	let mediaRecorder: MediaRecorder | null = null;
+	let isRecording: boolean = false;
+	let recordingType: 'audio' | 'video' | null = null;
+	let recordedChunks: Blob[] = [];
+	let showMediaControls: boolean = false;
+	let currentStream: MediaStream | null = null;
+	let videoPreview: HTMLVideoElement | null = null;
+	let audioContext: AudioContext | null = null;
+	let analyser: AnalyserNode | null = null;
+	let audioLevelArray: Uint8Array | null = null;
+	let animationFrame: number | null = null;
+	let storageInfo: StorageInfo = { used: 0, quota: 0, available: 0 };
+	let showStorageWarning: boolean = false;
 
 	onMount(async () => {
 		await initializeStorage();
@@ -65,7 +89,7 @@
 		}
 	}
 
-	function formatBytes(bytes) {
+	function formatBytes(bytes: number): string {
 		if (bytes === 0) return '0 Bytes';
 		const k = 1024;
 		const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -73,7 +97,7 @@
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 	}
 
-	async function checkStorageQuota(additionalSize = 0) {
+	async function checkStorageQuota(additionalSize = 0): Promise<boolean> {
 		await updateStorageInfo();
 		const wouldExceed = storageInfo.used + additionalSize > storageInfo.quota * 0.9; // 90% threshold
 		return !wouldExceed;
@@ -90,7 +114,7 @@
 			if (savedTopics) {
 				topics = JSON.parse(savedTopics);
 			}
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('Error loading notes:', error);
 			alert('Error loading saved notes. Storage may be corrupted.');
 		}
@@ -115,21 +139,22 @@
 
 			// Update storage info after saving
 			await updateStorageInfo();
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('Error saving notes:', error);
+			const err = error as Error;
 
-			if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+			if (err.name === 'QuotaExceededError' || err.message?.includes('quota')) {
 				alert(
 					`Storage quota exceeded! Current usage: ${formatBytes(storageInfo.used)}/${formatBytes(storageInfo.quota)}. Please delete some notes or media files to free up space.`
 				);
 				showStorageWarning = true;
 			} else {
-				alert('Error saving notes: ' + error.message);
+				alert('Error saving notes: ' + (err.message || 'Unknown error'));
 			}
 		}
 	}
 
-	async function addNote(mediaData = null) {
+	async function addNote(mediaData?: MediaData) {
 		if (newNoteText.trim() || mediaData) {
 			// Estimate the size of the new note
 			const noteSize = newNoteText.length * 2 + (mediaData ? mediaData.data.length : 0);
@@ -143,7 +168,7 @@
 				return;
 			}
 
-			const note = {
+			const note: Note = {
 				id: Date.now(),
 				text: newNoteText.trim(),
 				topic: selectedTopic,
@@ -157,18 +182,18 @@
 		}
 	}
 
-	async function deleteNote(noteId) {
+	async function deleteNote(noteId: number) {
 		notes = notes.filter((n) => n.id !== noteId);
 		await saveNotes();
 	}
 
-	async function startEdit(note) {
+	async function startEdit(note: Note) {
 		editingNote = { ...note };
 	}
 
 	async function saveEdit() {
 		if (editingNote) {
-			notes = notes.map((n) => (n.id === editingNote.id ? editingNote : n));
+			notes = notes.map((n) => (n.id === editingNote!.id ? editingNote! : n));
 			editingNote = null;
 			await saveNotes();
 		}
@@ -178,7 +203,7 @@
 		editingNote = null;
 	}
 
-	async function moveNoteToTopic(noteId, newTopic) {
+	async function moveNoteToTopic(noteId: number, newTopic: string) {
 		notes = notes.map((n) => {
 			if (n.id === noteId) {
 				return {
@@ -201,7 +226,7 @@
 		}
 	}
 
-	async function deleteTopic(topicToDelete) {
+	async function deleteTopic(topicToDelete: string) {
 		if (topicToDelete === 'Main') return; // Can't delete main
 
 		// Move all notes from deleted topic to Main
@@ -237,17 +262,21 @@
 		}
 	}
 
-	function handleDragStart(event, note) {
+	function handleDragStart(event: DragEvent, note: Note) {
 		draggedNote = note;
-		event.dataTransfer.effectAllowed = 'move';
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+		}
 	}
 
-	function handleDragOver(event) {
+	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
-		event.dataTransfer.dropEffect = 'move';
+		if (event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'move';
+		}
 	}
 
-	function handleDrop(event, dropNote) {
+	function handleDrop(event: DragEvent, dropNote: Note) {
 		event.preventDefault();
 		if (
 			draggedNote &&
@@ -256,31 +285,34 @@
 			draggedNote.topic === dropNote.topic
 		) {
 			// Reorder notes within the same topic
-			const topicNotes = notes.filter((n) => n.topic === draggedNote.topic);
-			const draggedIndex = topicNotes.findIndex((n) => n.id === draggedNote.id);
+			const topicNotes = notes.filter((n) => n.topic === draggedNote!.topic);
+			const draggedIndex = topicNotes.findIndex((n) => n.id === draggedNote!.id);
 			const dropIndex = topicNotes.findIndex((n) => n.id === dropNote.id);
 
 			// Update order values
 			topicNotes.splice(draggedIndex, 1);
-			topicNotes.splice(dropIndex, 0, draggedNote);
+			topicNotes.splice(dropIndex, 0, draggedNote!);
 
 			topicNotes.forEach((note, index) => {
 				note.order = index;
 			});
 
-			notes = [...notes.filter((n) => n.topic !== draggedNote.topic), ...topicNotes];
+			notes = [...notes.filter((n) => n.topic !== draggedNote!.topic), ...topicNotes];
 			saveNotes();
 		}
 		draggedNote = null;
 	}
 
-	function formatTimestamp(timestamp) {
+	function formatTimestamp(timestamp: string): string {
 		return new Date(timestamp).toLocaleString();
 	}
 
 	// Media handling functions
-	async function handleFileUpload(event) {
-		const file = event.target.files[0];
+	async function handleFileUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (!target || !target.files) return;
+
+		const file = target.files[0];
 		if (!file) return;
 
 		// Check file size (limit to 5MB for localStorage)
@@ -301,11 +333,11 @@
 
 		const reader = new FileReader();
 		reader.onload = async (e) => {
-			const mediaData = {
+			const mediaData: MediaData = {
 				type: file.type.startsWith('image/') ? 'image' : 'file',
 				name: file.name,
 				size: file.size,
-				data: e.target.result,
+				data: e.target?.result as string,
 				mimeType: file.type
 			};
 			await addNote(mediaData);
@@ -313,10 +345,10 @@
 		reader.readAsDataURL(file);
 
 		// Reset file input
-		event.target.value = '';
+		target.value = '';
 	}
 
-	async function startRecording(type) {
+	async function startRecording(type: 'audio' | 'video') {
 		try {
 			const constraints = type === 'video' ? { video: true, audio: true } : { audio: true };
 
@@ -367,11 +399,11 @@
 
 				const reader = new FileReader();
 				reader.onload = async (e) => {
-					const mediaData = {
+					const mediaData: MediaData = {
 						type: type,
 						name: `${type}_${Date.now()}.webm`,
 						size: blob.size,
-						data: e.target.result,
+						data: e.target?.result as string,
 						mimeType: blob.type
 					};
 					await addNote(mediaData);
@@ -401,14 +433,15 @@
 		}
 	}
 
-	function setupAudioVisualization(stream) {
+	function setupAudioVisualization(stream: MediaStream) {
 		try {
 			// Clean up any existing audio context
 			if (audioContext) {
 				audioContext.close();
 			}
 
-			audioContext = new (window.AudioContext || window.webkitAudioContext)();
+			const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+			audioContext = new AudioContext();
 			analyser = audioContext.createAnalyser();
 			const source = audioContext.createMediaStreamSource(stream);
 
@@ -432,7 +465,7 @@
 	}
 
 	function updateAudioLevels() {
-		if (!analyser || !isRecording || recordingType !== 'audio') return;
+		if (!analyser || !isRecording || recordingType !== 'audio' || !audioLevelArray) return;
 
 		analyser.getByteFrequencyData(audioLevelArray);
 
@@ -491,11 +524,11 @@
 		}
 	}
 
-	function formatFileSize(bytes) {
+	function formatFileSize(bytes: number): string {
 		return formatBytes(bytes); // Use the same function with different name for compatibility
 	}
 
-	function downloadFile(mediaData) {
+	function downloadFile(mediaData: MediaData) {
 		const link = document.createElement('a');
 		link.href = mediaData.data;
 		link.download = mediaData.name;
@@ -771,6 +804,9 @@
 									title={isRecording && recordingType === 'audio'
 										? 'Stop recording'
 										: 'Record audio'}
+									aria-label={isRecording && recordingType === 'audio'
+										? 'Stop recording'
+										: 'Record audio'}
 									disabled={isRecording && recordingType !== 'audio'}
 								>
 									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -794,6 +830,9 @@
 										? 'text-red-500'
 										: ''}"
 									title={isRecording && recordingType === 'video'
+										? 'Stop recording'
+										: 'Record video'}
+									aria-label={isRecording && recordingType === 'video'
 										? 'Stop recording'
 										: 'Record video'}
 									disabled={isRecording && recordingType !== 'video'}
@@ -909,13 +948,19 @@
 					<div
 						class="group cursor-move rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
 						draggable="true"
+						role="button"
+						tabindex="0"
 						on:dragstart={(e) => handleDragStart(e, note)}
 						on:dragover={handleDragOver}
 						on:drop={(e) => handleDrop(e, note)}
 						on:click={() => (focusedNote = focusedNote === note.id ? null : note.id)}
-						on:keydown={(e) =>
-							e.key === 'Enter' && (focusedNote = focusedNote === note.id ? null : note.id)}
-						tabindex="0"
+						on:keydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								focusedNote = focusedNote === note.id ? null : note.id;
+							}
+						}}
+						aria-label="Note from {formatTimestamp(note.timestamp)}"
 					>
 						<!-- Always visible: Date and content -->
 						<div class="flex items-start justify-between">
@@ -930,7 +975,10 @@
 							>
 								<!-- Move to topic dropdown -->
 								<select
-									on:change={(e) => moveNoteToTopic(note.id, e.target.value)}
+									on:change={(e) => {
+										const target = e.target as HTMLSelectElement;
+										moveNoteToTopic(note.id, target.value);
+									}}
 									value={note.topic}
 									class="rounded border border-gray-300 px-2 py-1 text-sm"
 									on:click|stopPropagation
@@ -1015,19 +1063,28 @@
 										{#if note.media.type === 'image'}
 											<!-- Image display -->
 											<div class="max-w-md">
-												<img
-													src={note.media.data}
-													alt={note.media.name}
-													class="h-auto max-w-full cursor-pointer rounded-lg shadow-sm transition-shadow hover:shadow-md"
+												<button
+													class="block cursor-pointer rounded-lg transition-shadow hover:shadow-md"
 													on:click={() => {
-														const img = new Image();
-														img.src = note.media.data;
-														const win = window.open('', '_blank');
-														win.document.write(
-															`<img src="${note.media.data}" style="max-width: 100%; height: auto;">`
-														);
+														if (note.media) {
+															const img = new Image();
+															img.src = note.media.data;
+															const win = window.open('', '_blank');
+															if (win) {
+																win.document.write(
+																	`<img src="${note.media.data}" style="max-width: 100%; height: auto;">`
+																);
+															}
+														}
 													}}
-												/>
+													aria-label="Open image {note.media?.name || 'image'} in new window"
+												>
+													<img
+														src={note.media.data}
+														alt={note.media.name}
+														class="h-auto max-w-full rounded-lg shadow-sm"
+													/>
+												</button>
 												<p class="mt-1 text-xs text-gray-500">
 													{note.media.name} ({formatFileSize(note.media.size)})
 												</p>
@@ -1080,6 +1137,7 @@
 												</div>
 												<video controls class="mb-2 w-full rounded">
 													<source src={note.media.data} type={note.media.mimeType} />
+													<track kind="captions" label="No captions available" default />
 													Your browser does not support the video element.
 												</video>
 												<p class="text-xs text-gray-500">
@@ -1110,9 +1168,10 @@
 														</div>
 													</div>
 													<button
-														on:click={() => downloadFile(note.media)}
+														on:click={() => note.media && downloadFile(note.media)}
 														class="text-blue-600 hover:text-blue-800"
 														title="Download file"
+														aria-label="Download file {note.media?.name || 'file'}"
 													>
 														<svg
 															class="h-5 w-5"

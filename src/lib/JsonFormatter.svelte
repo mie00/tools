@@ -263,7 +263,7 @@
 	<!-- Input Area -->
 	<div class="space-y-4">
 		<div class="flex justify-between items-center">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for="json-input" class="block text-sm font-medium text-gray-700">
 				JSON Input
 			</label>
 			<button
@@ -275,6 +275,7 @@
 		</div>
 		
 		<textarea
+			id="json-input"
 			bind:value={inputJson}
 			placeholder="Paste your JSON here..."
 			class="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm"

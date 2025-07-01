@@ -1,16 +1,22 @@
-<script>
-	let display = '0';
-	let previousValue = null;
-	let operation = null;
-	let waitingForOperand = false;
-	let shouldResetDisplay = false;
-	let history = [];
+<script lang="ts">
+	// Type definitions
+	interface HistoryItem {
+		expression: string;
+		result: number;
+	}
 
-	let currentExpression = '';
+	let display: string = '0';
+	let previousValue: number | null = null;
+	let operation: string | null = null;
+	let waitingForOperand: boolean = false;
+	let shouldResetDisplay: boolean = false;
+	let history: HistoryItem[] = [];
+
+	let currentExpression: string = '';
 	let lastCalculation = '';
 
 	// Format display number with proper spacing and commas
-	function formatDisplay(value) {
+	function formatDisplay(value: string): string {
 		if (value === 'Error') return value;
 
 		const num = parseFloat(value);
@@ -43,7 +49,7 @@
 		}
 	}
 
-	function inputNumber(num) {
+	function inputNumber(num: string) {
 		if (waitingForOperand || shouldResetDisplay) {
 			display = String(num);
 			waitingForOperand = false;
@@ -102,7 +108,7 @@
 		updateExpression();
 	}
 
-	function performOperation(nextOperation) {
+	function performOperation(nextOperation: string) {
 		const inputValue = parseFloat(display.replace(/,/g, ''));
 
 		if (previousValue === null) {
@@ -120,7 +126,7 @@
 				}
 			];
 
-			if (newValue === 'Error') {
+			if (isNaN(newValue) || !isFinite(newValue)) {
 				display = 'Error';
 				previousValue = null;
 				operation = null;
@@ -139,7 +145,7 @@
 		updateExpression();
 	}
 
-	function calculate(firstValue, secondValue, operation) {
+	function calculate(firstValue: number, secondValue: number, operation: string): number {
 		switch (operation) {
 			case '+':
 				return firstValue + secondValue;
@@ -148,7 +154,7 @@
 			case '×':
 				return firstValue * secondValue;
 			case '÷':
-				return secondValue !== 0 ? firstValue / secondValue : 'Error';
+				return secondValue !== 0 ? firstValue / secondValue : NaN;
 			case '=':
 				return secondValue;
 			default:
@@ -172,7 +178,7 @@
 				}
 			];
 
-			if (newValue === 'Error') {
+			if (isNaN(newValue) || !isFinite(newValue)) {
 				display = 'Error';
 				lastCalculation = '';
 			} else {
@@ -228,25 +234,25 @@
 		<button class="button operator" on:click={() => performOperation('÷')}> ÷ </button>
 
 		<!-- Row 2 -->
-		<button class="button number" on:click={() => inputNumber(7)}> 7 </button>
-		<button class="button number" on:click={() => inputNumber(8)}> 8 </button>
-		<button class="button number" on:click={() => inputNumber(9)}> 9 </button>
+		<button class="button number" on:click={() => inputNumber('7')}> 7 </button>
+		<button class="button number" on:click={() => inputNumber('8')}> 8 </button>
+		<button class="button number" on:click={() => inputNumber('9')}> 9 </button>
 		<button class="button operator" on:click={() => performOperation('×')}> × </button>
 
 		<!-- Row 3 -->
-		<button class="button number" on:click={() => inputNumber(4)}> 4 </button>
-		<button class="button number" on:click={() => inputNumber(5)}> 5 </button>
-		<button class="button number" on:click={() => inputNumber(6)}> 6 </button>
+		<button class="button number" on:click={() => inputNumber('4')}> 4 </button>
+		<button class="button number" on:click={() => inputNumber('5')}> 5 </button>
+		<button class="button number" on:click={() => inputNumber('6')}> 6 </button>
 		<button class="button operator" on:click={() => performOperation('−')}> − </button>
 
 		<!-- Row 4 -->
-		<button class="button number" on:click={() => inputNumber(1)}> 1 </button>
-		<button class="button number" on:click={() => inputNumber(2)}> 2 </button>
-		<button class="button number" on:click={() => inputNumber(3)}> 3 </button>
+		<button class="button number" on:click={() => inputNumber('1')}> 1 </button>
+		<button class="button number" on:click={() => inputNumber('2')}> 2 </button>
+		<button class="button number" on:click={() => inputNumber('3')}> 3 </button>
 		<button class="button operator" on:click={() => performOperation('+')}> + </button>
 
 		<!-- Row 5 -->
-		<button class="button number zero" on:click={() => inputNumber(0)}> 0 </button>
+		<button class="button number zero" on:click={() => inputNumber('0')}> 0 </button>
 		<button class="button number" on:click={inputDecimal}> . </button>
 		<button class="button operator" on:click={handleEquals}> = </button>
 	</div>
