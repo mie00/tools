@@ -208,12 +208,13 @@
 			</div>
 		{/if}
 
-		<!-- Output Area -->
-		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
-				{mode === 'encode' ? 'Encoded Base64' : 'Decoded Text'}
-			</label>
-			<textarea
+		    <!-- Output Area -->
+    <div>
+      <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
+        {mode === 'encode' ? 'Encoded Base64' : 'Decoded Text'}
+      </label>
+      <textarea
+        id="output-text"
 				value={outputText}
 				readonly
 				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none font-mono text-sm"

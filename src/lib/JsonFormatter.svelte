@@ -248,10 +248,10 @@
 
 	<!-- Settings -->
 	{#if mode === 'format'}
-		<div class="flex justify-center">
-			<div class="flex items-center gap-2">
-				<label class="text-sm font-medium text-gray-700">Indent Size:</label>
-				<select bind:value={indentSize} on:change={processJson} class="px-3 py-1 border border-gray-300 rounded">
+		    <div class="flex justify-center">
+      <div class="flex items-center gap-2">
+        <label for="indent-size" class="text-sm font-medium text-gray-700">Indent Size:</label>
+        <select id="indent-size" bind:value={indentSize} on:change={processJson} class="px-3 py-1 border border-gray-300 rounded">
 					<option value={2}>2 spaces</option>
 					<option value={4}>4 spaces</option>
 					<option value={8}>8 spaces</option>
@@ -362,12 +362,13 @@
 			</div>
 		{/if}
 
-		<!-- Output Area -->
-		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
-				Result ({mode === 'format' ? 'Formatted' : mode === 'minify' ? 'Minified' : 'Validation'} JSON)
-			</label>
-			<textarea
+		    <!-- Output Area -->
+    <div>
+      <label for="json-output" class="block text-sm font-medium text-gray-700 mb-2">
+        Result ({mode === 'format' ? 'Formatted' : mode === 'minify' ? 'Minified' : 'Validation'} JSON)
+      </label>
+      <textarea
+        id="json-output"
 				value={outputJson}
 				readonly
 				class="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none font-mono text-sm"

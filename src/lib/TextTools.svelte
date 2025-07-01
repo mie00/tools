@@ -106,12 +106,13 @@ Paragraphs: ${stats.paragraphs}`;
 	</div>
 
 	<!-- Input Area -->
-	<div class="space-y-4">
-		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
-				Input Text
-			</label>
-			<textarea
+	  <div class="space-y-4">
+    <div>
+      <label for="input-text" class="block text-sm font-medium text-gray-700 mb-2">
+        Input Text
+      </label>
+      <textarea
+        id="input-text"
 				bind:value={inputText}
 				placeholder="Enter your text here..."
 				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
@@ -135,12 +136,13 @@ Paragraphs: ${stats.paragraphs}`;
 			</button>
 		</div>
 
-		<!-- Output Area -->
-		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
-				Result {activeOperation === 'wordCount' ? '(Statistics)' : `(${operations.find(op => op.id === activeOperation)?.name})`}
-			</label>
-			<textarea
+		    <!-- Output Area -->
+    <div>
+      <label for="output-text" class="block text-sm font-medium text-gray-700 mb-2">
+        Result {activeOperation === 'wordCount' ? '(Statistics)' : `(${operations.find(op => op.id === activeOperation)?.name})`}
+      </label>
+      <textarea
+        id="output-text"
 				value={outputText}
 				readonly
 				class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none {

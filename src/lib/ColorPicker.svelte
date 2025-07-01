@@ -145,11 +145,12 @@
 
 	<!-- Color Input Methods -->
 	<div class="grid md:grid-cols-3 gap-4">
-		<!-- HEX Input -->
-		<div class="space-y-2">
-			<label class="block text-sm font-medium text-gray-700">HEX</label>
-			<div class="flex gap-2">
-				<input
+		    <!-- HEX Input -->
+    <div class="space-y-2">
+      <label for="hex-input" class="block text-sm font-medium text-gray-700">HEX</label>
+      <div class="flex gap-2">
+        <input
+          id="hex-input"
 					type="text"
 					bind:value={hexInput}
 					on:input={updateFromHex}
@@ -165,11 +166,12 @@
 			</div>
 		</div>
 
-		<!-- RGB Input -->
-		<div class="space-y-2">
-			<label class="block text-sm font-medium text-gray-700">RGB</label>
-			<div class="space-y-1">
-				<input
+		    <!-- RGB Input -->
+    <div class="space-y-2">
+      <label for="rgb-r" class="block text-sm font-medium text-gray-700">RGB</label>
+      <div class="space-y-1">
+        <input
+          id="rgb-r"
 					type="range"
 					min="0"
 					max="255"
@@ -207,11 +209,12 @@
 			</div>
 		</div>
 
-		<!-- HSL Input -->
-		<div class="space-y-2">
-			<label class="block text-sm font-medium text-gray-700">HSL</label>
-			<div class="space-y-1">
-				<input
+		    <!-- HSL Input -->
+    <div class="space-y-2">
+      <label for="hsl-h" class="block text-sm font-medium text-gray-700">HSL</label>
+      <div class="space-y-1">
+        <input
+          id="hsl-h"
 					type="range"
 					min="0"
 					max="360"
@@ -250,12 +253,13 @@
 		</div>
 	</div>
 
-	<!-- Color Palette -->
-	<div class="space-y-2">
-		<label class="block text-sm font-medium text-gray-700">Quick Colors</label>
-		<div class="grid grid-cols-8 gap-2">
-			{#each colorPalette as color}
-				<button
+	  <!-- Color Palette -->
+  <div class="space-y-2">
+    <label class="block text-sm font-medium text-gray-700">Quick Colors</label>
+    <div class="grid grid-cols-8 gap-2">
+      {#each colorPalette as color}
+        <button
+          aria-label="Select color {color}"
 					on:click={() => selectPaletteColor(color)}
 					class="w-full h-10 rounded-lg border-2 hover:scale-110 transition-transform {
 						selectedColor === color ? 'border-gray-800' : 'border-gray-300'
@@ -266,9 +270,9 @@
 		</div>
 	</div>
 
-	<!-- Color Variants -->
-	<div class="space-y-2">
-		<label class="block text-sm font-medium text-gray-700">Color Variants</label>
+	  <!-- Color Variants -->
+  <div class="space-y-2">
+    <span class="block text-sm font-medium text-gray-700">Color Variants</span>
 		<div class="grid grid-cols-3 gap-4">
 			<div class="text-center">
 				<div class="w-16 h-16 mx-auto rounded-lg border border-gray-300" style="background-color: {lighterColor};"></div>

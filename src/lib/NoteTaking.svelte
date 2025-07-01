@@ -565,11 +565,12 @@
 	<div class="flex flex-col gap-6 md:flex-row">
 		<!-- Topics Sidebar -->
 		<div class="rounded-lg bg-gray-50 p-4 md:w-64">
-			<div class="mb-4 flex items-center justify-between">
-				<h3 class="font-semibold text-gray-800">Topics</h3>
-				<button
-					on:click={() => (showNewTopicInput = !showNewTopicInput)}
-					class="text-blue-600 hover:text-blue-800"
+			      <div class="mb-4 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-800">Topics</h3>
+        <button
+          on:click={() => (showNewTopicInput = !showNewTopicInput)}
+          aria-label="Add new topic"
+          class="text-blue-600 hover:text-blue-800"
 					title="Add new topic"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -626,10 +627,11 @@
 								({notes.filter((n) => n.topic === topic).length})
 							</span>
 						</button>
-						{#if topic !== 'Main'}
-							<button
-								on:click={() => deleteTopic(topic)}
-								class="p-1 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700"
+						            {#if topic !== 'Main'}
+              <button
+                on:click={() => deleteTopic(topic)}
+                aria-label="Delete topic {topic}"
+                class="p-1 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700"
 								title="Delete topic"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -716,10 +718,11 @@
 					<!-- Media Controls -->
 					<div class="mt-3 flex items-center justify-between">
 						<div class="flex items-center space-x-2">
-							<!-- Toggle media controls -->
-							<button
-								on:click={() => (showMediaControls = !showMediaControls)}
-								class="text-gray-500 transition-colors hover:text-blue-600"
+							              <!-- Toggle media controls -->
+              <button
+                on:click={() => (showMediaControls = !showMediaControls)}
+                aria-label="Toggle media controls"
+                class="text-gray-500 transition-colors hover:text-blue-600"
 								title="Media options"
 							>
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -937,9 +940,10 @@
 									{/each}
 								</select>
 
-								<button
-									on:click|stopPropagation={() => startEdit(note)}
-									class="text-gray-500 hover:text-blue-600"
+								                <button
+                  on:click|stopPropagation={() => startEdit(note)}
+                  aria-label="Edit note"
+                  class="text-gray-500 hover:text-blue-600"
 									title="Edit note"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -952,9 +956,10 @@
 									</svg>
 								</button>
 
-								<button
-									on:click|stopPropagation={() => deleteNote(note.id)}
-									class="text-gray-500 hover:text-red-600"
+								                <button
+                  on:click|stopPropagation={() => deleteNote(note.id)}
+                  aria-label="Delete note"
+                  class="text-gray-500 hover:text-red-600"
 									title="Delete note"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
