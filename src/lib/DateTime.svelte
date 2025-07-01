@@ -51,14 +51,14 @@
 			if (isNaN(timestamp)) {
 				throw new Error('Invalid epoch timestamp');
 			}
-			
+
 			// Handle both seconds and milliseconds
 			const date = epochInput.length >= 13 ? new Date(timestamp) : new Date(timestamp * 1000);
-			
+
 			if (isNaN(date.getTime())) {
 				throw new Error('Invalid epoch timestamp');
 			}
-			
+
 			humanResult = `Local: ${formatDate(date)} at ${formatTime(date)}\nUTC: ${date.toUTCString()}\nISO: ${formatISO(date)}`;
 		} catch (error) {
 			errorMessage = error.message;
@@ -73,10 +73,10 @@
 			if (isNaN(date.getTime())) {
 				throw new Error('Invalid date format');
 			}
-			
+
 			const epochSeconds = Math.floor(date.getTime() / 1000);
 			const epochMilliseconds = date.getTime();
-			
+
 			epochResult = `Seconds: ${epochSeconds}\nMilliseconds: ${epochMilliseconds}`;
 		} catch (error) {
 			errorMessage = error.message;
@@ -105,7 +105,7 @@
 	}
 
 	// Get timezone info
-	$: timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	$: timezoneOffset = currentTime.getTimezoneOffset();
 	$: offsetHours = Math.abs(Math.floor(timezoneOffset / 60));
 	$: offsetMinutes = Math.abs(timezoneOffset % 60);
@@ -113,49 +113,60 @@
 	$: offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
 </script>
 
-<div class="max-w-4xl mx-auto space-y-8">
+<div class="mx-auto max-w-4xl space-y-8">
 	<!-- Current Time Display -->
-	<div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-8 text-center">
-		<h2 class="text-2xl font-bold mb-6">Current Date & Time</h2>
-		
-		<div class="grid md:grid-cols-2 gap-6">
+	<div class="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-center text-white">
+		<h2 class="mb-6 text-2xl font-bold">Current Date & Time</h2>
+
+		<div class="grid gap-6 md:grid-cols-2">
 			<!-- Local Time -->
-			<div class="bg-white/10 backdrop-blur rounded-lg p-6">
-				<h3 class="text-lg font-semibold mb-2">Local Time</h3>
-				<div class="text-3xl font-mono font-bold mb-2">{formatTime(currentTime)}</div>
-				<div class="text-sm opacity-90 mb-2">{formatDate(currentTime)}</div>
+			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
+				<h3 class="mb-2 text-lg font-semibold">Local Time</h3>
+				<div class="mb-2 font-mono text-3xl font-bold">{formatTime(currentTime)}</div>
+				<div class="mb-2 text-sm opacity-90">{formatDate(currentTime)}</div>
 				<div class="text-xs opacity-75">{timezone} ({offsetString})</div>
 			</div>
-			
+
 			<!-- UTC Time -->
-			<div class="bg-white/10 backdrop-blur rounded-lg p-6">
-				<h3 class="text-lg font-semibold mb-2">UTC Time</h3>
-				<div class="text-3xl font-mono font-bold mb-2">{formatTime(new Date(currentTime.getTime() + currentTime.getTimezoneOffset() * 60000))}</div>
-				<div class="text-sm opacity-90 mb-2">{new Date(currentTime.getTime() + currentTime.getTimezoneOffset() * 60000).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
+				<h3 class="mb-2 text-lg font-semibold">UTC Time</h3>
+				<div class="mb-2 font-mono text-3xl font-bold">
+					{formatTime(new Date(currentTime.getTime() + currentTime.getTimezoneOffset() * 60000))}
+				</div>
+				<div class="mb-2 text-sm opacity-90">
+					{new Date(
+						currentTime.getTime() + currentTime.getTimezoneOffset() * 60000
+					).toLocaleDateString('en-US', {
+						weekday: 'long',
+						year: 'numeric',
+						month: 'long',
+						day: 'numeric'
+					})}
+				</div>
 				<div class="text-xs opacity-75">Coordinated Universal Time</div>
 			</div>
 		</div>
-		
+
 		<!-- Current Epoch -->
-		<div class="mt-6 bg-white/10 backdrop-blur rounded-lg p-4">
-			<div class="text-sm opacity-90 mb-1">Current Epoch Timestamp</div>
+		<div class="mt-6 rounded-lg bg-white/10 p-4 backdrop-blur">
+			<div class="mb-1 text-sm opacity-90">Current Epoch Timestamp</div>
 			<div class="font-mono text-lg">{Math.floor(currentTime.getTime() / 1000)}</div>
 		</div>
 	</div>
 
 	<!-- Epoch Converter -->
-	<div class="bg-white rounded-xl shadow-lg border border-gray-100">
+	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
 		<div class="border-b border-gray-100 p-6">
 			<h2 class="text-2xl font-bold text-gray-800">Epoch Converter</h2>
-			<p class="text-gray-600 mt-2">Convert between Unix timestamps and human-readable dates</p>
+			<p class="mt-2 text-gray-600">Convert between Unix timestamps and human-readable dates</p>
 		</div>
-		
+
 		<div class="p-6">
-			<div class="grid lg:grid-cols-2 gap-8">
+			<div class="grid gap-8 lg:grid-cols-2">
 				<!-- Epoch to Human -->
 				<div class="space-y-4">
 					<h3 class="text-lg font-semibold text-gray-800">Epoch to Human Readable</h3>
-					
+
 					<div class="space-y-3">
 						<label class="block">
 							<span class="text-sm font-medium text-gray-700">Epoch Timestamp</span>
@@ -163,31 +174,34 @@
 								type="text"
 								bind:value={epochInput}
 								placeholder="1640995200 or 1640995200000"
-								class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								on:input={convertFromEpoch}
 							/>
 							<span class="text-xs text-gray-500">Enter seconds or milliseconds</span>
 						</label>
-						
+
 						<div class="flex gap-2">
 							<button
 								on:click={getCurrentEpoch}
-								class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 							>
 								Use Current Time
 							</button>
 							<button
-								on:click={() => {epochInput = ''; humanResult = '';}}
-								class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+								on:click={() => {
+									epochInput = '';
+									humanResult = '';
+								}}
+								class="rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400"
 							>
 								Clear
 							</button>
 						</div>
-						
+
 						{#if humanResult}
-							<div class="bg-green-50 border border-green-200 rounded-md p-3">
-								<div class="text-sm font-medium text-green-800 mb-1">Converted Date:</div>
-								<pre class="text-sm text-green-700 whitespace-pre-wrap">{humanResult}</pre>
+							<div class="rounded-md border border-green-200 bg-green-50 p-3">
+								<div class="mb-1 text-sm font-medium text-green-800">Converted Date:</div>
+								<pre class="text-sm whitespace-pre-wrap text-green-700">{humanResult}</pre>
 							</div>
 						{/if}
 					</div>
@@ -196,69 +210,78 @@
 				<!-- Human to Epoch -->
 				<div class="space-y-4">
 					<h3 class="text-lg font-semibold text-gray-800">Human Readable to Epoch</h3>
-					
+
 					<div class="space-y-3">
 						<label class="block">
 							<span class="text-sm font-medium text-gray-700">Date & Time</span>
 							<input
 								type="datetime-local"
 								bind:value={humanInput}
-								class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								on:input={convertToEpoch}
 							/>
 							<span class="text-xs text-gray-500">Or enter any valid date string</span>
 						</label>
-						
+
 						<input
 							type="text"
 							bind:value={humanInput}
 							placeholder="2024-01-01 12:00:00 or Dec 25, 2024"
-							class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 							on:input={convertToEpoch}
 						/>
-						
+
 						<div class="flex gap-2">
 							<button
 								on:click={getCurrentDateTime}
-								class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 							>
 								Use Current Time
 							</button>
 							<button
-								on:click={() => {humanInput = ''; epochResult = '';}}
-								class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+								on:click={() => {
+									humanInput = '';
+									epochResult = '';
+								}}
+								class="rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400"
 							>
 								Clear
 							</button>
 						</div>
-						
+
 						{#if epochResult}
-							<div class="bg-green-50 border border-green-200 rounded-md p-3">
-								<div class="text-sm font-medium text-green-800 mb-1">Converted Epoch:</div>
-								<pre class="text-sm text-green-700 whitespace-pre-wrap font-mono">{epochResult}</pre>
+							<div class="rounded-md border border-green-200 bg-green-50 p-3">
+								<div class="mb-1 text-sm font-medium text-green-800">Converted Epoch:</div>
+								<pre
+									class="font-mono text-sm whitespace-pre-wrap text-green-700">{epochResult}</pre>
 							</div>
 						{/if}
 					</div>
 				</div>
 			</div>
-			
+
 			<!-- Error Message -->
 			{#if errorMessage}
-				<div class="mt-4 bg-red-50 border border-red-200 rounded-md p-3">
+				<div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
 					<div class="text-sm text-red-800">
-						<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						<svg class="mr-1 inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							></path>
 						</svg>
 						{errorMessage}
 					</div>
 				</div>
 			{/if}
-			
+
 			<!-- Clear All Button -->
 			<div class="mt-6 text-center">
 				<button
 					on:click={clearResults}
-					class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+					class="rounded-md bg-gray-500 px-6 py-2 text-white transition-colors hover:bg-gray-600"
 				>
 					Clear All
 				</button>
@@ -267,11 +290,11 @@
 	</div>
 
 	<!-- Quick Reference -->
-	<div class="bg-gray-50 rounded-xl p-6">
-		<h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Reference</h3>
-		<div class="grid md:grid-cols-2 gap-6 text-sm text-gray-600">
+	<div class="rounded-xl bg-gray-50 p-6">
+		<h3 class="mb-4 text-lg font-semibold text-gray-800">Quick Reference</h3>
+		<div class="grid gap-6 text-sm text-gray-600 md:grid-cols-2">
 			<div>
-				<h4 class="font-medium text-gray-800 mb-2">Epoch Time Info</h4>
+				<h4 class="mb-2 font-medium text-gray-800">Epoch Time Info</h4>
 				<ul class="space-y-1">
 					<li>• Epoch time starts from January 1, 1970 00:00:00 UTC</li>
 					<li>• Usually measured in seconds since epoch</li>
@@ -280,7 +303,7 @@
 				</ul>
 			</div>
 			<div>
-				<h4 class="font-medium text-gray-800 mb-2">Supported Date Formats</h4>
+				<h4 class="mb-2 font-medium text-gray-800">Supported Date Formats</h4>
 				<ul class="space-y-1">
 					<li>• ISO 8601: 2024-01-01T12:00:00Z</li>
 					<li>• RFC 2822: Mon, 01 Jan 2024 12:00:00 GMT</li>
@@ -290,4 +313,4 @@
 			</div>
 		</div>
 	</div>
-</div> 
+</div>

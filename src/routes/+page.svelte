@@ -6,9 +6,9 @@
 	import NoteTaking from '$lib/NoteTaking.svelte';
 	import DateTime from '$lib/DateTime.svelte';
 	import StockTracker from '$lib/StockTracker.svelte';
-	
-	let selectedTool: string | null = null;
-	
+
+	let selectedTool = null;
+
 	const tools = [
 		{
 			id: 'calculator',
@@ -79,11 +79,11 @@
 			usesAPI: true
 		}
 	];
-	
-	function selectTool(toolId: string) {
+
+	function selectTool(toolId) {
 		selectedTool = selectedTool === toolId ? null : toolId;
 	}
-	
+
 	function goHome() {
 		selectedTool = null;
 	}
@@ -97,26 +97,34 @@
 	{#if selectedTool === null}
 		<!-- Home Page - App Grid -->
 		<div class="container mx-auto px-4 py-8">
-			<header class="text-center mb-12">
-				<h1 class="text-4xl font-bold text-gray-800 mb-4">My Tools</h1>
-				<p class="text-gray-600 text-lg">A collection of useful utilities</p>
+			<header class="mb-12 text-center">
+				<h1 class="mb-4 text-4xl font-bold text-gray-800">My Tools</h1>
+				<p class="text-lg text-gray-600">A collection of useful utilities</p>
 			</header>
-			
-			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-				{#each tools as tool}
+
+			<div class="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+				{#each tools as tool (tool.id)}
 					<button
 						on:click={() => selectTool(tool.id)}
-						class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-100 relative"
+						class="relative transform rounded-2xl border border-gray-100 bg-white p-6 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
 					>
 						{#if tool.usesAPI}
-							<div class="absolute top-3 right-3 bg-blue-100 text-blue-600 p-1 rounded-full" title="Uses external API">
-								<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"></path>
+							<div
+								class="absolute top-3 right-3 rounded-full bg-blue-100 p-1 text-blue-600"
+								title="Uses external API"
+							>
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"
+									></path>
 								</svg>
 							</div>
 						{/if}
-						<div class="text-4xl mb-3">{tool.icon}</div>
-						<h3 class="font-semibold text-gray-800 mb-2">{tool.name}</h3>
+						<div class="mb-3 text-4xl">{tool.icon}</div>
+						<h3 class="mb-2 font-semibold text-gray-800">{tool.name}</h3>
 						<p class="text-sm text-gray-500">{tool.description}</p>
 					</button>
 				{/each}
@@ -128,19 +136,24 @@
 			<header class="mb-8">
 				<button
 					on:click={goHome}
-					class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
+					class="mb-4 inline-flex items-center text-blue-600 hover:text-blue-800"
 				>
-					<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+					<svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 19l-7-7 7-7"
+						></path>
 					</svg>
 					Back to Tools
 				</button>
 				<h1 class="text-3xl font-bold text-gray-800">
-					{tools.find(t => t.id === selectedTool)?.name}
+					{tools.find((t) => t.id === selectedTool)?.name}
 				</h1>
 			</header>
-			
-			<div class="bg-white rounded-2xl shadow-lg p-6">
+
+			<div class="rounded-2xl bg-white p-6 shadow-lg">
 				{#if selectedTool === 'calculator'}
 					<Calculator />
 				{:else if selectedTool === 'datetime'}
@@ -156,9 +169,9 @@
 				{:else if selectedTool === 'stocktracker'}
 					<StockTracker />
 				{:else}
-					<div class="text-center py-12">
-						<div class="text-6xl mb-4">{tools.find(t => t.id === selectedTool)?.icon}</div>
-						<h3 class="text-xl font-semibold text-gray-800 mb-2">Coming Soon</h3>
+					<div class="py-12 text-center">
+						<div class="mb-4 text-6xl">{tools.find((t) => t.id === selectedTool)?.icon}</div>
+						<h3 class="mb-2 text-xl font-semibold text-gray-800">Coming Soon</h3>
 						<p class="text-gray-600">This tool is under development.</p>
 					</div>
 				{/if}

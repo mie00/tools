@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	
+
 	let selectedCategory = 'length';
 	let fromUnit = 'meter';
 	let toUnit = 'feet';
@@ -82,37 +82,37 @@
 	// Temperature conversion functions
 	function convertTemperature(value, from, to) {
 		if (from === to) return value;
-		
+
 		// Convert to Celsius first
 		let celsius = value;
 		if (from === 'fahrenheit') {
-			celsius = (value - 32) * 5/9;
+			celsius = ((value - 32) * 5) / 9;
 		} else if (from === 'kelvin') {
 			celsius = value - 273.15;
 		}
-		
+
 		// Convert from Celsius to target
 		if (to === 'fahrenheit') {
-			return celsius * 9/5 + 32;
+			return (celsius * 9) / 5 + 32;
 		} else if (to === 'kelvin') {
 			return celsius + 273.15;
 		}
-		
+
 		return celsius;
 	}
 
 	// General unit conversion
 	function convertUnits(value, from, to, category) {
 		if (from === to) return value;
-		
+
 		if (category === 'temperature') {
 			return convertTemperature(value, from, to);
 		}
-		
+
 		const categoryData = categories[category];
 		const fromFactor = categoryData.units[from].factor;
 		const toFactor = categoryData.units[to].factor;
-		
+
 		// Convert to base unit, then to target unit
 		const baseValue = value * fromFactor;
 		return baseValue / toFactor;
@@ -120,7 +120,7 @@
 
 	function formatResult(value) {
 		if (isNaN(value)) return 'Invalid input';
-		
+
 		// Format numbers with appropriate precision
 		if (Math.abs(value) >= 1000000) {
 			return value.toExponential(4);
@@ -140,13 +140,13 @@
 
 		const convertedValue = convertUnits(value, fromUnit, toUnit, selectedCategory);
 		result = formatResult(convertedValue);
-		
+
 		// Add to history
 		const fromUnitName = categories[selectedCategory].units[fromUnit].name;
 		const toUnitName = categories[selectedCategory].units[toUnit].name;
 		const fromSymbol = categories[selectedCategory].units[fromUnit].symbol;
 		const toSymbol = categories[selectedCategory].units[toUnit].symbol;
-		
+
 		history = [
 			{
 				input: `${value} ${fromSymbol}`,
@@ -162,7 +162,12 @@
 		const temp = fromUnit;
 		fromUnit = toUnit;
 		toUnit = temp;
-		if (inputValue && result && result !== 'Please enter a valid number' && result !== 'Invalid input') {
+		if (
+			inputValue &&
+			result &&
+			result !== 'Please enter a valid number' &&
+			result !== 'Invalid input'
+		) {
 			inputValue = result;
 			convert();
 		}
@@ -226,20 +231,19 @@
 	});
 </script>
 
-<div class="max-w-4xl mx-auto">
+<div class="mx-auto max-w-4xl">
 	<div class="mb-6">
-		<h2 class="text-2xl font-bold text-gray-800 mb-4">Unit Converter</h2>
-		
+		<h2 class="mb-4 text-2xl font-bold text-gray-800">Unit Converter</h2>
+
 		<!-- Category Selection -->
-		<div class="flex flex-wrap gap-2 mb-6">
-			{#each Object.entries(categories) as [key, category]}
+		<div class="mb-6 flex flex-wrap gap-2">
+			{#each Object.entries(categories) as [key, category] (key)}
 				<button
 					on:click={() => selectCategory(key)}
-					class="px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 {
-						selectedCategory === key 
-							? 'bg-blue-500 text-white shadow-md' 
-							: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-					}"
+					class="flex items-center gap-2 rounded-lg px-4 py-2 transition-all duration-200 {selectedCategory ===
+					key
+						? 'bg-blue-500 text-white shadow-md'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
 				>
 					<span class="text-lg">{category.icon}</span>
 					<span class="font-medium">{category.name}</span>
@@ -248,19 +252,19 @@
 		</div>
 	</div>
 
-	<div class="grid lg:grid-cols-3 gap-6">
+	<div class="grid gap-6 lg:grid-cols-3">
 		<!-- Converter -->
 		<div class="lg:col-span-2">
-			<div class="bg-gray-50 rounded-xl p-6">
-				<div class="grid md:grid-cols-2 gap-4 mb-4">
+			<div class="rounded-xl bg-gray-50 p-6">
+				<div class="mb-4 grid gap-4 md:grid-cols-2">
 					<!-- From Unit -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">From</label>
+						<label class="mb-2 block text-sm font-medium text-gray-700">From</label>
 						<select
 							bind:value={fromUnit}
-							class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full rounded-lg border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
 						>
-							{#each Object.entries(categories[selectedCategory].units) as [key, unit]}
+							{#each Object.entries(categories[selectedCategory].units) as [key, unit] (key)}
 								<option value={key}>{unit.name} ({unit.symbol})</option>
 							{/each}
 						</select>
@@ -268,7 +272,7 @@
 							type="number"
 							bind:value={inputValue}
 							placeholder="Enter value"
-							class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
 						/>
 					</div>
 
@@ -276,28 +280,44 @@
 					<div class="flex items-center justify-center md:flex-col">
 						<button
 							on:click={swapUnits}
-							class="p-3 text-gray-500 hover:text-blue-500 transition-colors duration-200"
+							class="p-3 text-gray-500 transition-colors duration-200 hover:text-blue-500"
 							title="Swap units"
 						>
-							<svg class="w-6 h-6 transform md:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+							<svg
+								class="h-6 w-6 transform md:rotate-90"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+								></path>
 							</svg>
 						</button>
 					</div>
 
 					<!-- To Unit -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">To</label>
+						<label class="mb-2 block text-sm font-medium text-gray-700">To</label>
 						<select
 							bind:value={toUnit}
-							class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full rounded-lg border border-gray-300 p-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
 						>
-							{#each Object.entries(categories[selectedCategory].units) as [key, unit]}
+							{#each Object.entries(categories[selectedCategory].units) as [key, unit] (key)}
 								<option value={key}>{unit.name} ({unit.symbol})</option>
 							{/each}
 						</select>
-						<div class="w-full mt-2 p-3 bg-white border border-gray-300 rounded-lg min-h-[3rem] flex items-center">
-							<span class="text-lg font-medium {result && result !== 'Please enter a valid number' ? 'text-green-600' : 'text-gray-400'}">
+						<div
+							class="mt-2 flex min-h-[3rem] w-full items-center rounded-lg border border-gray-300 bg-white p-3"
+						>
+							<span
+								class="text-lg font-medium {result && result !== 'Please enter a valid number'
+									? 'text-green-600'
+									: 'text-gray-400'}"
+							>
 								{result || 'Result will appear here'}
 							</span>
 						</div>
@@ -305,10 +325,12 @@
 				</div>
 
 				{#if result && result !== 'Please enter a valid number' && result !== 'Invalid input'}
-					<div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-						<div class="text-sm text-blue-600 font-medium">
-							{inputValue} {categories[selectedCategory].units[fromUnit].symbol} = 
-							{result} {categories[selectedCategory].units[toUnit].symbol}
+					<div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+						<div class="text-sm font-medium text-blue-600">
+							{inputValue}
+							{categories[selectedCategory].units[fromUnit].symbol} =
+							{result}
+							{categories[selectedCategory].units[toUnit].symbol}
 						</div>
 					</div>
 				{/if}
@@ -316,32 +338,29 @@
 		</div>
 
 		<!-- History -->
-		<div class="bg-gray-50 rounded-xl p-6">
-			<div class="flex justify-between items-center mb-4">
+		<div class="rounded-xl bg-gray-50 p-6">
+			<div class="mb-4 flex items-center justify-between">
 				<h3 class="font-semibold text-gray-800">History</h3>
 				{#if history.length > 0}
-					<button
-						on:click={clearHistory}
-						class="text-sm text-red-500 hover:text-red-700"
-					>
+					<button on:click={clearHistory} class="text-sm text-red-500 hover:text-red-700">
 						Clear
 					</button>
 				{/if}
 			</div>
-			
+
 			{#if history.length === 0}
-				<p class="text-gray-500 text-sm">No conversions yet</p>
+				<p class="text-sm text-gray-500">No conversions yet</p>
 			{:else}
-				<div class="space-y-3 max-h-96 overflow-y-auto">
-					{#each history as item}
-						<div class="bg-white p-3 rounded-lg border border-gray-200">
-							<div class="font-medium text-sm">{item.input} → {item.output}</div>
-							<div class="text-xs text-gray-500 mt-1">{item.conversion}</div>
-							<div class="text-xs text-gray-400 mt-1">{item.timestamp}</div>
+				<div class="max-h-96 space-y-3 overflow-y-auto">
+					{#each history as item, i (i)}
+						<div class="rounded-lg border border-gray-200 bg-white p-3">
+							<div class="text-sm font-medium">{item.input} → {item.output}</div>
+							<div class="mt-1 text-xs text-gray-500">{item.conversion}</div>
+							<div class="mt-1 text-xs text-gray-400">{item.timestamp}</div>
 						</div>
 					{/each}
 				</div>
 			{/if}
 		</div>
 	</div>
-</div> 
+</div>
