@@ -69,7 +69,7 @@
 					newProfile.latitude = position.coords.latitude;
 					newProfile.longitude = position.coords.longitude;
 					showLocationPermission = false;
-					
+
 					// Get timezone and location details
 					await enrichCurrentLocation();
 				},
@@ -83,20 +83,20 @@
 
 	async function enrichCurrentLocation() {
 		if (!newProfile.latitude || !newProfile.longitude) return;
-		
+
 		try {
 			const locationData = await enrichLocationData(newProfile.latitude, newProfile.longitude);
-			
+
 			if (locationData.timezone) {
 				newProfile.timezone = locationData.timezone;
 			}
-			
+
 			if (locationData.country) {
 				// Set default profile name
 				if (!newProfile.name) {
 					newProfile.name = locationData.country;
 				}
-				
+
 				// Suggest calculation method based on country
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.country);
 				newProfile.calculationMethod = suggestedMethod;
@@ -112,7 +112,7 @@
 		newProfile.latitude = city.lat;
 		newProfile.longitude = city.lng;
 		newProfile.name = `${city.name}, ${city.country}`;
-		
+
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
 	}
@@ -122,7 +122,7 @@
 			// Get timezone
 			const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 			newProfile.timezone = timezone;
-			
+
 			// Suggest calculation method based on country code
 			const suggestedMethod = getSuggestedCalculationMethod(city.country);
 			newProfile.calculationMethod = suggestedMethod;
@@ -199,7 +199,12 @@
 	}
 
 	// Auto-get location for new users
-	$: if (createMode === 'manual' && !hasExistingProfiles && !newProfile.latitude && !newProfile.longitude) {
+	$: if (
+		createMode === 'manual' &&
+		!hasExistingProfiles &&
+		!newProfile.latitude &&
+		!newProfile.longitude
+	) {
 		tryGetCurrentLocation();
 	}
 </script>
@@ -212,7 +217,7 @@
 	<div class="mb-6 border-b border-gray-200">
 		<nav class="-mb-px flex space-x-6" aria-label="Tabs">
 			<button
-				class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium"
+				class="border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap"
 				class:border-blue-500={createMode === 'manual'}
 				class:text-blue-600={createMode === 'manual'}
 				class:border-transparent={createMode !== 'manual'}
@@ -224,7 +229,7 @@
 				Create Manually
 			</button>
 			<button
-				class="whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium"
+				class="border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap"
 				class:border-blue-500={createMode === 'mawaqit'}
 				class:text-blue-600={createMode === 'mawaqit'}
 				class:border-transparent={createMode !== 'mawaqit'}
@@ -240,16 +245,18 @@
 
 	{#if createMode === 'manual'}
 		{#if showLocationPermission}
-			<div class="mb-6 rounded-lg bg-blue-50 p-4 border border-blue-200">
+			<div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
 				<div class="flex items-center space-x-2">
-					<div class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+					<div
+						class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+					></div>
 					<span class="text-blue-700">Getting your current location...</span>
 				</div>
 			</div>
 		{/if}
 
 		{#if locationError}
-			<div class="mb-6 rounded-lg bg-red-50 p-4 border border-red-200">
+			<div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
 				<p class="text-red-700">{locationError}</p>
 			</div>
 		{/if}
@@ -261,7 +268,7 @@
 					type="text"
 					bind:value={newProfile.name}
 					placeholder="e.g., Home, Work, Cairo"
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				/>
 			</div>
 
@@ -269,7 +276,7 @@
 				<label class="mb-2 block text-sm font-medium text-gray-700">Calculation Method</label>
 				<select
 					bind:value={newProfile.calculationMethod}
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
 					{#each Object.entries(calculationMethods) as [key, method]}
 						<option value={key}>{method.name}</option>
@@ -283,8 +290,8 @@
 			</div>
 
 			<div class="md:col-span-2">
-				<CitySearch 
-					{cities} 
+				<CitySearch
+					{cities}
 					loading={loadingCities}
 					bind:searchQuery={citySearchQuery}
 					placeholder="Search for a city or manually enter coordinates below..."
@@ -299,7 +306,7 @@
 					step="0.000001"
 					bind:value={newProfile.latitude}
 					placeholder="e.g., 40.7128"
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				/>
 			</div>
 
@@ -310,7 +317,7 @@
 					step="0.000001"
 					bind:value={newProfile.longitude}
 					placeholder="e.g., -74.0060"
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				/>
 			</div>
 
@@ -318,7 +325,7 @@
 				<label class="mb-2 block text-sm font-medium text-gray-700">Madhab</label>
 				<select
 					bind:value={newProfile.madhab}
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
 					<option value="shafi">Shafi/Maliki/Hanbali</option>
 					<option value="hanafi">Hanafi</option>
@@ -329,7 +336,7 @@
 				<label class="mb-2 block text-sm font-medium text-gray-700">High Latitude Rule</label>
 				<select
 					bind:value={newProfile.highLatitudeRule}
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
 					<option value="middle_of_night">Middle of Night</option>
 					<option value="seventh_of_night">Seventh of Night</option>
@@ -346,7 +353,7 @@
 			>
 				Create Profile
 			</button>
-			
+
 			{#if !showLocationPermission}
 				<button
 					on:click={tryGetCurrentLocation}
@@ -355,7 +362,7 @@
 					📍 Use Current Location
 				</button>
 			{/if}
-			
+
 			{#if hasExistingProfiles}
 				<button
 					on:click={handleCancel}
@@ -376,16 +383,17 @@
 					id="mawaqit-json"
 					bind:value={mawaqitJson}
 					rows="8"
-					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 					placeholder="Paste the confData from mawaqit.net mosque page source here..."
 				></textarea>
 				<p class="mt-1 text-sm text-gray-500">
-					Find the `confData` variable in the page source of a mosque on mawaqit.net and paste its JSON content here.
+					Find the `confData` variable in the page source of a mosque on mawaqit.net and paste its
+					JSON content here.
 				</p>
 			</div>
 
 			{#if mawaqitError}
-				<div class="rounded-lg bg-red-50 p-4 border border-red-200">
+				<div class="rounded-lg border border-red-200 bg-red-50 p-4">
 					<p class="text-red-700">{mawaqitError}</p>
 				</div>
 			{/if}
@@ -398,14 +406,14 @@
 					Import Profile
 				</button>
 				{#if hasExistingProfiles}
-				<button
-					on:click={handleCancel}
-					class="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
-				>
-					Cancel
-				</button>
-			{/if}
+					<button
+						on:click={handleCancel}
+						class="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
+					>
+						Cancel
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/if}
-</div> 
+</div>

@@ -1,7 +1,12 @@
 <script lang="ts">
 	let inputUrl = '';
 	let urlComponents: any = {};
-	let searchParams: Array<{ key: string; value: string; keyDecoded: string; valueDecoded: string }> = [];
+	let searchParams: Array<{
+		key: string;
+		value: string;
+		keyDecoded: string;
+		valueDecoded: string;
+	}> = [];
 	let error = '';
 	let copiedItem = '';
 
@@ -22,7 +27,7 @@
 			}
 
 			const parsedUrl = new URL(processedUrl);
-			
+
 			urlComponents = {
 				full: parsedUrl.href,
 				protocol: parsedUrl.protocol,
@@ -117,16 +122,20 @@
 					{#if value}
 						<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
 							<div class="mb-1 flex items-center justify-between">
-								<span class="text-sm font-medium text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+								<span class="text-sm font-medium text-gray-700 capitalize"
+									>{key.replace(/([A-Z])/g, ' $1')}</span
+								>
 								<button
 									on:click={() => copyToClipboard(String(value), `component-${key}`)}
-									class="rounded px-2 py-1 text-xs {copiedItem === `component-${key}` ? 'bg-green-500' : 'bg-blue-500'} text-white hover:bg-blue-600 transition-colors"
+									class="rounded px-2 py-1 text-xs {copiedItem === `component-${key}`
+										? 'bg-green-500'
+										: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
 									title="Copy to clipboard"
 								>
 									{copiedItem === `component-${key}` ? 'Copied!' : 'Copy'}
 								</button>
 							</div>
-							<div class="break-all font-mono text-sm text-gray-800">{value}</div>
+							<div class="font-mono text-sm break-all text-gray-800">{value}</div>
 						</div>
 					{/if}
 				{/each}
@@ -147,17 +156,23 @@
 										<span class="text-sm font-medium text-gray-700">Key</span>
 										<button
 											on:click={() => copyToClipboard(param.key, `key-${param.key}`)}
-											class="rounded px-2 py-1 text-xs {copiedItem === `key-${param.key}` ? 'bg-green-500' : 'bg-blue-500'} text-white hover:bg-blue-600 transition-colors"
+											class="rounded px-2 py-1 text-xs {copiedItem === `key-${param.key}`
+												? 'bg-green-500'
+												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
 										>
 											{copiedItem === `key-${param.key}` ? 'Copied!' : 'Copy'}
 										</button>
 									</div>
 									<div class="space-y-1">
 										<div class="text-sm text-gray-600">Raw:</div>
-										<div class="break-all font-mono text-xs bg-white border rounded p-2">{param.key}</div>
+										<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+											{param.key}
+										</div>
 										{#if param.key !== param.keyDecoded}
 											<div class="text-sm text-gray-600">Decoded:</div>
-											<div class="break-all font-mono text-xs bg-white border rounded p-2">{param.keyDecoded}</div>
+											<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+												{param.keyDecoded}
+											</div>
 										{/if}
 									</div>
 								</div>
@@ -168,17 +183,23 @@
 										<span class="text-sm font-medium text-gray-700">Value</span>
 										<button
 											on:click={() => copyToClipboard(param.value, `value-${param.key}`)}
-											class="rounded px-2 py-1 text-xs {copiedItem === `value-${param.key}` ? 'bg-green-500' : 'bg-blue-500'} text-white hover:bg-blue-600 transition-colors"
+											class="rounded px-2 py-1 text-xs {copiedItem === `value-${param.key}`
+												? 'bg-green-500'
+												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
 										>
 											{copiedItem === `value-${param.key}` ? 'Copied!' : 'Copy'}
 										</button>
 									</div>
 									<div class="space-y-1">
 										<div class="text-sm text-gray-600">Raw:</div>
-										<div class="break-all font-mono text-xs bg-white border rounded p-2">{param.value}</div>
+										<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+											{param.value}
+										</div>
 										{#if param.value !== param.valueDecoded}
 											<div class="text-sm text-gray-600">Decoded:</div>
-											<div class="break-all font-mono text-xs bg-white border rounded p-2">{param.valueDecoded}</div>
+											<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+												{param.valueDecoded}
+											</div>
 										{/if}
 									</div>
 								</div>
@@ -189,4 +210,4 @@
 			</div>
 		{/if}
 	{/if}
-</div> 
+</div>

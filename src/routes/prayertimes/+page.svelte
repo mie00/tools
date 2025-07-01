@@ -4,7 +4,10 @@
 
 <svelte:head>
 	<title>Prayer Times - Tools App</title>
-	<meta name="description" content="Calculate accurate Islamic prayer times based on your location with multiple calculation methods and profile management." />
+	<meta
+		name="description"
+		content="Calculate accurate Islamic prayer times based on your location with multiple calculation methods and profile management."
+	/>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

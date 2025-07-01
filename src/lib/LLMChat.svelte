@@ -13,6 +13,7 @@
 	let llmInference: any = null;
 	let isModelLoaded = false;
 	let loadingProgress = '';
+	let hasInitializationError = false;
 	let chatContainer: HTMLDivElement;
 	let webGpuSupported = false;
 	let shaderF16Supported = false;
@@ -93,6 +94,14 @@
 		} catch (error) {
 			console.error('Failed to initialize model:', error);
 			loadingProgress = `Error: ${error instanceof Error ? error.message : 'Failed to initialize model'}`;
+			hasInitializationError = true;
+			// Add error message to chat
+			const errorMessage: Message = {
+				role: 'assistant',
+				content: `❌ Model initialization failed: ${error instanceof Error ? error.message : 'Failed to initialize model'}\n\nThis could be due to:\n• Insufficient memory (try closing other tabs)\n• Network issues downloading the model\n• WebGPU compatibility issues\n• Browser not supporting required features\n\nPlease refresh the page to try again.`,
+				timestamp: new Date()
+			};
+			messages = [errorMessage];
 		} finally {
 			isLoading = false;
 		}
@@ -219,6 +228,13 @@
 	function downloadAlternativeModel() {
 		window.open('https://www.kaggle.com/models/google/gemma-2/tensorFlow/2b-it-gpu-int8', '_blank');
 	}
+
+	async function retryInitialization() {
+		hasInitializationError = false;
+		messages = [];
+		loadingProgress = '';
+		await initializeModel();
+	}
 </script>
 
 <div class="mx-auto max-w-4xl">
@@ -319,6 +335,50 @@
 			</div>
 		{/if}
 
+		<!-- Initialization Error -->
+		{#if hasInitializationError && !isLoading}
+			<div class="rounded-lg bg-red-50 p-4">
+				<div class="flex items-start gap-3">
+					<div class="flex-shrink-0">
+						<svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+							<path
+								fill-rule="evenodd"
+								d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+								clip-rule="evenodd"
+							></path>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<h3 class="font-semibold text-red-800">Model Initialization Failed</h3>
+						<p class="mt-1 text-sm text-red-700">{loadingProgress}</p>
+						<div class="mt-3 text-xs text-red-600">
+							<p class="mb-2"><strong>Common causes:</strong></p>
+							<ul class="list-disc space-y-1 pl-4">
+								<li>Insufficient memory (try closing other browser tabs)</li>
+								<li>Network issues downloading the model</li>
+								<li>WebGPU compatibility issues</li>
+								<li>Browser not supporting required features</li>
+							</ul>
+						</div>
+						<div class="mt-4 flex gap-2">
+							<button
+								on:click={retryInitialization}
+								class="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:bg-red-700"
+							>
+								🔄 Retry
+							</button>
+							<button
+								on:click={() => window.location.reload()}
+								class="rounded bg-gray-600 px-3 py-1 text-sm text-white transition-colors hover:bg-gray-700"
+							>
+								🔄 Refresh Page
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Model Info -->
 		{#if isModelLoaded}
 			<div class="rounded-lg bg-green-50 p-4">
@@ -353,6 +413,9 @@
 					<div class="mb-2 text-4xl">🤖</div>
 					{#if !webGpuSupported}
 						<p>WebGPU support required for local AI</p>
+					{:else if hasInitializationError}
+						<p>Model failed to initialize</p>
+						<p class="mt-1 text-sm">Check the error details above</p>
 					{:else if !isModelLoaded}
 						<p>Initialize the model to start chatting</p>
 					{:else}

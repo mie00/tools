@@ -14,7 +14,7 @@
 	let loadingCities = true;
 	let profilePrayerTimes = new Map<string, PrayerTimes>();
 
-	$: activeProfile = profiles.find(p => p.isActive) || null;
+	$: activeProfile = profiles.find((p) => p.isActive) || null;
 	$: activePrayerTimes = activeProfile ? profilePrayerTimes.get(activeProfile.id) : null;
 
 	onMount(async () => {
@@ -77,7 +77,7 @@
 
 	function handleActivateProfile(event: CustomEvent<Profile>) {
 		const profile = event.detail;
-		profiles = profiles.map(p => ({ ...p, isActive: p.id === profile.id }));
+		profiles = profiles.map((p) => ({ ...p, isActive: p.id === profile.id }));
 		saveProfiles();
 	}
 
@@ -87,7 +87,7 @@
 
 	function handleSaveEditedProfile(event: CustomEvent<Profile>) {
 		const updatedProfile = event.detail;
-		profiles = profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p);
+		profiles = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
 		saveProfiles();
 		calculateAllPrayerTimes();
 		editingProfile = null;
@@ -95,15 +95,15 @@
 
 	function handleDeleteProfile(event: CustomEvent<string>) {
 		const profileId = event.detail;
-		const wasActive = profiles.find(p => p.id === profileId)?.isActive;
-		
-		profiles = profiles.filter(p => p.id !== profileId);
-		
+		const wasActive = profiles.find((p) => p.id === profileId)?.isActive;
+
+		profiles = profiles.filter((p) => p.id !== profileId);
+
 		// If we deleted the active profile, make the first remaining profile active
 		if (wasActive && profiles.length > 0) {
 			profiles[0].isActive = true;
 		}
-		
+
 		saveProfiles();
 		calculateAllPrayerTimes();
 	}
@@ -152,10 +152,7 @@
 
 		<!-- Prayer Times Display for Active Profile -->
 		{#if activeProfile && activePrayerTimes}
-			<PrayerTimesDisplay
-				{activeProfile}
-				prayerTimes={activePrayerTimes}
-			/>
+			<PrayerTimesDisplay {activeProfile} prayerTimes={activePrayerTimes} />
 		{/if}
 	{/if}
-</div> 
+</div>

@@ -38,7 +38,7 @@
 </script>
 
 <div class="rounded-xl bg-white p-6 shadow-lg">
-	<div class="flex items-center justify-between mb-4">
+	<div class="mb-4 flex items-center justify-between">
 		<h3 class="text-xl font-bold text-gray-800">Prayer Profiles</h3>
 		<button
 			on:click={handleCreateNew}
@@ -47,11 +47,13 @@
 			Add Profile
 		</button>
 	</div>
-	
+
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 		{#each profiles as profile (profile.id)}
-			<div 
-				class="rounded-lg border p-4 transition-all duration-200 cursor-pointer {profile.isActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
+			<div
+				class="cursor-pointer rounded-lg border p-4 transition-all duration-200 {profile.isActive
+					? 'border-blue-500 bg-blue-50'
+					: 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
 				on:click={() => handleActivate(profile)}
 				role="button"
 				tabindex="0"
@@ -59,19 +61,21 @@
 			>
 				<div class="flex items-start justify-between">
 					<div class="flex-1">
-						<div class="flex items-center gap-2 mb-2">
-							<h4 class="font-semibold {profile.isActive ? 'text-blue-800' : 'text-gray-800'}">{profile.name}</h4>
+						<div class="mb-2 flex items-center gap-2">
+							<h4 class="font-semibold {profile.isActive ? 'text-blue-800' : 'text-gray-800'}">
+								{profile.name}
+							</h4>
 							{#if profile.isActive}
-								<span class="px-2 py-1 text-xs bg-blue-600 text-white rounded-full">Active</span>
+								<span class="rounded-full bg-blue-600 px-2 py-1 text-xs text-white">Active</span>
 							{/if}
 						</div>
 						<p class="text-sm text-gray-600">
 							{calculationMethods[profile.calculationMethod]?.name || profile.calculationMethod}
 						</p>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="mt-1 text-xs text-gray-500">
 							{profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
 						</p>
-						
+
 						{#if profilePrayerTimes.get(profile.id)}
 							{@const profileTimes = profilePrayerTimes.get(profile.id)!}
 							{@const nextPrayerForThisProfile = getNextPrayerForProfile(profile, profileTimes)}
@@ -89,14 +93,14 @@
 					<div class="flex items-center space-x-2">
 						<button
 							on:click={(e) => handleEdit(e, profile)}
-							class="text-sm text-blue-600 hover:text-blue-700 p-1"
+							class="p-1 text-sm text-blue-600 hover:text-blue-700"
 							title="Edit Profile"
 						>
 							✏️
 						</button>
 						<button
 							on:click={(e) => handleDelete(e, profile.id)}
-							class="text-sm text-red-600 hover:text-red-700 p-1"
+							class="p-1 text-sm text-red-600 hover:text-red-700"
 							title="Delete Profile"
 						>
 							🗑️
@@ -106,4 +110,4 @@
 			</div>
 		{/each}
 	</div>
-</div> 
+</div>

@@ -72,4 +72,4 @@ export interface NextPrayer {
 	name: string;
 	time: string;
 	timeRemaining?: string;
-} 
+}
