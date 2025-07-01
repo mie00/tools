@@ -15,10 +15,11 @@
 	let loadingProgress = '';
 	let chatContainer: HTMLDivElement;
 	let webGpuSupported = false;
+	let shaderF16Supported = false;
 
 	// Model configuration
 	const MODEL_CONFIG = {
-		modelPath: 'https://storage.googleapis.com/mediapipe-models/llm_inference/gemma-1b-it-gpu-int4/1/gemma-1b-it-gpu-int4.task',
+		modelPath: '/gemma-3n-E2B-it-int4.task',
 		maxTokens: 1000,
 		topK: 40,
 		temperature: 0.8,
@@ -42,6 +43,7 @@
 			const adapter = await (navigator as any).gpu.requestAdapter();
 			if (adapter) {
 				webGpuSupported = true;
+				shaderF16Supported = adapter.features.has('shader-f16');
 			}
 		} catch (error) {
 			console.error('WebGPU not supported:', error);
@@ -231,6 +233,15 @@
 				</span>
 			</div>
 
+			{#if webGpuSupported}
+				<div class="flex items-center gap-2">
+					<div class="h-3 w-3 rounded-full {shaderF16Supported ? 'bg-green-500' : 'bg-orange-400'}"></div>
+					<span class="text-sm {shaderF16Supported ? 'text-green-700' : 'text-orange-600'}">
+						{shaderF16Supported ? 'FP16 Supported' : 'FP16 Recommended'}
+					</span>
+				</div>
+			{/if}
+
 			{#if isModelLoaded}
 				<div class="flex items-center gap-2">
 					<div class="h-3 w-3 rounded-full bg-green-500"></div>
@@ -257,6 +268,24 @@
 					<p class="mb-1"><strong>Chrome/Edge:</strong> Enable WebGPU in chrome://flags/#enable-unsafe-webgpu</p>
 					<p class="mb-1"><strong>Firefox:</strong> WebGPU support is limited</p>
 					<p><strong>Safari:</strong> WebGPU is supported in recent versions</p>
+				</div>
+			</div>
+		{/if}
+
+		<!-- FP16 Not Supported Warning -->
+		{#if webGpuSupported && !shaderF16Supported && !isModelLoaded}
+			<div class="rounded-lg bg-orange-50 p-4">
+				<h3 class="mb-2 font-semibold text-orange-800">FP16 Shader Support Recommended</h3>
+				<p class="mb-3 text-sm text-orange-700">
+					Your browser supports WebGPU, but may lack support for 16-bit floating-point (FP16)
+					shaders. This is highly recommended for running quantized AI models efficiently.
+				</p>
+				<p class="mb-3 text-sm text-orange-700">
+					Without FP16, the model requires significantly more memory and may fail to load.
+				</p>
+				<div class="text-sm text-orange-600">
+					<p class="mb-1"><strong>For Chrome/Edge on Linux:</strong> Ensure Vulkan is enabled by checking <code>chrome://flags/#enable-vulkan</code>.</p>
+					<p>Please ensure you are using a modern browser and your graphics drivers are up to date.</p>
 				</div>
 			</div>
 		{/if}
