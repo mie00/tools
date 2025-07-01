@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@mediapipe/tasks-genai':
+        specifier: ^0.10.23
+        version: 0.10.23
     devDependencies:
       '@eslint/compat':
         specifier: ^1.2.5
@@ -333,6 +337,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.28':
     resolution: {integrity: sha512-KNNHHwW3EIp4EDYOvYFGyIFfx36R2dNJYH4knnZlF8T5jdbD5Wx8xmSaQ2gP9URkJ04LGEtlcCtwArKcmFcwKw==}
+
+  '@mediapipe/tasks-genai@0.10.23':
+    resolution: {integrity: sha512-3ApFdNBlsTa8rxok5+kyEmQscTEqdm/9THwCSmb6xz5uvf7v5zK5hHuIEzHdWDv00pTytg1KDWIWAvLyijr9uw==}
 
   '@playwright/test@1.53.2':
     resolution: {integrity: sha512-tEB2U5z74ebBeyfGNZ3Jfg29AnW+5HlWhvHtb/Mqco9pFdZU1ZLNdVb2UtB5CvmiilNr2ZfVH/qMmAROG/XTzw==}
@@ -1709,6 +1716,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.3
+
+  '@mediapipe/tasks-genai@0.10.23': {}
 
   '@playwright/test@1.53.2':
     dependencies:

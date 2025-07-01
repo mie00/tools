@@ -6,8 +6,14 @@
 	import NoteTaking from '$lib/NoteTaking.svelte';
 	import DateTime from '$lib/DateTime.svelte';
 	import StockTracker from '$lib/StockTracker.svelte';
+	import TextTools from '$lib/TextTools.svelte';
+	import ColorPicker from '$lib/ColorPicker.svelte';
+	import Base64 from '$lib/Base64.svelte';
+	import JsonFormatter from '$lib/JsonFormatter.svelte';
+	import Azkar from '$lib/Azkar.svelte';
+	import LLMChat from '$lib/LLMChat.svelte';
 
-	let selectedTool = null;
+	let selectedTool: string | null = null;
 
 	const tools = [
 		{
@@ -77,10 +83,22 @@
 			icon: '📈',
 			description: 'Track stock prices and view charts',
 			usesAPI: true
+		},
+		{
+			id: 'azkar',
+			name: 'Azkar',
+			icon: '📿',
+			description: 'Islamic prayers and dhikr with progress tracking'
+		},
+		{
+			id: 'llmchat',
+			name: 'LLM Chat',
+			icon: '🤖',
+			description: 'Chat with local Gemma AI using MediaPipe (WebGPU)'
 		}
 	];
 
-	function selectTool(toolId) {
+	function selectTool(toolId: string) {
 		selectedTool = selectedTool === toolId ? null : toolId;
 	}
 
@@ -168,6 +186,18 @@
 					<NoteTaking />
 				{:else if selectedTool === 'stocktracker'}
 					<StockTracker />
+				{:else if selectedTool === 'texttools'}
+					<TextTools />
+				{:else if selectedTool === 'colorpicker'}
+					<ColorPicker />
+				{:else if selectedTool === 'base64'}
+					<Base64 />
+				{:else if selectedTool === 'jsonformat'}
+					<JsonFormatter />
+				{:else if selectedTool === 'azkar'}
+					<Azkar />
+				{:else if selectedTool === 'llmchat'}
+					<LLMChat />
 				{:else}
 					<div class="py-12 text-center">
 						<div class="mb-4 text-6xl">{tools.find((t) => t.id === selectedTool)?.icon}</div>

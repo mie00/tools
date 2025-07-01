@@ -45,5 +45,8 @@
 		"onlyBuiltDependencies": [
 			"esbuild"
 		]
+	},
+	"dependencies": {
+		"@mediapipe/tasks-genai": "^0.10.23"
 	}
 }
