@@ -12,7 +12,7 @@
 			const query = window.location.search;
 			if (query.startsWith('?/')) {
 				// Extract the path from the query parameter
-				const path = query.slice(2).replace(/&/g, '&').replace(/~and~/g, '&');
+				const path = query.slice(2).replace(/~and~/g, '&').replace(/~question~/g, '?');
 				const fullPath = '/' + path;
 
 				// Navigate to the correct route and replace the current history entry
