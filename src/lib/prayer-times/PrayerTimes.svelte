@@ -32,29 +32,33 @@
 
 	// Check if a profile with similar configuration already exists
 	function findDuplicateProfile(configToCheck: Profile): Profile | null {
-		return profiles.find(profile => {
-			console.log('findDuplicateProfile', profile, configToCheck);
-			// Check basic location and method match
-			const locationMatch = Math.abs(profile.latitude - configToCheck.latitude) < 0.001 && 
-								Math.abs(profile.longitude - configToCheck.longitude) < 0.001;
-			const methodMatch = profile.calculationMethod === configToCheck.calculationMethod;
-			const timezoneMatch = profile.timezone === configToCheck.timezone;
-			
-			// For Mawaqit profiles, also check if it's the same mosque
-			if (configToCheck.profileType === 'mawaqit' && profile.profileType === 'mawaqit') {
-				const mawaqitNameMatch = profile.mawaqitConfig?.name === configToCheck.mawaqitConfig?.name;
-				return locationMatch && timezoneMatch && mawaqitNameMatch;
-			}
-			
-			// For calculated profiles, check calculation parameters
-			if (configToCheck.profileType === 'calculated' && profile.profileType === 'calculated') {
-				const madhabMatch = profile.madhab === configToCheck.madhab;
-				const highLatMatch = profile.highLatitudeRule === configToCheck.highLatitudeRule;
-				return locationMatch && methodMatch && timezoneMatch && madhabMatch && highLatMatch;
-			}
-			
-			return false;
-		}) || null;
+		return (
+			profiles.find((profile) => {
+				console.log('findDuplicateProfile', profile, configToCheck);
+				// Check basic location and method match
+				const locationMatch =
+					Math.abs(profile.latitude - configToCheck.latitude) < 0.001 &&
+					Math.abs(profile.longitude - configToCheck.longitude) < 0.001;
+				const methodMatch = profile.calculationMethod === configToCheck.calculationMethod;
+				const timezoneMatch = profile.timezone === configToCheck.timezone;
+
+				// For Mawaqit profiles, also check if it's the same mosque
+				if (configToCheck.profileType === 'mawaqit' && profile.profileType === 'mawaqit') {
+					const mawaqitNameMatch =
+						profile.mawaqitConfig?.name === configToCheck.mawaqitConfig?.name;
+					return locationMatch && timezoneMatch && mawaqitNameMatch;
+				}
+
+				// For calculated profiles, check calculation parameters
+				if (configToCheck.profileType === 'calculated' && profile.profileType === 'calculated') {
+					const madhabMatch = profile.madhab === configToCheck.madhab;
+					const highLatMatch = profile.highLatitudeRule === configToCheck.highLatitudeRule;
+					return locationMatch && methodMatch && timezoneMatch && madhabMatch && highLatMatch;
+				}
+
+				return false;
+			}) || null
+		);
 	}
 
 	// Compression utilities for calendar data
@@ -65,19 +69,19 @@
 			const stream = new CompressionStream('gzip');
 			const writer = stream.writable.getWriter();
 			const reader = stream.readable.getReader();
-			
+
 			// Convert string to Uint8Array
 			const encoder = new TextEncoder();
 			const input = encoder.encode(data);
-			
+
 			// Start compression
 			writer.write(input);
 			writer.close();
-			
+
 			// Read compressed data
 			const chunks: Uint8Array[] = [];
 			let done = false;
-			
+
 			while (!done) {
 				const { value, done: readerDone } = await reader.read();
 				done = readerDone;
@@ -85,7 +89,7 @@
 					chunks.push(value);
 				}
 			}
-			
+
 			// Combine chunks and convert to base64
 			const compressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
 			let offset = 0;
@@ -93,7 +97,7 @@
 				compressed.set(chunk, offset);
 				offset += chunk.length;
 			}
-			
+
 			// Convert to base64 for URL safety
 			return btoa(String.fromCharCode(...compressed));
 		} catch (error) {
@@ -110,19 +114,19 @@
 			for (let i = 0; i < binaryString.length; i++) {
 				bytes[i] = binaryString.charCodeAt(i);
 			}
-			
+
 			const stream = new DecompressionStream('gzip');
 			const writer = stream.writable.getWriter();
 			const reader = stream.readable.getReader();
-			
+
 			// Start decompression
 			writer.write(bytes);
 			writer.close();
-			
+
 			// Read decompressed data
 			const chunks: Uint8Array[] = [];
 			let done = false;
-			
+
 			while (!done) {
 				const { value, done: readerDone } = await reader.read();
 				done = readerDone;
@@ -130,7 +134,7 @@
 					chunks.push(value);
 				}
 			}
-			
+
 			// Combine chunks and convert to string
 			const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
 			let offset = 0;
@@ -138,7 +142,7 @@
 				decompressed.set(chunk, offset);
 				offset += chunk.length;
 			}
-			
+
 			const decoder = new TextDecoder();
 			return decoder.decode(decompressed);
 		} catch (error) {
@@ -156,7 +160,7 @@
 		if (typeof window !== 'undefined') {
 			sharingInProgress = true;
 			const params = new URLSearchParams();
-			
+
 			params.set('name', profile.name);
 			params.set('lat', profile.latitude.toString());
 			params.set('lng', profile.longitude.toString());
@@ -164,12 +168,12 @@
 			params.set('timezone', profile.timezone);
 			params.set('madhab', profile.madhab);
 			params.set('highLatRule', profile.highLatitudeRule);
-			
+
 			// Handle Mawaqit configurations
 			if (profile.profileType === 'mawaqit' && profile.mawaqitConfig) {
 				params.set('type', 'mawaqit');
 				params.set('mawaqitName', profile.mawaqitConfig.name);
-				
+
 				// Compress and serialize the calendar data
 				const calendarData = JSON.stringify(profile.mawaqitConfig.calendar);
 				try {
@@ -181,7 +185,7 @@
 					// Fallback to uncompressed (though this might be too large)
 					params.set('calendar', calendarData);
 				}
-				
+
 				// Include other Mawaqit-specific data
 				if (profile.mawaqitConfig.times) {
 					params.set('times', JSON.stringify(profile.mawaqitConfig.times));
@@ -210,15 +214,16 @@
 			} else {
 				params.set('type', 'calculated');
 			}
-			
+
 			const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-			
+
 			// Copy to clipboard
 			try {
 				await navigator.clipboard.writeText(shareUrl);
-				const message = profile.profileType === 'mawaqit' 
-					? 'Mawaqit prayer times configuration URL copied to clipboard! (Calendar data compressed for sharing)'
-					: 'Prayer times configuration URL copied to clipboard!';
+				const message =
+					profile.profileType === 'mawaqit'
+						? 'Mawaqit prayer times configuration URL copied to clipboard! (Calendar data compressed for sharing)'
+						: 'Prayer times configuration URL copied to clipboard!';
 				alert(message);
 			} catch (error) {
 				// Fallback - show the URL in a prompt
@@ -241,20 +246,20 @@
 		const madhab = urlParams.get('madhab') || 'standard';
 		const highLatRule = urlParams.get('highLatRule') || 'NightMiddle';
 		const type = urlParams.get('type') || 'calculated';
-		
+
 		console.log('loadFromUrl called with params:', { name, lat, lng, method, timezone, type });
-		
+
 		if (name && lat && lng && timezone) {
 			const latitude = parseFloat(lat);
 			const longitude = parseFloat(lng);
-			
+
 			if (!isNaN(latitude) && !isNaN(longitude)) {
 				const baseConfig = {
 					id: 'shared-config',
 					name: name,
 					latitude: latitude,
 					longitude: longitude,
-					calculationMethod: method,
+					calculationMethod: method || 'MWL',
 					timezone: timezone,
 					madhab: madhab,
 					highLatitudeRule: highLatRule,
@@ -284,11 +289,11 @@
 					const association = urlParams.get('association');
 					const site = urlParams.get('site');
 
-					console.log('Mawaqit params:', { 
-						mawaqitName, 
-						hasCalendar: !!calendarParam, 
-						isCompressed, 
-						hasTimes: !!timesParam 
+					console.log('Mawaqit params:', {
+						mawaqitName,
+						hasCalendar: !!calendarParam,
+						isCompressed,
+						hasTimes: !!timesParam
 					});
 
 					try {
@@ -343,16 +348,16 @@
 						if (existingProfile) {
 							console.log('Found duplicate profile:', existingProfile.name);
 							// Switch to existing profile instead of showing save dialog
-							profiles = profiles.map(p => ({ ...p, isActive: p.id === existingProfile.id }));
+							profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 							saveProfiles();
-							
+
 							// Show message about switching to existing profile
 							duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}"`;
 							showDuplicateMessage = true;
 							setTimeout(() => {
 								showDuplicateMessage = false;
 							}, 5000);
-							
+
 							// Clear URL parameters
 							goto(window.location.pathname, { replaceState: true });
 							return; // Exit early
@@ -370,15 +375,15 @@
 						// Check for duplicates even for fallback
 						const existingProfile = findDuplicateProfile(tempConfig);
 						if (existingProfile) {
-							profiles = profiles.map(p => ({ ...p, isActive: p.id === existingProfile.id }));
+							profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 							saveProfiles();
-							
+
 							duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}" (Mawaqit data couldn't be loaded)`;
 							showDuplicateMessage = true;
 							setTimeout(() => {
 								showDuplicateMessage = false;
 							}, 5000);
-							
+
 							goto(window.location.pathname, { replaceState: true });
 							return;
 						}
@@ -397,15 +402,15 @@
 					if (existingProfile) {
 						console.log('Found duplicate calculated profile:', existingProfile.name);
 						// Switch to existing profile instead of showing save dialog
-						profiles = profiles.map(p => ({ ...p, isActive: p.id === existingProfile.id }));
+						profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 						saveProfiles();
-						
+
 						duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}"`;
 						showDuplicateMessage = true;
 						setTimeout(() => {
 							showDuplicateMessage = false;
 						}, 5000);
-						
+
 						// Clear URL parameters
 						goto(window.location.pathname, { replaceState: true });
 						return; // Exit early
@@ -413,7 +418,7 @@
 
 					sharedConfig = tempConfig;
 				}
-				
+
 				// Calculate prayer times for shared config
 				if (sharedConfig) {
 					console.log('Calculating prayer times for shared config...');
@@ -425,12 +430,12 @@
 					} catch (error) {
 						console.error('Error calculating shared prayer times:', error);
 					}
-					
+
 					showSaveButton = true;
 					const configType = type === 'mawaqit' ? 'Mawaqit' : 'Calculated';
 					suggestedName = `${name} (${configType} - Shared)`;
 					console.log('Shared config ready for saving:', suggestedName);
-					
+
 					// Clear URL parameters after loading
 					goto(window.location.pathname, { replaceState: true });
 				} else {
@@ -448,16 +453,16 @@
 				name: suggestedName,
 				isActive: profiles.length === 0 // Make active if it's the first profile
 			};
-			
+
 			// If there are existing profiles, deactivate them
 			if (profiles.length > 0) {
-				profiles = profiles.map(p => ({ ...p, isActive: false }));
+				profiles = profiles.map((p) => ({ ...p, isActive: false }));
 			}
-			
+
 			profiles = [...profiles, newProfile];
 			saveProfiles();
 			calculateAllPrayerTimes();
-			
+
 			// Clear shared config
 			sharedConfig = null;
 			showSaveButton = false;
@@ -592,11 +597,11 @@
 		<div class="rounded-lg border-2 border-green-200 bg-green-50 p-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
-					<span class="text-green-600 mr-2">✓</span>
-					<p class="text-green-800 font-medium">{duplicateFoundMessage}</p>
+					<span class="mr-2 text-green-600">✓</span>
+					<p class="font-medium text-green-800">{duplicateFoundMessage}</p>
 				</div>
-				<button 
-					on:click={() => showDuplicateMessage = false}
+				<button
+					on:click={() => (showDuplicateMessage = false)}
 					class="text-green-400 hover:text-green-600"
 					title="Dismiss"
 				>
@@ -612,9 +617,11 @@
 			<div class="flex items-start justify-between">
 				<div class="flex-1">
 					<h3 class="text-lg font-semibold text-blue-800">Shared Prayer Times Configuration</h3>
-					<p class="text-blue-700 mt-1">Someone shared this prayer times configuration with you:</p>
+					<p class="mt-1 text-blue-700">Someone shared this prayer times configuration with you:</p>
 					<div class="mt-2 text-sm text-blue-600">
-						<strong>{sharedConfig.name}</strong> • {sharedConfig.latitude.toFixed(4)}, {sharedConfig.longitude.toFixed(4)}
+						<strong>{sharedConfig.name}</strong> • {sharedConfig.latitude.toFixed(4)}, {sharedConfig.longitude.toFixed(
+							4
+						)}
 						{#if sharedConfig.profileType === 'mawaqit'}
 							• Mawaqit Mosque Calendar
 						{:else}
@@ -622,7 +629,7 @@
 						{/if}
 					</div>
 				</div>
-				<button 
+				<button
 					on:click={dismissSharedConfig}
 					class="ml-4 text-blue-400 hover:text-blue-600"
 					title="Dismiss"
@@ -631,15 +638,15 @@
 				</button>
 			</div>
 			<div class="mt-4 flex gap-2">
-				<input 
-					type="text" 
+				<input
+					type="text"
 					bind:value={suggestedName}
 					placeholder="Profile name"
 					class="flex-1 rounded-md border border-blue-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
 				/>
-				<button 
+				<button
 					on:click={saveSharedConfig}
-					class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				>
 					Save as Profile
 				</button>
@@ -658,6 +665,7 @@
 			{cities}
 			{loadingCities}
 			hasExistingProfiles={hasProfiles}
+			hasSharedConfig={sharedConfig !== null}
 			on:create={handleCreateProfile}
 			on:cancel={handleCancelCreate}
 		/>
@@ -683,10 +691,7 @@
 		{#if sharedConfig}
 			{@const sharedTimes = profilePrayerTimes.get(sharedConfig.id)}
 			{#if sharedTimes}
-				<PrayerTimesDisplay 
-					activeProfile={sharedConfig} 
-					prayerTimes={sharedTimes} 
-				/>
+				<PrayerTimesDisplay activeProfile={sharedConfig} prayerTimes={sharedTimes} />
 			{/if}
 		{/if}
 	{/if}

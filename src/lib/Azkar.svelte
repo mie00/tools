@@ -62,21 +62,21 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			const firstCategory = availableCategories[0] || 'أذكار الصباح';
 			if (activeCategory !== firstCategory) {
 				params.set('category', activeCategory);
 			} else {
 				params.delete('category');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
 
 	function loadFromUrl() {
 		const category = $page.url.searchParams.get('category');
-		
+
 		if (category && availableCategories.includes(category)) {
 			activeCategory = category;
 		}

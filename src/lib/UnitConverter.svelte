@@ -36,31 +36,31 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (selectedCategory !== 'length') {
 				params.set('category', selectedCategory);
 			} else {
 				params.delete('category');
 			}
-			
+
 			if (inputValue !== '1') {
 				params.set('value', inputValue);
 			} else {
 				params.delete('value');
 			}
-			
+
 			if (fromUnit !== 'meter') {
 				params.set('from', fromUnit);
 			} else {
 				params.delete('from');
 			}
-			
+
 			if (toUnit !== 'kilometer') {
 				params.set('to', toUnit);
 			} else {
 				params.delete('to');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -70,23 +70,23 @@
 		const value = $page.url.searchParams.get('value');
 		const from = $page.url.searchParams.get('from');
 		const to = $page.url.searchParams.get('to');
-		
+
 		if (category && categories[category]) {
 			selectedCategory = category;
 		}
-		
+
 		if (value) {
 			inputValue = value;
 		}
-		
+
 		if (from && selectedCategory && categories[selectedCategory].units[from]) {
 			fromUnit = from;
 		}
-		
+
 		if (to && selectedCategory && categories[selectedCategory].units[to]) {
 			toUnit = to;
 		}
-		
+
 		// Convert if we have all parameters
 		if (value) {
 			convert();
@@ -320,7 +320,11 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && isLoaded && (inputValue || fromUnit || toUnit || selectedCategory)) {
+	$: if (
+		typeof window !== 'undefined' &&
+		isLoaded &&
+		(inputValue || fromUnit || toUnit || selectedCategory)
+	) {
 		updateUrl();
 	}
 </script>

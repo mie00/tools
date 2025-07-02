@@ -23,7 +23,7 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			// Set expression parameter based on current state
 			if (currentExpression) {
 				params.set('expression', currentExpression);
@@ -32,7 +32,7 @@
 			} else {
 				params.delete('expression');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -48,12 +48,12 @@
 					display = expression;
 					return;
 				}
-				
+
 				// If it's an incomplete expression like "9+" or "9+8"
 				const operators = ['+', '−', '×', '÷'];
 				let foundOp = false;
 				let opIndex = -1;
-				
+
 				for (const op of operators) {
 					const index = expression.lastIndexOf(op);
 					if (index > opIndex) {
@@ -62,15 +62,15 @@
 						operation = op;
 					}
 				}
-				
+
 				if (foundOp && opIndex > 0) {
 					const leftPart = expression.substring(0, opIndex).trim();
 					const rightPart = expression.substring(opIndex + 1).trim();
-					
+
 					const leftNum = parseFloat(leftPart);
 					if (!isNaN(leftNum)) {
 						previousValue = leftNum;
-						
+
 						if (rightPart) {
 							const rightNum = parseFloat(rightPart);
 							if (!isNaN(rightNum)) {

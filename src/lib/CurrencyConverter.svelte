@@ -46,25 +46,25 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (amount !== '1') {
 				params.set('amount', amount);
 			} else {
 				params.delete('amount');
 			}
-			
+
 			if (fromCurrency !== 'USD') {
 				params.set('from', fromCurrency);
 			} else {
 				params.delete('from');
 			}
-			
+
 			if (toCurrency !== 'EUR') {
 				params.set('to', toCurrency);
 			} else {
 				params.delete('to');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -73,16 +73,16 @@
 		const urlAmount = $page.url.searchParams.get('amount');
 		const urlFromCurrency = $page.url.searchParams.get('from');
 		const urlToCurrency = $page.url.searchParams.get('to');
-		
+
 		if (urlAmount) {
 			amount = urlAmount;
 		}
-		
-		if (urlFromCurrency && popularCurrencies.some(c => c.code === urlFromCurrency)) {
+
+		if (urlFromCurrency && popularCurrencies.some((c) => c.code === urlFromCurrency)) {
 			fromCurrency = urlFromCurrency;
 		}
-		
-		if (urlToCurrency && popularCurrencies.some(c => c.code === urlToCurrency)) {
+
+		if (urlToCurrency && popularCurrencies.some((c) => c.code === urlToCurrency)) {
 			toCurrency = urlToCurrency;
 		}
 	}

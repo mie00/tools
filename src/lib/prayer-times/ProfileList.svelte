@@ -100,9 +100,11 @@
 					<div class="flex items-center space-x-2">
 						<button
 							on:click={(e) => handleShare(e, profile)}
-							class="p-1 text-sm text-green-600 hover:text-green-700 {sharingInProgress ? 'opacity-50 cursor-wait' : ''}"
+							class="p-1 text-sm text-green-600 hover:text-green-700 {sharingInProgress
+								? 'cursor-wait opacity-50'
+								: ''}"
 							disabled={sharingInProgress}
-							title={sharingInProgress ? "Sharing..." : "Share Profile"}
+							title={sharingInProgress ? 'Sharing...' : 'Share Profile'}
 						>
 							{sharingInProgress ? '⏳' : '🔗'}
 						</button>

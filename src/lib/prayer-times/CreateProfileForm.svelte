@@ -8,6 +8,7 @@
 	export let cities: City[] = [];
 	export let loadingCities: boolean = false;
 	export let hasExistingProfiles: boolean = false;
+	export let hasSharedConfig: boolean = false;
 
 	const dispatch = createEventDispatcher<{
 		create: any;
@@ -85,19 +86,31 @@
 		if (!newProfile.latitude || !newProfile.longitude) return;
 
 		try {
-			const locationData = await enrichLocationData(newProfile.latitude, newProfile.longitude);
+			const locationData = await enrichLocationData(
+				newProfile.latitude,
+				newProfile.longitude,
+				cities
+			);
 
 			if (locationData.timezone) {
 				newProfile.timezone = locationData.timezone;
 			}
 
-			if (locationData.country) {
-				// Set default profile name
+			if (locationData.closestCity) {
+				// Set default profile name using closest city
+				if (!newProfile.name) {
+					newProfile.name = `${locationData.closestCity.name}, ${locationData.closestCity.country}`;
+				}
+
+				// Suggest calculation method based on country
+				const suggestedMethod = getSuggestedCalculationMethod(locationData.closestCity.country);
+				newProfile.calculationMethod = suggestedMethod;
+			} else if (locationData.country) {
+				// Fallback if no city found but country available
 				if (!newProfile.name) {
 					newProfile.name = locationData.country;
 				}
 
-				// Suggest calculation method based on country
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.country);
 				newProfile.calculationMethod = suggestedMethod;
 			}
@@ -199,10 +212,11 @@
 		}
 	}
 
-	// Auto-get location for new users
+	// Auto-get location for new users (only if no existing profiles and no shared config)
 	$: if (
 		createMode === 'manual' &&
 		!hasExistingProfiles &&
+		!hasSharedConfig &&
 		!newProfile.latitude &&
 		!newProfile.longitude
 	) {

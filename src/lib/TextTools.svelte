@@ -23,19 +23,19 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (activeOperation !== 'uppercase') {
 				params.set('utility', activeOperation);
 			} else {
 				params.delete('utility');
 			}
-			
+
 			if (inputText) {
 				params.set('input', inputText);
 			} else {
 				params.delete('input');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -43,11 +43,11 @@
 	function loadFromUrl() {
 		const utility = $page.url.searchParams.get('utility');
 		const input = $page.url.searchParams.get('input');
-		
-		if (utility && operations.some(op => op.id === utility)) {
+
+		if (utility && operations.some((op) => op.id === utility)) {
 			activeOperation = utility;
 		}
-		
+
 		if (input) {
 			inputText = input;
 		}

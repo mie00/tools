@@ -36,20 +36,20 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (hexInput !== '#3b82f6') {
 				params.set('hex', hexInput);
 			} else {
 				params.delete('hex');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
 
 	function loadFromUrl() {
 		const hex = $page.url.searchParams.get('hex');
-		
+
 		if (hex && /^#[0-9A-F]{6}$/i.test(hex)) {
 			hexInput = hex;
 			updateFromHex();

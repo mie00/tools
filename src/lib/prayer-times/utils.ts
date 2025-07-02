@@ -419,23 +419,59 @@ export function getSuggestedCalculationMethod(countryCode: string): string {
 	return countryMethodMapping[countryCode] || 'MWL';
 }
 
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+	const R = 6371; // Earth's radius in kilometers
+	const dLat = ((lat2 - lat1) * Math.PI) / 180;
+	const dLng = ((lng2 - lng1) * Math.PI) / 180;
+	const a =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos((lat1 * Math.PI) / 180) *
+			Math.cos((lat2 * Math.PI) / 180) *
+			Math.sin(dLng / 2) *
+			Math.sin(dLng / 2);
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+	return R * c;
+}
+
+// Find the closest city from the cities array
+export function findClosestCity(latitude: number, longitude: number, cities: City[]): City | null {
+	if (!cities || cities.length === 0) {
+		return null;
+	}
+
+	let closestCity: City | null = null;
+	let minDistance = Infinity;
+
+	for (const city of cities) {
+		const distance = calculateDistance(latitude, longitude, city.lat, city.lng);
+		if (distance < minDistance) {
+			minDistance = distance;
+			closestCity = city;
+		}
+	}
+
+	return closestCity;
+}
+
 export async function enrichLocationData(
 	latitude: number,
-	longitude: number
-): Promise<{ country?: string; timezone?: string }> {
+	longitude: number,
+	cities: City[] = []
+): Promise<{ country?: string; timezone?: string; closestCity?: City }> {
 	try {
 		// Get timezone
 		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-		// Try to get country and suggest calculation method
-		const response = await fetch(
-			`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-		);
+		// Find closest city from our local data
+		const closestCity = findClosestCity(latitude, longitude, cities);
 
-		if (response.ok) {
-			const data = await response.json();
-			const country = data.countryName || data.countryCode;
-			return { country, timezone };
+		if (closestCity) {
+			return {
+				country: closestCity.country,
+				timezone,
+				closestCity
+			};
 		}
 
 		return { timezone };

@@ -65,39 +65,39 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			// Timezone converter params
 			if (timezoneConvertInput) {
 				params.set('time', timezoneConvertInput);
 			} else {
 				params.delete('time');
 			}
-			
+
 			if (fromTimezone !== 'Local') {
 				params.set('from_tz', fromTimezone);
 			} else {
 				params.delete('from_tz');
 			}
-			
+
 			if (toTimezone !== 'America/New_York') {
 				params.set('to_tz', toTimezone);
 			} else {
 				params.delete('to_tz');
 			}
-			
+
 			// Epoch converter params
 			if (epochInput) {
 				params.set('epoch', epochInput);
 			} else {
 				params.delete('epoch');
 			}
-			
+
 			if (humanInput) {
 				params.set('human', humanInput);
 			} else {
 				params.delete('human');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -107,7 +107,7 @@
 		const time = $page.url.searchParams.get('time');
 		const fromTz = $page.url.searchParams.get('from_tz');
 		const toTz = $page.url.searchParams.get('to_tz');
-		
+
 		if (time) {
 			timezoneConvertInput = time;
 		}
@@ -117,11 +117,11 @@
 		if (toTz) {
 			toTimezone = toTz;
 		}
-		
+
 		// Load epoch converter params
 		const epoch = $page.url.searchParams.get('epoch');
 		const human = $page.url.searchParams.get('human');
-		
+
 		if (epoch) {
 			epochInput = epoch;
 			convertFromEpoch();
@@ -130,7 +130,7 @@
 			humanInput = human;
 			convertToEpoch();
 		}
-		
+
 		// Convert timezone if params are set
 		if (time && (fromTz || toTz)) {
 			convertTimezone();
@@ -140,7 +140,7 @@
 	onMount(() => {
 		// Load from URL parameters first
 		loadFromUrl();
-		
+
 		// Load saved cities from localStorage
 		const savedCities = localStorage.getItem('selectedCities');
 		if (savedCities) {
@@ -178,7 +178,10 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (timezoneConvertInput || fromTimezone || toTimezone || epochInput || humanInput)) {
+	$: if (
+		typeof window !== 'undefined' &&
+		(timezoneConvertInput || fromTimezone || toTimezone || epochInput || humanInput)
+	) {
 		updateUrl();
 	}
 

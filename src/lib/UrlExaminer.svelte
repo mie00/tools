@@ -18,20 +18,20 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (inputUrl) {
 				params.set('input', inputUrl);
 			} else {
 				params.delete('input');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
 
 	function loadFromUrl() {
 		const input = $page.url.searchParams.get('input');
-		
+
 		if (input) {
 			inputUrl = input;
 		}

@@ -40,25 +40,25 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (mode !== 'format') {
 				params.set('operation', mode);
 			} else {
 				params.delete('operation');
 			}
-			
+
 			if (inputJson) {
 				params.set('input', inputJson);
 			} else {
 				params.delete('input');
 			}
-			
+
 			if (indentSize !== 2) {
 				params.set('indent', indentSize.toString());
 			} else {
 				params.delete('indent');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -67,15 +67,18 @@
 		const operation = $page.url.searchParams.get('operation');
 		const input = $page.url.searchParams.get('input');
 		const indent = $page.url.searchParams.get('indent');
-		
-		if (operation && (operation === 'format' || operation === 'minify' || operation === 'validate')) {
+
+		if (
+			operation &&
+			(operation === 'format' || operation === 'minify' || operation === 'validate')
+		) {
 			mode = operation;
 		}
-		
+
 		if (input) {
 			inputJson = input;
 		}
-		
+
 		if (indent) {
 			const indentValue = parseInt(indent);
 			if (!isNaN(indentValue) && indentValue >= 1 && indentValue <= 8) {

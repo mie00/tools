@@ -82,23 +82,23 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (selectedStock) {
 				params.set('stock', selectedStock.symbol);
 			} else {
 				params.delete('stock');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
 
 	function loadFromUrl() {
 		const stockSymbol = $page.url.searchParams.get('stock');
-		
+
 		if (stockSymbol) {
 			// Try to find the stock in pinned stocks first
-			const pinnedStock = pinnedStocks.find(stock => stock.symbol === stockSymbol);
+			const pinnedStock = pinnedStocks.find((stock) => stock.symbol === stockSymbol);
 			if (pinnedStock) {
 				selectedStock = pinnedStock;
 				loadChartData();
@@ -107,7 +107,7 @@
 				searchQuery = stockSymbol;
 				searchStocks().then(() => {
 					// After search, try to pin the stock if found (this will also select it)
-					const searchResult = searchResults.find(result => result['1. symbol'] === stockSymbol);
+					const searchResult = searchResults.find((result) => result['1. symbol'] === stockSymbol);
 					if (searchResult) {
 						// We need to pin the stock first to convert it to PinnedStock format
 						pinStock(searchResult);

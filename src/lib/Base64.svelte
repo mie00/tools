@@ -13,19 +13,19 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (mode !== 'encode') {
 				params.set('operation', mode);
 			} else {
 				params.delete('operation');
 			}
-			
+
 			if (inputText) {
 				params.set('input', inputText);
 			} else {
 				params.delete('input');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
@@ -33,11 +33,11 @@
 	function loadFromUrl() {
 		const operation = $page.url.searchParams.get('operation');
 		const input = $page.url.searchParams.get('input');
-		
+
 		if (operation && (operation === 'encode' || operation === 'decode')) {
 			mode = operation;
 		}
-		
+
 		if (input) {
 			inputText = input;
 		}

@@ -54,20 +54,20 @@
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (selectedTopic !== 'Main') {
 				params.set('topic', selectedTopic);
 			} else {
 				params.delete('topic');
 			}
-			
+
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 		}
 	}
 
 	function loadFromUrl() {
 		const topic = $page.url.searchParams.get('topic');
-		
+
 		if (topic && topics.includes(topic)) {
 			selectedTopic = topic;
 		}
