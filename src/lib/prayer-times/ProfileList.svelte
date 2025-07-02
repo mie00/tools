@@ -6,11 +6,13 @@
 
 	export let profiles: Profile[] = [];
 	export let profilePrayerTimes: Map<string, PrayerTimes> = new Map();
+	export let sharingInProgress: boolean = false;
 
 	const dispatch = createEventDispatcher<{
 		activate: Profile;
 		edit: Profile;
 		delete: string;
+		share: Profile;
 		'create-new': void;
 	}>();
 
@@ -30,6 +32,11 @@
 		if (confirm('Are you sure you want to delete this profile?')) {
 			dispatch('delete', profileId);
 		}
+	}
+
+	function handleShare(event: MouseEvent, profile: Profile) {
+		event.stopPropagation();
+		dispatch('share', profile);
 	}
 
 	function handleCreateNew() {
@@ -91,6 +98,14 @@
 						{/if}
 					</div>
 					<div class="flex items-center space-x-2">
+						<button
+							on:click={(e) => handleShare(e, profile)}
+							class="p-1 text-sm text-green-600 hover:text-green-700 {sharingInProgress ? 'opacity-50 cursor-wait' : ''}"
+							disabled={sharingInProgress}
+							title={sharingInProgress ? "Sharing..." : "Share Profile"}
+						>
+							{sharingInProgress ? '⏳' : '🔗'}
+						</button>
 						<button
 							on:click={(e) => handleEdit(e, profile)}
 							class="p-1 text-sm text-blue-600 hover:text-blue-700"

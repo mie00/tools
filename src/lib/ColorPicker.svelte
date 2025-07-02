@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
 	let selectedColor = '#3b82f6';
 	let hexInput = '#3b82f6';
 	let rgbR = 59;
@@ -27,6 +31,39 @@
 		'#374151',
 		'#000000'
 	];
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (hexInput !== '#3b82f6') {
+				params.set('hex', hexInput);
+			} else {
+				params.delete('hex');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const hex = $page.url.searchParams.get('hex');
+		
+		if (hex && /^#[0-9A-F]{6}$/i.test(hex)) {
+			hexInput = hex;
+			updateFromHex();
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && hexInput) {
+		updateUrl();
+	}
 
 	function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

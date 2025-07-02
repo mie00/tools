@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+
 	// Type definitions
 	interface HistoryItem {
 		expression: string;
@@ -14,6 +18,95 @@
 
 	let currentExpression: string = '';
 	let lastCalculation = '';
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			// Set expression parameter based on current state
+			if (currentExpression) {
+				params.set('expression', currentExpression);
+			} else if (display !== '0') {
+				params.set('expression', display.replace(/,/g, ''));
+			} else {
+				params.delete('expression');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const expression = $page.url.searchParams.get('expression');
+		if (expression) {
+			// Parse and restore calculator state from expression
+			try {
+				// If it's just a number, set it as display
+				const num = parseFloat(expression);
+				if (!isNaN(num) && expression === num.toString()) {
+					display = expression;
+					return;
+				}
+				
+				// If it's an incomplete expression like "9+" or "9+8"
+				const operators = ['+', '−', '×', '÷'];
+				let foundOp = false;
+				let opIndex = -1;
+				
+				for (const op of operators) {
+					const index = expression.lastIndexOf(op);
+					if (index > opIndex) {
+						opIndex = index;
+						foundOp = true;
+						operation = op;
+					}
+				}
+				
+				if (foundOp && opIndex > 0) {
+					const leftPart = expression.substring(0, opIndex).trim();
+					const rightPart = expression.substring(opIndex + 1).trim();
+					
+					const leftNum = parseFloat(leftPart);
+					if (!isNaN(leftNum)) {
+						previousValue = leftNum;
+						
+						if (rightPart) {
+							const rightNum = parseFloat(rightPart);
+							if (!isNaN(rightNum)) {
+								display = rightPart;
+								waitingForOperand = false;
+							} else {
+								display = '0';
+								waitingForOperand = true;
+							}
+						} else {
+							display = '0';
+							waitingForOperand = true;
+						}
+						updateExpression();
+					}
+				} else {
+					// If it's just a number or invalid, set as display
+					const num = parseFloat(expression);
+					if (!isNaN(num)) {
+						display = expression;
+					}
+				}
+			} catch (e) {
+				console.warn('Failed to parse expression from URL:', e);
+			}
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && (currentExpression || display)) {
+		updateUrl();
+	}
 
 	// Format display number with proper spacing and commas
 	function formatDisplay(value: string): string {

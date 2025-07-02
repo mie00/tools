@@ -1,9 +1,56 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
 	let inputText = '';
 	let outputText = '';
 	let mode: 'encode' | 'decode' = 'encode';
 	let errorMessage = '';
 	let fileInput: HTMLInputElement;
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (mode !== 'encode') {
+				params.set('operation', mode);
+			} else {
+				params.delete('operation');
+			}
+			
+			if (inputText) {
+				params.set('input', inputText);
+			} else {
+				params.delete('input');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const operation = $page.url.searchParams.get('operation');
+		const input = $page.url.searchParams.get('input');
+		
+		if (operation && (operation === 'encode' || operation === 'decode')) {
+			mode = operation;
+		}
+		
+		if (input) {
+			inputText = input;
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && (mode || inputText)) {
+		updateUrl();
+	}
 
 	function encodeBase64(text: string): string {
 		try {

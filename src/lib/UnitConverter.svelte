@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
 	// Type definitions
 	interface UnitInfo {
@@ -29,6 +31,67 @@
 	let result: string = '';
 	let history: HistoryItem[] = [];
 	let isLoaded: boolean = false;
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (selectedCategory !== 'length') {
+				params.set('category', selectedCategory);
+			} else {
+				params.delete('category');
+			}
+			
+			if (inputValue !== '1') {
+				params.set('value', inputValue);
+			} else {
+				params.delete('value');
+			}
+			
+			if (fromUnit !== 'meter') {
+				params.set('from', fromUnit);
+			} else {
+				params.delete('from');
+			}
+			
+			if (toUnit !== 'kilometer') {
+				params.set('to', toUnit);
+			} else {
+				params.delete('to');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const category = $page.url.searchParams.get('category');
+		const value = $page.url.searchParams.get('value');
+		const from = $page.url.searchParams.get('from');
+		const to = $page.url.searchParams.get('to');
+		
+		if (category && categories[category]) {
+			selectedCategory = category;
+		}
+		
+		if (value) {
+			inputValue = value;
+		}
+		
+		if (from && selectedCategory && categories[selectedCategory].units[from]) {
+			fromUnit = from;
+		}
+		
+		if (to && selectedCategory && categories[selectedCategory].units[to]) {
+			toUnit = to;
+		}
+		
+		// Convert if we have all parameters
+		if (value) {
+			convert();
+		}
+	}
 
 	// Unit definitions with conversion factors to base units
 	const categories: Record<string, CategoryInfo> = {
@@ -251,9 +314,15 @@
 
 	// Load history on component mount
 	onMount(() => {
+		loadFromUrl();
 		loadHistoryFromStorage();
 		isLoaded = true;
 	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && isLoaded && (inputValue || fromUnit || toUnit || selectedCategory)) {
+		updateUrl();
+	}
 </script>
 
 <div class="mx-auto max-w-4xl">

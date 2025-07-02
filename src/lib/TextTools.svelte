@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
 	let inputText = '';
 	let outputText = '';
 	let activeOperation = 'uppercase';
@@ -14,6 +18,49 @@
 		{ id: 'encode', name: 'URL Encode', description: 'URL encode the text' },
 		{ id: 'decode', name: 'URL Decode', description: 'URL decode the text' }
 	];
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (activeOperation !== 'uppercase') {
+				params.set('utility', activeOperation);
+			} else {
+				params.delete('utility');
+			}
+			
+			if (inputText) {
+				params.set('input', inputText);
+			} else {
+				params.delete('input');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const utility = $page.url.searchParams.get('utility');
+		const input = $page.url.searchParams.get('input');
+		
+		if (utility && operations.some(op => op.id === utility)) {
+			activeOperation = utility;
+		}
+		
+		if (input) {
+			inputText = input;
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && (activeOperation || inputText)) {
+		updateUrl();
+	}
 
 	function transformText(operation: string, text: string): string {
 		switch (operation) {

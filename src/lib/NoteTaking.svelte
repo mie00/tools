@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
 	// Type definitions
 	interface MediaData {
@@ -48,11 +50,40 @@
 	let storageInfo: StorageInfo = { used: 0, quota: 0, available: 0 };
 	let showStorageWarning: boolean = false;
 
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (selectedTopic !== 'Main') {
+				params.set('topic', selectedTopic);
+			} else {
+				params.delete('topic');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const topic = $page.url.searchParams.get('topic');
+		
+		if (topic && topics.includes(topic)) {
+			selectedTopic = topic;
+		}
+	}
+
 	onMount(async () => {
 		await initializeStorage();
 		loadNotes();
+		loadFromUrl(); // Load URL params after notes/topics are loaded
 		await updateStorageInfo();
 	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && selectedTopic) {
+		updateUrl();
+	}
 
 	onDestroy(() => {
 		cleanupRecording();

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import azkarJsonData from './azkar.json';
 
 	// Process the JSON data to organize by categories
@@ -55,6 +57,30 @@
 	let activeCategory: string = availableCategories[0] || 'أذكار الصباح';
 	let progress: Record<number, number> = {};
 	let focusedAzkarId: number | null = null;
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			const firstCategory = availableCategories[0] || 'أذكار الصباح';
+			if (activeCategory !== firstCategory) {
+				params.set('category', activeCategory);
+			} else {
+				params.delete('category');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const category = $page.url.searchParams.get('category');
+		
+		if (category && availableCategories.includes(category)) {
+			activeCategory = category;
+		}
+	}
 
 	// Load progress from localStorage
 	function loadProgress() {
@@ -146,7 +172,13 @@
 	// Load progress on component mount
 	onMount(() => {
 		loadProgress();
+		loadFromUrl();
 	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && activeCategory) {
+		updateUrl();
+	}
 </script>
 
 <div class="azkar-container">

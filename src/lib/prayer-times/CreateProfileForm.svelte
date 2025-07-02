@@ -147,6 +147,7 @@
 			madhab: newProfile.madhab,
 			highLatitudeRule: newProfile.highLatitudeRule,
 			adjustments: { ...newProfile.adjustments },
+			profileType: 'calculated',
 			isActive: !hasExistingProfiles // First profile is active by default
 		};
 

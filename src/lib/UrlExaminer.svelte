@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
 	let inputUrl = '';
 	let urlComponents: any = {};
 	let searchParams: Array<{
@@ -9,6 +13,38 @@
 	}> = [];
 	let error = '';
 	let copiedItem = '';
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (inputUrl) {
+				params.set('input', inputUrl);
+			} else {
+				params.delete('input');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const input = $page.url.searchParams.get('input');
+		
+		if (input) {
+			inputUrl = input;
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && inputUrl !== undefined) {
+		updateUrl();
+	}
 
 	function parseUrl(url: string) {
 		error = '';

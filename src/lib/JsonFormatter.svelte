@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
 	let inputJson = '';
 	let outputJson = '';
 	let errorMessage = '';
@@ -31,6 +35,63 @@
 		maxDepth: 0,
 		size: '0 B'
 	};
+
+	// URL parameter sync
+	function updateUrl() {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams($page.url.searchParams);
+			
+			if (mode !== 'format') {
+				params.set('operation', mode);
+			} else {
+				params.delete('operation');
+			}
+			
+			if (inputJson) {
+				params.set('input', inputJson);
+			} else {
+				params.delete('input');
+			}
+			
+			if (indentSize !== 2) {
+				params.set('indent', indentSize.toString());
+			} else {
+				params.delete('indent');
+			}
+			
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+		}
+	}
+
+	function loadFromUrl() {
+		const operation = $page.url.searchParams.get('operation');
+		const input = $page.url.searchParams.get('input');
+		const indent = $page.url.searchParams.get('indent');
+		
+		if (operation && (operation === 'format' || operation === 'minify' || operation === 'validate')) {
+			mode = operation;
+		}
+		
+		if (input) {
+			inputJson = input;
+		}
+		
+		if (indent) {
+			const indentValue = parseInt(indent);
+			if (!isNaN(indentValue) && indentValue >= 1 && indentValue <= 8) {
+				indentSize = indentValue;
+			}
+		}
+	}
+
+	onMount(() => {
+		loadFromUrl();
+	});
+
+	// Watch for state changes and update URL
+	$: if (typeof window !== 'undefined' && (mode || inputJson || indentSize)) {
+		updateUrl();
+	}
 
 	function formatBytes(bytes: number): string {
 		if (bytes === 0) return '0 B';
