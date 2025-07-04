@@ -116,6 +116,12 @@
 			name: 'Prayer Times',
 			icon: '🕌',
 			description: 'Islamic prayer times with location-based calculation methods'
+		},
+		{
+			id: 'ollamachat',
+			name: 'Ollama Chat',
+			icon: '💬',
+			description: 'Chat with local Ollama models with history and configurations'
 		}
 	];
 
