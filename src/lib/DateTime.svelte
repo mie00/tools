@@ -98,7 +98,7 @@
 				params.delete('human');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -177,13 +177,7 @@
 		}, 1000);
 	});
 
-	// Watch for state changes and update URL
-	$: if (
-		typeof window !== 'undefined' &&
-		(timezoneConvertInput || fromTimezone || toTimezone || epochInput || humanInput)
-	) {
-		updateUrl();
-	}
+	// Watch for state changes and update URL -- REMOVED
 
 	onDestroy(() => {
 		if (timeInterval) {
@@ -382,6 +376,7 @@
 			timezoneConvertError = error instanceof Error ? error.message : 'Conversion failed';
 			timezoneConvertResult = '';
 		}
+		updateUrl();
 	}
 
 	function getTimezoneOffset(timezone: string): number {
@@ -425,24 +420,27 @@
 			errorMessage = error instanceof Error ? error.message : 'Conversion failed';
 			humanResult = '';
 		}
+		updateUrl();
 	}
 
 	function convertToEpoch() {
-		errorMessage = '';
+		if (!humanInput) {
+			epochResult = '';
+			errorMessage = '';
+			return;
+		}
 		try {
 			const date = new Date(humanInput);
 			if (isNaN(date.getTime())) {
 				throw new Error('Invalid date format');
 			}
-
-			const epochSeconds = Math.floor(date.getTime() / 1000);
-			const epochMilliseconds = date.getTime();
-
-			epochResult = `Seconds: ${epochSeconds}\nMilliseconds: ${epochMilliseconds}`;
+			epochResult = String(Math.floor(date.getTime() / 1000));
+			errorMessage = '';
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Conversion failed';
 			epochResult = '';
+			errorMessage = error instanceof Error ? error.message : 'An error occurred';
 		}
+		updateUrl();
 	}
 
 	function getCurrentEpoch() {

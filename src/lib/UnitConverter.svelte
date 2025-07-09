@@ -61,7 +61,7 @@
 				params.delete('to');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 

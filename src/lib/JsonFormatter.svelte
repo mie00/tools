@@ -59,7 +59,7 @@
 				params.delete('indent');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -90,11 +90,6 @@
 	onMount(() => {
 		loadFromUrl();
 	});
-
-	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (mode || inputJson || indentSize)) {
-		updateUrl();
-	}
 
 	function formatBytes(bytes: number): string {
 		if (bytes === 0) return '0 B';
@@ -200,6 +195,7 @@
 			errorMessage = error instanceof Error ? error.message : 'Invalid JSON';
 			outputJson = '';
 		}
+		updateUrl();
 	}
 
 	function copyToClipboard() {

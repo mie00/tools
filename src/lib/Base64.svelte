@@ -26,7 +26,7 @@
 				params.delete('input');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -46,11 +46,6 @@
 	onMount(() => {
 		loadFromUrl();
 	});
-
-	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (mode || inputText)) {
-		updateUrl();
-	}
 
 	function encodeBase64(text: string): string {
 		try {
@@ -80,6 +75,7 @@
 			errorMessage = error instanceof Error ? error.message : 'An error occurred';
 			outputText = '';
 		}
+		updateUrl();
 	}
 
 	function switchMode() {

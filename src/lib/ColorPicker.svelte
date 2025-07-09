@@ -43,7 +43,7 @@
 				params.delete('hex');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -60,10 +60,7 @@
 		loadFromUrl();
 	});
 
-	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && hexInput) {
-		updateUrl();
-	}
+	// Watch for state changes and update URL -- REMOVED
 
 	function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -152,6 +149,7 @@
 			hslS = hsl.s;
 			hslL = hsl.l;
 		}
+		updateUrl();
 	}
 
 	function updateFromRgb() {
@@ -161,6 +159,7 @@
 		hslH = hsl.h;
 		hslS = hsl.s;
 		hslL = hsl.l;
+		updateUrl();
 	}
 
 	function updateFromHsl() {
@@ -170,6 +169,7 @@
 		rgbB = rgb.b;
 		selectedColor = rgbToHex(rgb.r, rgb.g, rgb.b);
 		hexInput = selectedColor;
+		updateUrl();
 	}
 
 	function selectPaletteColor(color: string) {
