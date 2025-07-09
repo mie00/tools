@@ -285,6 +285,7 @@
 		<div class="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
 			{#each tools as tool, index (tool.id)}
 				<div
+					role="listitem"
 					draggable="true"
 					on:dragstart={(e) => handleDragStart(e, index)}
 					on:dragover={(e) => handleDragOver(e, index)}
@@ -334,6 +335,7 @@
 					<!-- Clickable overlay for navigation -->
 					<a
 						href="/{tool.id}"
+						aria-label={tool.name}
 						class="absolute inset-0 z-10"
 						on:click={(e) => {
 							// Prevent navigation if we're dragging

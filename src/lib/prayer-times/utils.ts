@@ -250,36 +250,34 @@ export function calculateTimesFromMawaqitConfig(
 	adjustments: Profile['adjustments']
 ): PrayerTimes {
 	const now = new Date();
-	const currentMonth = now.getMonth(); // 0-indexed (0 = January)
-	const currentDay = now.getDate();
+	const today = now.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }); // YYYY-MM-DD
+	const dayOfMonth = String(now.getDate());
 
-	// Get today's prayer times from the calendar
-	const monthData = config.calendar[currentMonth];
-	const todayData = monthData?.[currentDay.toString()];
+	// Find today's prayer times from the calendar
+	const calendarDay = config.calendar.find((day) => day[dayOfMonth]);
 
-	if (!todayData || todayData.length < 6) {
+	if (!calendarDay) {
 		// Fallback to default times if calendar data is not available
 		return {
 			fajr: config.times[0] || '05:00',
 			sunrise: config.shuruq || '06:30',
 			dhuhr: config.times[1] || '12:00',
-			asr: config.times[2] || '15:30',
+			asr: config.times[2] || '15:00',
 			maghrib: config.times[3] || '18:00',
 			isha: config.times[4] || '19:30',
-			date: now.toDateString()
+			date: today,
+			time: formatTimeForDisplay(now, config.timezone)
 		};
 	}
 
-	// Parse times from calendar: [fajr, shuruq, dhuhr, asr, maghrib, isha]
-	let [fajr, sunrise, dhuhr, asr, maghrib, isha] = todayData;
-
-	// Apply adjustments
-	fajr = applyTimeAdjustment(fajr, adjustments.fajr);
-	sunrise = applyTimeAdjustment(sunrise, adjustments.sunrise);
-	dhuhr = applyTimeAdjustment(dhuhr, adjustments.dhuhr);
-	asr = applyTimeAdjustment(asr, adjustments.asr);
-	maghrib = applyTimeAdjustment(maghrib, adjustments.maghrib);
-	isha = applyTimeAdjustment(isha, adjustments.isha);
+	const times = calendarDay[dayOfMonth];
+	const fajr = applyTimeAdjustment(times[0], adjustments.fajr);
+	// Mawaqit sunrise is often in times[1], but can also be in a separate 'shuruq' field
+	const sunrise = applyTimeAdjustment(times[1] || config.shuruq || '06:30', adjustments.sunrise);
+	const dhuhr = applyTimeAdjustment(times[2], adjustments.dhuhr);
+	const asr = applyTimeAdjustment(times[3], adjustments.asr);
+	const maghrib = applyTimeAdjustment(times[4], adjustments.maghrib);
+	const isha = applyTimeAdjustment(times[5], adjustments.isha);
 
 	return {
 		fajr,
@@ -288,7 +286,8 @@ export function calculateTimesFromMawaqitConfig(
 		asr,
 		maghrib,
 		isha,
-		date: now.toDateString()
+		date: today,
+		time: formatTimeForDisplay(now, config.timezone)
 	};
 }
 
@@ -377,42 +376,18 @@ export function calculateTimesForProfile(profile: Profile): PrayerTimes {
 	// Calculate prayer times
 	const prayerTimes = new AdhanPrayerTimes(coordinates, now, params);
 
-		// Apply manual minute adjustments.
-	const adjustedTimes = {
-		fajr: addMinutes(prayerTimes.fajr, profile.adjustments.fajr),
-		sunrise: addMinutes(prayerTimes.sunrise, profile.adjustments.sunrise),
-		dhuhr: addMinutes(prayerTimes.dhuhr, profile.adjustments.dhuhr),
-		asr: addMinutes(prayerTimes.asr, profile.adjustments.asr),
-		maghrib: addMinutes(prayerTimes.maghrib, profile.adjustments.maghrib),
-		isha: addMinutes(prayerTimes.isha, profile.adjustments.isha)
+	const formattedTimes = {
+		fajr: formatTimeForDisplay(addMinutes(prayerTimes.fajr, profile.adjustments.fajr), profile.timezone),
+		sunrise: formatTimeForDisplay(addMinutes(prayerTimes.sunrise, profile.adjustments.sunrise), profile.timezone),
+		dhuhr: formatTimeForDisplay(addMinutes(prayerTimes.dhuhr, profile.adjustments.dhuhr), profile.timezone),
+		asr: formatTimeForDisplay(addMinutes(prayerTimes.asr, profile.adjustments.asr), profile.timezone),
+		maghrib: formatTimeForDisplay(addMinutes(prayerTimes.maghrib, profile.adjustments.maghrib), profile.timezone),
+		isha: formatTimeForDisplay(addMinutes(prayerTimes.isha, profile.adjustments.isha), profile.timezone),
+		date: now.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+		time: formatTimeForDisplay(now, profile.timezone)
 	};
 
-	// Format the date for display in the city's locale.
-	const dateDisplay = nowInZone.toLocaleDateString('en-US', {
-		weekday: 'long',
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-		timeZone
-	});
-	// Format the date for display in the city's locale.
-	const timeDisplay = nowInZone.toLocaleTimeString('en-US', {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: true,
-	});
-
-	// The key fix: Format the final Date objects into HH:mm strings using the city's timezone.
-	return {
-		fajr: formatTimeForDisplay(adjustedTimes.fajr, timeZone),
-		sunrise: formatTimeForDisplay(adjustedTimes.sunrise, timeZone),
-		dhuhr: formatTimeForDisplay(adjustedTimes.dhuhr, timeZone),
-		asr: formatTimeForDisplay(adjustedTimes.asr, timeZone),
-		maghrib: formatTimeForDisplay(adjustedTimes.maghrib, timeZone),
-		isha: formatTimeForDisplay(adjustedTimes.isha, timeZone),
-		date: dateDisplay,
-		time: timeDisplay
-	};
+	return formattedTimes;
 }
 
 export function addMinutes(date: Date, minutes: number): Date {

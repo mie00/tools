@@ -283,8 +283,9 @@
 
 		<div class="grid gap-6 md:grid-cols-2">
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">Profile Name</label>
+				<label for="profile-name" class="mb-2 block text-sm font-medium text-gray-700">Profile Name</label>
 				<input
+					id="profile-name"
 					type="text"
 					bind:value={newProfile.name}
 					placeholder="e.g., Home, Work, Cairo"
@@ -293,8 +294,9 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">Calculation Method</label>
+				<label for="calculation-method" class="mb-2 block text-sm font-medium text-gray-700">Calculation Method</label>
 				<select
+					id="calculation-method"
 					bind:value={newProfile.calculationMethod}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
@@ -320,8 +322,9 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">Latitude</label>
+				<label for="latitude" class="mb-2 block text-sm font-medium text-gray-700">Latitude</label>
 				<input
+					id="latitude"
 					type="number"
 					step="0.000001"
 					bind:value={newProfile.latitude}
@@ -331,8 +334,9 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">Longitude</label>
+				<label for="longitude" class="mb-2 block text-sm font-medium text-gray-700">Longitude</label>
 				<input
+					id="longitude"
 					type="number"
 					step="0.000001"
 					bind:value={newProfile.longitude}
@@ -342,8 +346,9 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">Madhab</label>
+				<label for="madhab" class="mb-2 block text-sm font-medium text-gray-700">Madhab</label>
 				<select
+					id="madhab"
 					bind:value={newProfile.madhab}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
@@ -353,8 +358,9 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium text-gray-700">High Latitude Rule</label>
+				<label for="high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700">High Latitude Rule</label>
 				<select
+					id="high-latitude-rule"
 					bind:value={newProfile.highLatitudeRule}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
