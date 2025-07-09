@@ -9,6 +9,8 @@
 	let isValid = false;
 	let mode: 'format' | 'minify' | 'validate' = 'format';
 	let indentSize = 2;
+	let errorPosition: number | null = null;
+	let highlightedErrorJson = '';
 
 	interface JsonStats {
 		keys: number;
@@ -89,6 +91,9 @@
 
 	onMount(() => {
 		loadFromUrl();
+		if (inputJson) {
+			processJson();
+		}
 	});
 
 	function formatBytes(bytes: number): string {
@@ -150,6 +155,8 @@
 		errorMessage = '';
 		isValid = false;
 		outputJson = '';
+		errorPosition = null;
+		highlightedErrorJson = '';
 
 		if (!inputJson.trim()) {
 			stats = {
@@ -170,6 +177,8 @@
 		try {
 			const parsed = JSON.parse(inputJson);
 			isValid = true;
+			errorPosition = null;
+			highlightedErrorJson = '';
 
 			// Generate stats
 			const analyzed = analyzeJson(parsed);
@@ -194,6 +203,30 @@
 			isValid = false;
 			errorMessage = error instanceof Error ? error.message : 'Invalid JSON';
 			outputJson = '';
+
+			if (error instanceof SyntaxError) {
+				const match = /at position (\d+)/.exec(error.message);
+				if (match) {
+					errorPosition = parseInt(match[1], 10);
+				}
+			}
+
+			const escapeHtml = (unsafe: string) =>
+				unsafe
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&#039;');
+
+			if (errorPosition !== null && errorPosition < inputJson.length) {
+				const before = escapeHtml(inputJson.substring(0, errorPosition));
+				const char = escapeHtml(inputJson[errorPosition]);
+				const after = escapeHtml(inputJson.substring(errorPosition + 1));
+				highlightedErrorJson = `${before}<span class="bg-red-500 text-white px-1">${char}</span>${after}`;
+			} else {
+				highlightedErrorJson = escapeHtml(inputJson);
+			}
 		}
 		updateUrl();
 	}
@@ -431,13 +464,21 @@
 			<label for="json-output" class="mb-2 block text-sm font-medium text-gray-700">
 				Result ({mode === 'format' ? 'Formatted' : mode === 'minify' ? 'Minified' : 'Validation'} JSON)
 			</label>
-			<textarea
-				id="json-output"
-				value={outputJson}
-				readonly
-				class="h-40 w-full resize-none rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm"
-				placeholder="Processed JSON will appear here..."
-			></textarea>
+			{#if !isValid && inputJson.trim()}
+				<div
+					class="h-40 w-full resize-none overflow-auto rounded-lg border border-red-300 bg-red-50 px-3 py-2 font-mono text-sm"
+				>
+					<pre class="whitespace-pre-wrap">{@html highlightedErrorJson}</pre>
+				</div>
+			{:else}
+				<textarea
+					id="json-output"
+					value={outputJson}
+					readonly
+					class="h-40 w-full resize-none rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm"
+					placeholder="Processed JSON will appear here..."
+				></textarea>
+			{/if}
 		</div>
 	</div>
 </div>
