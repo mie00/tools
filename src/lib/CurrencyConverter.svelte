@@ -10,6 +10,16 @@
 		flag: string;
 	}
 
+	interface CacheEntry {
+		rates: Record<string, number>;
+		fetchTime: number;
+		updateTime: number;
+	}
+
+	// Cache for exchange rates to reduce API calls and improve performance
+	const rateCache = new Map<string, CacheEntry>();
+	const CACHE_DURATION_MS = 60 * 60 * 1000; // Cache rates for 1 hour
+
 	let fromCurrency: string = 'USD';
 	let toCurrency: string = 'EUR';
 	let amount: string = '1';
@@ -42,12 +52,12 @@
 		{ code: 'ZAR', name: 'South African Rand', flag: '🇿🇦' }
 	];
 
-	// URL parameter sync
+	// Syncs state to the URL without stealing input focus
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
 
-			if (amount !== '1') {
+			if (amount && parseFloat(amount) !== 1) {
 				params.set('amount', amount);
 			} else {
 				params.delete('amount');
@@ -65,7 +75,7 @@
 				params.delete('to');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -92,14 +102,9 @@
 		loadRecentConversions();
 		// Auto-convert on mount if we have valid currencies
 		if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-			convertCurrency();
+			convertAndSync();
 		}
 	});
-
-	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (amount || fromCurrency || toCurrency)) {
-		updateUrl();
-	}
 
 	function loadRecentConversions() {
 		try {
@@ -125,10 +130,12 @@
 		}
 	}
 
+	// Rewritten with caching for performance
 	async function convertCurrency() {
 		const numAmount = parseFloat(amount);
 		if (!amount || numAmount <= 0 || fromCurrency === toCurrency) {
 			result = '';
+			exchangeRate = null;
 			return;
 		}
 
@@ -136,27 +143,43 @@
 		error = '';
 
 		try {
-			// Using exchangerate-api.com (free tier allows 1500 requests/month)
-			const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
+			const now = Date.now();
+			const cacheKey = typeof fromCurrency === 'string' ? fromCurrency : JSON.stringify(fromCurrency);
+			const cachedEntry = rateCache.get(cacheKey);
+			let ratesData: Record<string, number>;
 
-			if (!response.ok) {
-				throw new Error(`API Error: ${response.status}`);
+			if (cachedEntry && now - cachedEntry.fetchTime < CACHE_DURATION_MS) {
+				// Use cached data
+				ratesData = cachedEntry.rates;
+				lastUpdated = new Date(cachedEntry.updateTime).toLocaleString();
+			} else {
+				// Fetch new data
+				const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
+				if (!response.ok) {
+					throw new Error(`API Error: ${response.status}`);
+				}
+				const data = await response.json();
+				if (!data.rates) {
+					throw new Error('Invalid API response');
+				}
+				ratesData = data.rates;
+				// The API returns time_last_updated as a UNIX timestamp in seconds
+				const apiUpdateTime = new Date((data.time_last_updated || now / 1000) * 1000);
+				lastUpdated = apiUpdateTime.toLocaleString();
+				rateCache.set(cacheKey, {
+					rates: ratesData,
+					fetchTime: now,
+					updateTime: apiUpdateTime.getTime()
+				});
 			}
 
-			const data = await response.json();
-
-			if (!data.rates || !data.rates[toCurrency]) {
+			const rate = ratesData[toCurrency];
+			if (rate === undefined) {
 				throw new Error(`Exchange rate not found for ${toCurrency}`);
 			}
 
-			exchangeRate = data.rates[toCurrency];
-			if (exchangeRate) {
-				const convertedAmount = (numAmount * exchangeRate).toFixed(2);
-				result = convertedAmount;
-			}
-			lastUpdated = new Date(data.time_last_updated || Date.now()).toLocaleString();
-
-			// Save this conversion pair to recent
+			exchangeRate = rate;
+			result = (numAmount * exchangeRate).toFixed(2);
 			saveRecentConversion(fromCurrency, toCurrency);
 		} catch (err: unknown) {
 			error = (err as Error).message || 'Failed to fetch exchange rates';
@@ -169,14 +192,14 @@
 
 	function swapCurrencies() {
 		[fromCurrency, toCurrency] = [toCurrency, fromCurrency];
-		convertCurrency();
+		convertAndSync();
 	}
 
 	function useRecentConversion(conversionPair: string) {
 		const [from, to] = conversionPair.split('-');
 		fromCurrency = from;
 		toCurrency = to;
-		convertCurrency();
+		convertAndSync();
 	}
 
 	function getCurrencyDisplay(code: string): string {
@@ -184,9 +207,14 @@
 		return currency ? `${currency.flag} ${currency.code}` : code;
 	}
 
-	// Auto-convert when amount or currencies change
-	$: if (amount && fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-		convertCurrency();
+	// This function now handles both conversion and URL updates
+	async function convertAndSync() {
+		await convertCurrency();
+		updateUrl();
+	}
+
+	function handleInput() {
+		convertAndSync();
 	}
 </script>
 
@@ -233,6 +261,7 @@
 				id="amount-input"
 				type="number"
 				bind:value={amount}
+				on:input={handleInput}
 				min="0"
 				step="0.01"
 				class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
@@ -248,6 +277,7 @@
 				<select
 					id="from-currency"
 					bind:value={fromCurrency}
+					on:change={handleInput}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}
@@ -281,6 +311,7 @@
 				<select
 					id="to-currency"
 					bind:value={toCurrency}
+					on:change={handleInput}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}
@@ -332,7 +363,7 @@
 						</p>
 						<p>1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}</p>
 						{#if lastUpdated}
-							<p class="text-xs">Last updated: {lastUpdated}</p>
+							<p class="text-xs">Rates as of: {lastUpdated}</p>
 						{/if}
 					</div>
 				</div>
