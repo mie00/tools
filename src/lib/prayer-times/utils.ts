@@ -1,40 +1,46 @@
-import { Coordinates, PrayerTimes as AdhanPrayerTimes, Madhab, HighLatitudeRule } from 'adhan';
+import {
+	Coordinates,
+	PrayerTimes as AdhanPrayerTimes,
+	Madhab,
+	HighLatitudeRule,
+	CalculationMethod
+} from 'adhan';
 import type { Profile, PrayerTimes, NextPrayer, City, SearchResult, MawaqitConfig } from './types';
 import { calculationMethods, countryMethodMapping } from './constants';
 
-export function normalizeToAscii(str: string): string {
-	return (
-		str
-			.toLowerCase()
-			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '') // Remove accents
-			// Convert common non-ASCII characters to ASCII equivalents
-			.replace(/[àáâãäåā]/g, 'a')
-			.replace(/[èéêëē]/g, 'e')
-			.replace(/[ìíîïī]/g, 'i')
-			.replace(/[òóôõöøō]/g, 'o')
-			.replace(/[ùúûüū]/g, 'u')
-			.replace(/[ñ]/g, 'n')
-			.replace(/[ç]/g, 'c')
-			.replace(/[ß]/g, 'ss')
-			.replace(/[æ]/g, 'ae')
-			.replace(/[œ]/g, 'oe')
-			.replace(/[ÿ]/g, 'y')
-			.replace(/[ł]/g, 'l')
-			.replace(/[đ]/g, 'd')
-			.replace(/[ř]/g, 'r')
-			.replace(/[š]/g, 's')
-			.replace(/[ž]/g, 'z')
-			.replace(/[č]/g, 'c')
-			.replace(/[ť]/g, 't')
-			.replace(/[ň]/g, 'n')
-			.replace(/[ý]/g, 'y')
-			.replace(/[ů]/g, 'u')
-			.replace(/[ě]/g, 'e')
-			.replace(/[^a-z0-9\s]/g, '') // Remove remaining special characters
-			.replace(/\s+/g, ' ')
-			.trim()
-	);
+/**
+ * Gets the UTC offset string (e.g., "+02:00" or "-04:00") for a given IANA timezone and date.
+ * This is crucial for creating correct Date objects from time strings in different timezones.
+ * @param timeZone The IANA timezone name (e.g., 'America/New_York').
+ * @param date The date for which to get the offset (important for DST).
+ * @returns The UTC offset string or null if the timezone is invalid.
+ */
+function getUtcOffset(timeZone: string, date: Date): string | null {
+	try {
+		// Use Intl.DateTimeFormat to find the offset. 'longOffset' gives "GMT-4", "GMT+5:30", etc.
+		const formatter = new Intl.DateTimeFormat('en-US', {
+			timeZone,
+			timeZoneName: 'longOffset'
+		});
+		const parts = formatter.formatToParts(date);
+		const gmtPart = parts.find((part) => part.type === 'timeZoneName');
+
+		if (!gmtPart) return null;
+
+		// Convert "GMT-4" or "GMT+5:30" to a standard offset format "-04:00" or "+05:30"
+		const offsetString = gmtPart.value.replace('GMT', '');
+		const [hoursStr, minutesStr] = offsetString.split(':');
+		const hours = parseInt(hoursStr, 10);
+		const minutes = parseInt(minutesStr || '0', 10);
+		const sign = hours < 0 || Object.is(hours, -0) ? '-' : '+';
+		const absHours = Math.abs(hours);
+
+		return `${sign}${String(absHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+	} catch (error) {
+		// This will catch invalid timezone identifiers
+		console.error(`Failed to get UTC offset for timezone ${timeZone}:`, error);
+		return null;
+	}
 }
 
 export function calculateSearchScore(
@@ -42,83 +48,55 @@ export function calculateSearchScore(
 	cityName: string,
 	countryCode: string
 ): number {
-	const normalizedSearch = normalizeToAscii(searchTerm);
-	const normalizedCity = normalizeToAscii(cityName);
-	const normalizedCountry = normalizeToAscii(countryCode);
-	const combinedText = `${normalizedCity} ${normalizedCountry}`;
+	// No normalization, just substring matching
+	if (!searchTerm || !cityName) return 0;
 
 	let score = 0;
 
-	// Perfect match (highest score)
-	if (normalizedCity === normalizedSearch || normalizedCountry === normalizedSearch) {
-		score += 1000;
+	const city = cityName;
+	const search = searchTerm;
+
+	const idx = city.toLowerCase().indexOf(search.toLowerCase());
+
+	if (idx === -1) {
+		// No substring match at all
+		return 0;
 	}
 
-	// Exact substring match in city name
-	else if (normalizedCity.includes(normalizedSearch)) {
-		// Prefix match gets higher score
-		if (normalizedCity.startsWith(normalizedSearch)) {
-			score += 800;
-		} else {
-			score += 600;
-		}
+	// Substring match found
+	// Score is based on how many characters are missing (penalty)
+	// Missing chars at the end give less penalty than at the start
+	const missingAtStart = idx;
+	const missingAtEnd = city.length - (idx + search.length);
+
+	// Penalty: chars missing at start count as 2, at end as 1
+	const penalty = missingAtStart * 2 + missingAtEnd * 1;
+
+	// Base score for substring match
+	score = 1000 - penalty;
+
+	// If perfect match, give max score
+	if (city === search) {
+		score = 2000;
 	}
 
-	// Exact substring match in country
-	else if (normalizedCountry.includes(normalizedSearch)) {
-		if (normalizedCountry.startsWith(normalizedSearch)) {
-			score += 400;
-		} else {
-			score += 300;
-		}
+	// If search is a prefix, give a bonus
+	else if (idx === 0) {
+		score += 100;
 	}
 
-	// Substring match in combined text
-	else if (combinedText.includes(normalizedSearch)) {
-		score += 200;
+	// If search is a suffix, give a small bonus
+	else if (idx + search.length === city.length) {
+		score += 50;
 	}
 
-	// Word boundary matches (space-separated words)
-	else {
-		const searchWords = normalizedSearch.split(' ').filter((w) => w.length > 0);
-		const cityWords = normalizedCity.split(' ').filter((w) => w.length > 0);
-		const countryWords = normalizedCountry.split(' ').filter((w) => w.length > 0);
-
-		let wordMatches = 0;
-		let partialMatches = 0;
-
-		for (const searchWord of searchWords) {
-			// Check for word matches in city
-			for (const cityWord of cityWords) {
-				if (cityWord === searchWord) {
-					wordMatches += 20;
-				} else if (cityWord.startsWith(searchWord) || searchWord.startsWith(cityWord)) {
-					partialMatches += 10;
-				}
-			}
-
-			// Check for word matches in country
-			for (const countryWord of countryWords) {
-				if (countryWord === searchWord) {
-					wordMatches += 15;
-				} else if (countryWord.startsWith(searchWord) || searchWord.startsWith(countryWord)) {
-					partialMatches += 8;
-				}
-			}
-		}
-
-		score += wordMatches + partialMatches;
-	}
-
-	// Bonus for shorter city names (more specific)
-	if (score > 0) {
-		score += Math.max(0, 20 - normalizedCity.length);
-	}
+	// Never negative
+	if (score < 0) score = 0;
 
 	return score;
 }
 
-export function searchCities(query: string, cities: City[]): City[] {
+export function searchCities(query: string, cities: City[]): SearchResult[] {
 	if (!query.trim()) {
 		return [];
 	}
@@ -150,20 +128,69 @@ export function searchCities(query: string, cities: City[]): City[] {
 	let filteredCities = cities;
 	if (countryCodeFilter) {
 		filteredCities = cities.filter(
-			(city) => normalizeToAscii(city.country).toUpperCase() === countryCodeFilter
+			(city) => city.country.toUpperCase() === countryCodeFilter.toUpperCase()
 		);
 	}
 
 	const results: SearchResult[] = filteredCities
-		.map((city) => ({
-			city,
-			score: calculateSearchScore(searchTerm, city.name, city.country)
-		}))
+		.map((city) => {
+			let bestScore = 0;
+			let matchedName = city.name;
+
+			// Score for primary name
+			const primaryScore = calculateSearchScore(searchTerm, city.name, city.country);
+			if (primaryScore > bestScore) {
+				bestScore = primaryScore;
+			}
+
+			// Score for alternate names
+			if (city.altnames) {
+				const allAltNames = Object.values(city.altnames).flat();
+				for (const altname of allAltNames) {
+					const altScore = calculateSearchScore(searchTerm, altname, city.country);
+					if (altScore > bestScore) {
+						bestScore = altScore;
+						matchedName = altname;
+					}
+				}
+			}
+
+			return {
+				city,
+				score: bestScore,
+				matchedName
+			};
+		})
 		.filter((result) => result.score > 0)
 		.sort((a, b) => b.score - a.score) // Sort by score descending
 		.slice(0, 10); // Limit to 10 results
 
-	return results.map((result) => result.city);
+	return results;
+}
+
+function parseCsvLine(line: string): string[] {
+	const result: string[] = [];
+	let field = '';
+	let inQuotes = false;
+	for (let i = 0; i < line.length; i++) {
+		const char = line[i];
+		if (char === '"') {
+			if (inQuotes && line[i + 1] === '"') {
+				// Escaped quote
+				field += '"';
+				i++;
+			} else {
+				inQuotes = !inQuotes;
+			}
+		} else if (char === ',' && !inQuotes) {
+			result.push(field);
+			field = '';
+		} else {
+			field += char;
+		}
+	}
+	result.push(field); // Add the last field
+	return result;
 }
 
 export function parseCsv(csvText: string): City[] {
@@ -172,14 +199,46 @@ export function parseCsv(csvText: string): City[] {
 
 	// Skip header line
 	for (let i = 1; i < lines.length; i++) {
-		const [country, name, lat, lng] = lines[i].split(',');
+		if (!lines[i]) continue;
+		const fields = parseCsvLine(lines[i]);
+		const [country, name, altnames, lat, lng, timezone, altitude,languages] = fields;
+
 		if (country && name && lat && lng) {
-			cities.push({
+			const city: City = {
 				country: country.trim(),
 				name: name.trim(),
 				lat: parseFloat(lat.trim()),
-				lng: parseFloat(lng.trim())
-			});
+				lng: parseFloat(lng.trim()),
+				altitude: parseFloat(altitude.trim()),
+				languages: languages.split(',').map((lang) => lang.trim())
+			};
+
+			if (timezone) {
+				city.timezone = timezone.trim();
+			}
+
+			if (altnames) {
+				try {
+					// Handle both JSON array and simple comma-separated strings for altnames
+					if (altnames.startsWith('{') && altnames.endsWith('}')) {
+						// Handle single-quoted JSON with possible inner single quotes
+						let fixedAltnames = altnames;
+						if (altnames.startsWith("{'")) {
+							// Replace outer single quotes with double quotes, but preserve inner single quotes
+							fixedAltnames = altnames.replace(/([\{\[,]\s*)'/g, '$1"').replace(/'(\s*[\}\],:])/g, '"$1');
+							// Replace all occurrences of \x followed by two hex digits with a JSON-compatible unicode escape
+							fixedAltnames = fixedAltnames.replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => '\\u00' + hex.toLowerCase());
+						}
+						const parsedAltnames = JSON.parse(fixedAltnames);
+						city.altnames = parsedAltnames;
+					}
+				} catch (e) {
+					// eslint-disable-next-line no-console
+					console.warn(`Could not parse altnames for city ${name}: ${altnames}`);
+				}
+			}
+
+			cities.push(city);
 		}
 	}
 
@@ -241,7 +300,7 @@ function applyTimeAdjustment(timeString: string, adjustmentMinutes: number): str
 	date.setHours(hours, minutes, 0, 0);
 
 	const adjustedDate = addMinutes(date, adjustmentMinutes);
-	return formatTimeForDisplay(adjustedDate);
+	return formatTimeForDisplay(adjustedDate, date.toLocaleTimeString('en-GB', { hourCycle: 'h23' }));
 }
 
 export function parseMawaqitConfig(jsonData: any): MawaqitConfig | null {
@@ -273,7 +332,6 @@ export function parseMawaqitConfig(jsonData: any): MawaqitConfig | null {
 }
 
 export function calculateTimesForProfile(profile: Profile): PrayerTimes {
-	// Handle mawaqit-based profiles
 	if (profile.profileType === 'mawaqit' && profile.mawaqitConfig) {
 		return calculateTimesFromMawaqitConfig(profile.mawaqitConfig, profile.adjustments);
 	}
@@ -281,6 +339,15 @@ export function calculateTimesForProfile(profile: Profile): PrayerTimes {
 	// Handle calculated profiles (existing logic)
 	const now = new Date();
 	const method = calculationMethods[profile.calculationMethod];
+
+	if (!profile.timezone) {
+		throw new Error('Profile timezone is missing, cannot calculate times accurately.');
+	}
+
+	const timeZone = profile.timezone;
+
+	// Get the current date in the target timezone to prevent off-by-one-day errors.
+	const nowInZone = new Date(new Date().toLocaleString('en-US', { timeZone }));
 
 	// Set up coordinates
 	const coordinates = new Coordinates(profile.latitude, profile.longitude);
@@ -310,7 +377,7 @@ export function calculateTimesForProfile(profile: Profile): PrayerTimes {
 	// Calculate prayer times
 	const prayerTimes = new AdhanPrayerTimes(coordinates, now, params);
 
-	// Apply adjustments (in minutes)
+		// Apply manual minute adjustments.
 	const adjustedTimes = {
 		fajr: addMinutes(prayerTimes.fajr, profile.adjustments.fajr),
 		sunrise: addMinutes(prayerTimes.sunrise, profile.adjustments.sunrise),
@@ -320,26 +387,46 @@ export function calculateTimesForProfile(profile: Profile): PrayerTimes {
 		isha: addMinutes(prayerTimes.isha, profile.adjustments.isha)
 	};
 
+	// Format the date for display in the city's locale.
+	const dateDisplay = nowInZone.toLocaleDateString('en-US', {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+		timeZone
+	});
+	// Format the date for display in the city's locale.
+	const timeDisplay = nowInZone.toLocaleTimeString('en-US', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: true,
+	});
+
+	// The key fix: Format the final Date objects into HH:mm strings using the city's timezone.
 	return {
-		fajr: formatTimeForDisplay(adjustedTimes.fajr),
-		sunrise: formatTimeForDisplay(adjustedTimes.sunrise),
-		dhuhr: formatTimeForDisplay(adjustedTimes.dhuhr),
-		asr: formatTimeForDisplay(adjustedTimes.asr),
-		maghrib: formatTimeForDisplay(adjustedTimes.maghrib),
-		isha: formatTimeForDisplay(adjustedTimes.isha),
-		date: now.toLocaleDateString()
+		fajr: formatTimeForDisplay(adjustedTimes.fajr, timeZone),
+		sunrise: formatTimeForDisplay(adjustedTimes.sunrise, timeZone),
+		dhuhr: formatTimeForDisplay(adjustedTimes.dhuhr, timeZone),
+		asr: formatTimeForDisplay(adjustedTimes.asr, timeZone),
+		maghrib: formatTimeForDisplay(adjustedTimes.maghrib, timeZone),
+		isha: formatTimeForDisplay(adjustedTimes.isha, timeZone),
+		date: dateDisplay,
+		time: timeDisplay
 	};
 }
 
 export function addMinutes(date: Date, minutes: number): Date {
-	return new Date(date.getTime() + minutes * 60000);
+	date.setMinutes(date.getMinutes() + minutes);
+	return date;
 }
 
-export function formatTimeForDisplay(date: Date): string {
-	return date.toLocaleTimeString('en-US', {
+export function formatTimeForDisplay(date: Date, timeZone: string): string {
+	// Use 'en-GB' for a reliable HH:mm 24-hour format in the specified timezone.
+	return date.toLocaleTimeString('en-GB', {
+		timeZone,
 		hour: '2-digit',
 		minute: '2-digit',
-		hour12: false
+		hourCycle: 'h23'
 	});
 }
 
@@ -362,57 +449,108 @@ export function getNextPrayerForProfile(
 	profile: Profile,
 	prayerTimes: PrayerTimes
 ): NextPrayer | null {
-	if (!prayerTimes) return null;
-
-	// Get current time in the profile's timezone
-	const now = new Date();
-	const prayers = [
-		{ name: 'Fajr', time: prayerTimes.fajr },
-		{ name: 'Dhuhr', time: prayerTimes.dhuhr },
-		{ name: 'Asr', time: prayerTimes.asr },
-		{ name: 'Maghrib', time: prayerTimes.maghrib },
-		{ name: 'Isha', time: prayerTimes.isha }
-	];
-
-	const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-	for (const prayer of prayers) {
-		const [hours, minutes] = prayer.time.split(':');
-		const prayerMinutes = parseInt(hours) * 60 + parseInt(minutes);
-
-		if (prayerMinutes > currentMinutes) {
-			const timeRemaining = calculateTimeRemaining(currentMinutes, prayerMinutes);
-			return {
-				name: prayer.name,
-				time: prayer.time,
-				timeRemaining
-			};
-		}
+	if (!profile.timezone) {
+		console.warn('Profile is missing timezone. Cannot accurately calculate next prayer.');
+		return null; // Cannot proceed without a timezone
 	}
 
-	// If no prayer found today, return tomorrow's Fajr
-	const tomorrowMinutes = 24 * 60; // Minutes in a day
-	const fajrMinutes =
-		parseInt(prayerTimes.fajr.split(':')[0]) * 60 + parseInt(prayerTimes.fajr.split(':')[1]);
-	const timeRemaining = calculateTimeRemaining(currentMinutes, tomorrowMinutes + fajrMinutes);
+	const now = new Date();
+
+	// Get today's date components (year, month, day) in the PROFILE'S timezone.
+	// This prevents bugs where the user's local date is ahead or behind the profile's date.
+	const dateParts = new Intl.DateTimeFormat('en-CA', {
+		timeZone: profile.timezone,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit'
+	}).formatToParts(now);
+
+	const year = dateParts.find((p) => p.type === 'year')?.value;
+	const month = dateParts.find((p) => p.type === 'month')?.value;
+	const day = dateParts.find((p) => p.type === 'day')?.value;
+
+	if (!year || !month || !day) {
+		console.error('Could not determine the current date in the profile timezone.');
+		return null;
+	}
+	const dateInProfileTimezone = `${year}-${month}-${day}`;
+
+	// Get the UTC offset for the profile's timezone for today's date to handle DST.
+	const offset = getUtcOffset(profile.timezone, now);
+	if (!offset) {
+		console.error(`Could not get UTC offset for timezone: ${profile.timezone}`);
+		return null;
+	}
+
+	const prayerNameMapping = {
+		fajr: 'Fajr',
+		sunrise: 'Sunrise',
+		dhuhr: 'Dhuhr',
+		asr: 'Asr',
+		maghrib: 'Maghrib',
+		isha: 'Isha'
+	};
+
+	const prayerTimesWithDates = Object.entries(prayerTimes)
+		.filter(([key]) => prayerNameMapping[key as keyof typeof prayerNameMapping])
+		.map(([key, time]) => {
+			if (typeof time !== 'string' || !time.includes(':')) return null;
+
+			// Construct a full ISO 8601 string with the correct offset.
+			// e.g., "2024-08-01T05:30:00-04:00" for a time in New York (EDT).
+			const isoString = `${dateInProfileTimezone}T${time}:00${offset}`;
+			const prayerDate = new Date(isoString);
+
+			// Handle cases where parsing might fail for some reason
+			if (isNaN(prayerDate.getTime())) {
+				return null;
+			}
+
+			return {
+				name: prayerNameMapping[key as keyof typeof prayerNameMapping],
+				time: time,
+				date: prayerDate
+			};
+		})
+		.filter(Boolean) as { name: string; time: string; date: Date }[];
+
+	// Find the first prayer that is in the future
+	let nextPrayer = prayerTimesWithDates.find((p) => p.date.getTime() > now.getTime());
+
+	// If all prayers for today have passed, the next prayer is Fajr of the next day.
+	if (!nextPrayer && prayerTimesWithDates.length > 0) {
+		const fajrPrayer = prayerTimesWithDates[0];
+		// Create a new date for tomorrow's Fajr
+		const tomorrowFajrDate = new Date(fajrPrayer.date.getTime());
+		tomorrowFajrDate.setDate(tomorrowFajrDate.getDate() + 1);
+		nextPrayer = { ...fajrPrayer, date: tomorrowFajrDate };
+	}
+
+	if (!nextPrayer) {
+		return null;
+	}
+
+	const diff = nextPrayer.date.getTime() - now.getTime();
+	const hours = Math.floor(diff / (1000 * 60 * 60));
+	const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
 	return {
-		name: 'Fajr',
-		time: prayerTimes.fajr,
-		timeRemaining
+		name: nextPrayer.name,
+		time: nextPrayer.time,
+		timeRemaining: `${hours}h ${minutes}m`
 	};
 }
 
 export function calculateTimeRemaining(currentMinutes: number, prayerMinutes: number): string {
-	const diffMinutes = prayerMinutes - currentMinutes;
-	const hours = Math.floor(diffMinutes / 60);
-	const minutes = diffMinutes % 60;
-
-	if (hours > 0) {
-		return `${hours}h ${minutes}m`;
-	} else {
-		return `${minutes}m`;
+	let diff = prayerMinutes - currentMinutes;
+	if (diff < 0) {
+		// This case should ideally be handled by the next day's prayer logic
+		// but as a fallback, we calculate time until tomorrow.
+		diff += 24 * 60;
 	}
+	const hours = Math.floor(diff / 60);
+	const minutes = diff % 60;
+	return `${hours}h ${minutes}m`;
 }
 
 export function getSuggestedCalculationMethod(countryCode: string): string {
@@ -460,20 +598,18 @@ export async function enrichLocationData(
 	cities: City[] = []
 ): Promise<{ country?: string; timezone?: string; closestCity?: City }> {
 	try {
-		// Get timezone
-		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-		// Find closest city from our local data
 		const closestCity = findClosestCity(latitude, longitude, cities);
 
 		if (closestCity) {
 			return {
 				country: closestCity.country,
-				timezone,
+				timezone: closestCity.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
 				closestCity
 			};
 		}
 
+		// Fallback if no city found
+		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		return { timezone };
 	} catch (error) {
 		console.error('Error enriching location data:', error);

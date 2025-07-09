@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { calculationMethods, countryMethodMapping } from './constants';
 	import { enrichLocationData, getSuggestedCalculationMethod, parseMawaqitConfig } from './utils';
-	import type { City, MawaqitConfig } from './types';
+	import type { City, MawaqitConfig, SearchResult } from './types';
 	import CitySearch from './CitySearch.svelte';
 
 	export let cities: City[] = [];
@@ -92,19 +92,23 @@
 				cities
 			);
 
-			if (locationData.timezone) {
-				newProfile.timezone = locationData.timezone;
-			}
-
 			if (locationData.closestCity) {
 				// Set default profile name using closest city
 				if (!newProfile.name) {
-					newProfile.name = `${locationData.closestCity.name}, ${locationData.closestCity.country}`;
+					let name = locationData.closestCity.name;
+					if (locationData.closestCity.altnames && locationData.closestCity.languages) {
+						name = locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
+					}
+					newProfile.name = `${name}, ${locationData.closestCity.country}`;
 				}
 
 				// Suggest calculation method based on country
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.closestCity.country);
 				newProfile.calculationMethod = suggestedMethod;
+
+				if (locationData.closestCity.timezone) {
+					newProfile.timezone = locationData.closestCity.timezone;
+				}
 			} else if (locationData.country) {
 				// Fallback if no city found but country available
 				if (!newProfile.name) {
@@ -120,11 +124,13 @@
 		}
 	}
 
-	function handleCitySelect(event: CustomEvent<City>) {
-		const city = event.detail;
+	function handleCitySelect(event: CustomEvent<SearchResult>) {
+		const result = event.detail;
+		const city = result.city;
+
 		newProfile.latitude = city.lat;
 		newProfile.longitude = city.lng;
-		newProfile.name = `${city.name}, ${city.country}`;
+		newProfile.name = result.matchedName ? `${result.matchedName}, ${city.country}` : `${city.name}, ${city.country}`;
 
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
@@ -132,9 +138,8 @@
 
 	async function enrichCityLocation(city: City) {
 		try {
-			// Get timezone
-			const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-			newProfile.timezone = timezone;
+			// Get timezone from city data if available, otherwise use browser's
+			newProfile.timezone = city.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 			// Suggest calculation method based on country code
 			const suggestedMethod = getSuggestedCalculationMethod(city.country);

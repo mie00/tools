@@ -487,7 +487,7 @@
 
 	async function loadCities() {
 		try {
-			const response = await fetch('/world_cities_5000.csv');
+			const response = await fetch('/world_cities_tz_5000.csv');
 			const csvText = await response.text();
 			cities = parseCsv(csvText);
 		} catch (error) {

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { City } from './types';
+	import type { SearchResult } from './types';
 	import { searchCities } from './utils';
+	import type { City } from './types';
 
 	export let cities: City[] = [];
 	export let searchQuery: string = '';
@@ -9,11 +10,11 @@
 	export let loading: boolean = false;
 
 	const dispatch = createEventDispatcher<{
-		select: City;
+		select: SearchResult;
 		search: string;
 	}>();
 
-	let filteredCities: City[] = [];
+	let filteredResults: SearchResult[] = [];
 	let showDropdown = false;
 
 	function handleSearch(query: string) {
@@ -21,23 +22,23 @@
 		dispatch('search', query);
 
 		if (!query.trim()) {
-			filteredCities = [];
+			filteredResults = [];
 			showDropdown = false;
 			return;
 		}
 
-		filteredCities = searchCities(query, cities);
-		showDropdown = filteredCities.length > 0;
+		filteredResults = searchCities(query, cities);
+		showDropdown = filteredResults.length > 0;
 	}
 
-	function selectCity(city: City) {
-		searchQuery = `${city.name}, ${city.country}`;
+	function selectCity(result: SearchResult) {
+		searchQuery = `${result.matchedName}, ${result.city.country}`;
 		showDropdown = false;
-		dispatch('select', city);
+		dispatch('select', result);
 	}
 
 	function handleFocus() {
-		if (searchQuery && filteredCities.length > 0) {
+		if (searchQuery && filteredResults.length > 0) {
 			showDropdown = true;
 		}
 	}
@@ -65,19 +66,20 @@
 		on:focus={handleFocus}
 	/>
 
-	{#if showDropdown && filteredCities.length > 0}
+	{#if showDropdown && filteredResults.length > 0}
 		<div
 			class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg"
 		>
-			{#each filteredCities as city}
+			{#each filteredResults as result}
+				{console.log(result)}
 				<button
 					type="button"
 					class="w-full border-b border-gray-100 px-4 py-2 text-left last:border-b-0 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-					on:click={() => selectCity(city)}
+					on:click={() => selectCity(result)}
 				>
-					<div class="font-medium">{city.name}</div>
+					<div class="font-medium">{result.matchedName}</div>
 					<div class="text-sm text-gray-500">
-						{city.country} • {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
+						{result.city.country} • {result.city.lat.toFixed(4)}, {result.city.lng.toFixed(4)}
 					</div>
 				</button>
 			{/each}

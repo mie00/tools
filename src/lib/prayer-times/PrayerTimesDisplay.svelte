@@ -85,11 +85,7 @@
 		</p>
 		<p>Date: {prayerTimes.date}</p>
 		<p class="mt-2">
-			Current time: {currentTime.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: true
-			})}
+			Current time: {prayerTimes.time}
 		</p>
 	</div>
 </div>

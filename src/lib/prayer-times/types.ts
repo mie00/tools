@@ -48,6 +48,7 @@ export interface PrayerTimes {
 	maghrib: string;
 	isha: string;
 	date: string;
+	time: string;
 }
 
 export interface City {
@@ -55,6 +56,10 @@ export interface City {
 	name: string;
 	lat: number;
 	lng: number;
+	timezone?: string;
+	altnames?: Record<string, string[]>;
+	altitude?: number;
+	languages?: string[];
 }
 
 export interface CalculationMethodInfo {
@@ -66,6 +71,7 @@ export interface CalculationMethodInfo {
 export interface SearchResult {
 	city: City;
 	score: number;
+	matchedName?: string;
 }
 
 export interface NextPrayer {
