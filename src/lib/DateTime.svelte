@@ -23,12 +23,10 @@
 	let humanResult: string = '';
 	let errorMessage: string = '';
 
-	// Timezone conversion variables
-	let timezoneConvertInput: string = '';
-	let fromTimezone: string = 'Local';
-	let toTimezone: string = 'America/New_York';
-	let timezoneConvertResult: string = '';
-	let timezoneConvertError: string = '';
+	// Custom time input variables
+	let customTimeInput: string = '';
+	let customTimezone: string = 'Local';
+	let useCustomTime: boolean = false;
 
 	// Selected cities for display - with persistence
 	let selectedCities: string[] = [];
@@ -66,23 +64,17 @@
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
 
-			// Timezone converter params
-			if (timezoneConvertInput) {
-				params.set('time', timezoneConvertInput);
+			// Custom time params
+			if (customTimeInput) {
+				params.set('time', customTimeInput);
 			} else {
 				params.delete('time');
 			}
 
-			if (fromTimezone !== 'Local') {
-				params.set('from_tz', fromTimezone);
+			if (customTimezone !== 'Local') {
+				params.set('custom_tz', customTimezone);
 			} else {
-				params.delete('from_tz');
-			}
-
-			if (toTimezone !== 'America/New_York') {
-				params.set('to_tz', toTimezone);
-			} else {
-				params.delete('to_tz');
+				params.delete('custom_tz');
 			}
 
 			// Epoch converter params
@@ -103,19 +95,16 @@
 	}
 
 	function loadFromUrl() {
-		// Load timezone converter params
+		// Load custom time params
 		const time = $page.url.searchParams.get('time');
-		const fromTz = $page.url.searchParams.get('from_tz');
-		const toTz = $page.url.searchParams.get('to_tz');
+		const customTz = $page.url.searchParams.get('custom_tz');
 
 		if (time) {
-			timezoneConvertInput = time;
+			customTimeInput = time;
+			useCustomTime = true;
 		}
-		if (fromTz) {
-			fromTimezone = fromTz;
-		}
-		if (toTz) {
-			toTimezone = toTz;
+		if (customTz) {
+			customTimezone = customTz;
 		}
 
 		// Load epoch converter params
@@ -129,11 +118,6 @@
 		if (human) {
 			humanInput = human;
 			convertToEpoch();
-		}
-
-		// Convert timezone if params are set
-		if (time && (fromTz || toTz)) {
-			convertTimezone();
 		}
 	}
 
@@ -177,8 +161,6 @@
 		}, 1000);
 	});
 
-	// Watch for state changes and update URL -- REMOVED
-
 	onDestroy(() => {
 		if (timeInterval) {
 			clearInterval(timeInterval);
@@ -207,9 +189,103 @@
 		return date.toISOString();
 	}
 
-	function getTimeInTimezone(timezone: string): TimeInfo {
-		const date = new Date();
+	function getCustomTimeInTimezone(timezone: string, referenceTime: Date): TimeInfo {
+		if (!useCustomTime || !customTimeInput) {
+			return getTimeInTimezone(timezone, referenceTime);
+		}
 
+		try {
+			// Get today's date for the time conversion
+			const today = new Date();
+			const [hours, minutes] = customTimeInput.split(':');
+
+			if (!hours || !minutes) {
+				throw new Error('Invalid time format');
+			}
+
+			let sourceTimezoneName = customTimezone;
+			// Handle Local timezone
+			if (customTimezone === 'Local') {
+				sourceTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			}
+
+			// Create a date string that represents the input time in the source timezone
+			const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${hours}:${minutes}:00`;
+			
+			// Create a date assuming it's in the source timezone
+			// We'll use a trick: create the date as if it were UTC, then adjust for source timezone
+			const baseDate = new Date(dateString);
+			
+			// Get the timezone offset difference between source and target
+			const sourceOffset = getTimezoneOffsetMinutes(sourceTimezoneName, baseDate);
+			const targetOffset = getTimezoneOffsetMinutes(timezone, baseDate);
+			
+			// Calculate the time difference in minutes
+			const offsetDiff = targetOffset - sourceOffset;
+			
+			// Apply the offset to get the correct time in target timezone
+			const resultDate = new Date(baseDate.getTime() + offsetDiff * 60000);
+
+			// Format the result in the target timezone
+			const timeFormatter = new Intl.DateTimeFormat('en-US', {
+				timeZone: timezone,
+				hour12: true,
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit'
+			});
+
+			const dateFormatter = new Intl.DateTimeFormat('en-US', {
+				timeZone: timezone,
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric'
+			});
+
+			// Get timezone offset
+			const offsetFormatter = new Intl.DateTimeFormat('en', {
+				timeZone: timezone,
+				timeZoneName: 'shortOffset'
+			});
+			const offset =
+				offsetFormatter.formatToParts(resultDate).find((part) => part.type === 'timeZoneName')?.value || '';
+
+			return {
+				time: timeFormatter.format(resultDate),
+				date: dateFormatter.format(resultDate),
+				offset: offset
+			};
+		} catch (error) {
+			// Fallback to current time if conversion fails
+			return getTimeInTimezone(timezone, referenceTime);
+		}
+	}
+
+	function getTimezoneOffsetMinutes(timezone: string, date: Date): number {
+		// Get the timezone offset in minutes for a given timezone and date
+		const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+		
+		// Create a date formatter for the target timezone
+		const formatter = new Intl.DateTimeFormat('sv-SE', {
+			timeZone: timezone,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit'
+		});
+		
+		// Get the local time in the target timezone
+		const localTimeString = formatter.format(utcDate);
+		const localTime = new Date(localTimeString);
+		
+		// Calculate the offset
+		return (localTime.getTime() - utcDate.getTime()) / 60000;
+	}
+
+	function getTimeInTimezone(timezone: string, referenceTime: Date = new Date()): TimeInfo {
 		const timeFormatter = new Intl.DateTimeFormat('en-US', {
 			timeZone: timezone,
 			hour12: true,
@@ -232,11 +308,11 @@
 			timeZoneName: 'shortOffset'
 		});
 		const offset =
-			offsetFormatter.formatToParts(date).find((part) => part.type === 'timeZoneName')?.value || '';
+			offsetFormatter.formatToParts(referenceTime).find((part) => part.type === 'timeZoneName')?.value || '';
 
 		return {
-			time: timeFormatter.format(date),
-			date: dateFormatter.format(date),
+			time: timeFormatter.format(referenceTime),
+			date: dateFormatter.format(referenceTime),
 			offset: offset
 		};
 	}
@@ -296,108 +372,27 @@
 		return abbreviation ? `${city.name} (${abbreviation})` : city.name;
 	}
 
-	function convertTimezone() {
-		timezoneConvertError = '';
-		try {
-			if (!timezoneConvertInput) {
-				throw new Error('Please enter a time to convert');
-			}
-
-			// Get today's date for the time conversion
-			const today = new Date();
-			const [hours, minutes] = timezoneConvertInput.split(':');
-
-			if (!hours || !minutes) {
-				throw new Error('Invalid time format');
-			}
-
-			// Create a date object with today's date and the input time
-			const inputDate = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-				parseInt(hours),
-				parseInt(minutes)
-			);
-
-			if (isNaN(inputDate.getTime())) {
-				throw new Error('Invalid time format');
-			}
-
-			let sourceDate: Date;
-			let sourceTimezoneName = fromTimezone;
-			let targetTimezoneName = toTimezone;
-
-			// Handle Local timezone
-			if (fromTimezone === 'Local') {
-				sourceTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
-			}
-			if (toTimezone === 'Local') {
-				targetTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
-			}
-
-			// Create the time in the source timezone
-			if (fromTimezone === 'UTC') {
-				sourceDate = new Date(inputDate.getTime() - inputDate.getTimezoneOffset() * 60000);
-			} else {
-				// For non-UTC timezones, we treat the input as local time in the source timezone
-				sourceDate = inputDate;
-			}
-
-			// Format the result in the target timezone
-			const resultTimeFormatter = new Intl.DateTimeFormat('en-US', {
-				timeZone: targetTimezoneName,
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: true
-			});
-
-			const resultDateFormatter = new Intl.DateTimeFormat('en-US', {
-				timeZone: targetTimezoneName,
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			});
-
-			const offsetFormatter = new Intl.DateTimeFormat('en', {
-				timeZone: targetTimezoneName,
-				timeZoneName: 'shortOffset'
-			});
-			const offset =
-				offsetFormatter.formatToParts(sourceDate).find((part) => part.type === 'timeZoneName')
-					?.value || '';
-
-			const timeResult = resultTimeFormatter.format(sourceDate);
-			const dateResult = resultDateFormatter.format(sourceDate);
-
-			timezoneConvertResult = `${timeResult} on ${dateResult} (${offset})`;
-		} catch (error) {
-			timezoneConvertError = error instanceof Error ? error.message : 'Conversion failed';
-			timezoneConvertResult = '';
+	function toggleCustomTime() {
+		useCustomTime = !useCustomTime;
+		if (!useCustomTime) {
+			customTimeInput = '';
+			customTimezone = 'Local';
 		}
 		updateUrl();
 	}
 
-	function getTimezoneOffset(timezone: string): number {
-		const date = new Date();
-		const localTime = date.getTime();
-		const localOffset = date.getTimezoneOffset() * 60000;
-		const utc = localTime + localOffset;
+	function setCurrentTime() {
+		const now = new Date();
+		customTimeInput = now.toTimeString().slice(0, 5); // HH:MM format
+		useCustomTime = true;
+		updateUrl();
+	}
 
-		const targetDate = new Date(utc + 0); // UTC
-		const targetTime = new Intl.DateTimeFormat('sv-SE', {
-			timeZone: timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit'
-		}).format(targetDate);
-
-		const parsed = new Date(targetTime);
-		return (parsed.getTime() - targetDate.getTime()) / 60000;
+	function clearCustomTime() {
+		customTimeInput = '';
+		customTimezone = 'Local';
+		useCustomTime = false;
+		updateUrl();
 	}
 
 	function convertFromEpoch() {
@@ -463,12 +458,6 @@
 		errorMessage = '';
 	}
 
-	function getCurrentTimeForTimezone() {
-		const now = new Date();
-		timezoneConvertInput = now.toTimeString().slice(0, 5); // HH:MM format
-		convertTimezone();
-	}
-
 	// Get timezone info
 	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	$: timezoneOffset = currentTime.getTimezoneOffset();
@@ -479,9 +468,64 @@
 </script>
 
 <div class="mx-auto max-w-6xl space-y-8">
-	<!-- Current Time Display -->
-	<div class="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-center text-white">
-		<h2 class="mb-6 text-2xl font-bold">Current Date & Time</h2>
+	<!-- Time Display with Custom Time Input -->
+	<div class="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-white">
+		<h2 class="mb-6 text-2xl font-bold">
+			{useCustomTime && customTimeInput ? 'Custom Time Conversion' : 'Current Date & Time'}
+		</h2>
+
+		<!-- Custom Time Input Toggle -->
+		<div class="mb-6 flex flex-wrap gap-2">
+			<button
+				on:click={toggleCustomTime}
+				class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+			>
+				{useCustomTime ? 'Show Current Time' : 'Convert Custom Time'}
+			</button>
+			{#if useCustomTime}
+				<button
+					on:click={setCurrentTime}
+					class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+				>
+					Use Current Time
+				</button>
+				<button
+					on:click={clearCustomTime}
+					class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+				>
+					Clear
+				</button>
+			{/if}
+		</div>
+
+		{#if useCustomTime}
+			<!-- Custom Time Input -->
+			<div class="mb-6 grid gap-4 md:grid-cols-2">
+				<div>
+					<label class="block text-sm font-medium mb-2">Time</label>
+					<input
+						type="time"
+						bind:value={customTimeInput}
+						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
+						on:input={updateUrl}
+					/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium mb-2">Source Timezone</label>
+					<select
+						bind:value={customTimezone}
+						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
+						on:change={updateUrl}
+					>
+						<option value="Local">Local</option>
+						<option value="UTC">UTC</option>
+						{#each availableCities as city}
+							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+		{/if}
 
 		<div class="grid gap-6 md:grid-cols-2">
 			<!-- Local Time -->
@@ -522,8 +566,14 @@
 	<!-- World Clock -->
 	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
 		<div class="border-b border-gray-100 p-6">
-			<h2 class="text-2xl font-bold text-gray-800">World Clock</h2>
-			<p class="mt-2 text-gray-600">View time in different cities around the world</p>
+			<h2 class="text-2xl font-bold text-gray-800">
+				{useCustomTime && customTimeInput ? 'Time Conversion Results' : 'World Clock'}
+			</h2>
+			<p class="mt-2 text-gray-600">
+				{useCustomTime && customTimeInput 
+					? `Showing ${customTimeInput} from ${getCityName(customTimezone)} converted to different cities`
+					: 'View current time in different cities around the world'}
+			</p>
 		</div>
 
 		<div class="p-6">
@@ -546,7 +596,7 @@
 			<!-- Cities Grid -->
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each selectedCities as timezone}
-					{@const timeInfo = getTimeInTimezone(timezone)}
+					{@const timeInfo = getCustomTimeInTimezone(timezone, currentTime)}
 					<div class="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
 						<button
 							on:click={() => removeCity(timezone)}
@@ -577,122 +627,6 @@
 					<p>No cities selected. Add some cities to see their current time.</p>
 				</div>
 			{/if}
-		</div>
-	</div>
-
-	<!-- Timezone Converter -->
-	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
-		<div class="border-b border-gray-100 p-6">
-			<h2 class="text-2xl font-bold text-gray-800">Timezone Converter</h2>
-			<p class="mt-2 text-gray-600">Convert time between different timezones</p>
-		</div>
-
-		<div class="p-6">
-			<div class="grid gap-6 lg:grid-cols-2">
-				<!-- Input Section -->
-				<div class="space-y-4">
-					<div class="grid gap-4 sm:grid-cols-2">
-						<label class="block">
-							<span class="text-sm font-medium text-gray-700">From Timezone</span>
-							<select
-								bind:value={fromTimezone}
-								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								on:change={convertTimezone}
-							>
-								<option value="Local">Local</option>
-								<option value="UTC">UTC</option>
-								{#each availableCities as city}
-									<option value={city.timezone}>{getCityWithTimezone(city)}</option>
-								{/each}
-							</select>
-						</label>
-
-						<label class="block">
-							<span class="text-sm font-medium text-gray-700">To Timezone</span>
-							<select
-								bind:value={toTimezone}
-								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								on:change={convertTimezone}
-							>
-								<option value="Local">Local</option>
-								{#each availableCities as city}
-									<option value={city.timezone}>{getCityWithTimezone(city)}</option>
-								{/each}
-							</select>
-						</label>
-					</div>
-
-					<label class="block">
-						<span class="text-sm font-medium text-gray-700">Time</span>
-						<input
-							type="time"
-							bind:value={timezoneConvertInput}
-							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-							on:input={convertTimezone}
-						/>
-					</label>
-
-					<div class="flex gap-2">
-						<button
-							on:click={getCurrentTimeForTimezone}
-							class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-						>
-							Use Current Time
-						</button>
-						<button
-							on:click={() => {
-								timezoneConvertInput = '';
-								timezoneConvertResult = '';
-								timezoneConvertError = '';
-							}}
-							class="rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400"
-						>
-							Clear
-						</button>
-					</div>
-				</div>
-
-				<!-- Result Section -->
-				<div class="space-y-4">
-					<h3 class="text-lg font-semibold text-gray-800">Converted Time</h3>
-
-					{#if timezoneConvertResult}
-						<div class="rounded-md border border-green-200 bg-green-50 p-4">
-							<div class="mb-2 text-sm font-medium text-green-800">
-								Result in {getCityName(toTimezone)}:
-							</div>
-							<div class="font-mono text-lg text-green-700">{timezoneConvertResult}</div>
-						</div>
-					{/if}
-
-					{#if timezoneConvertError}
-						<div class="rounded-md border border-red-200 bg-red-50 p-4">
-							<div class="text-sm text-red-800">
-								<svg
-									class="mr-1 inline h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									></path>
-								</svg>
-								{timezoneConvertError}
-							</div>
-						</div>
-					{/if}
-
-					{#if !timezoneConvertResult && !timezoneConvertError}
-						<div class="rounded-md border border-gray-200 bg-gray-50 p-4 text-center text-gray-500">
-							<p>Enter a date and time to see the conversion</p>
-						</div>
-					{/if}
-				</div>
-			</div>
 		</div>
 	</div>
 
@@ -854,10 +788,10 @@
 				</ul>
 			</div>
 			<div>
-				<h4 class="mb-2 font-medium text-gray-800">Timezone Features</h4>
+				<h4 class="mb-2 font-medium text-gray-800">Time Conversion Features</h4>
 				<ul class="space-y-1">
 					<li>• World Clock: View multiple cities at once</li>
-					<li>• Timezone Converter: Convert between any timezones with abbreviations</li>
+					<li>• Custom Time: Convert specific time across timezones</li>
 					<li>• Real-time Updates: All times update automatically</li>
 					<li>• Add/Remove Cities: Customize your world clock (saved automatically)</li>
 					<li>• Local Timezone: Use "Local" for your system timezone</li>
