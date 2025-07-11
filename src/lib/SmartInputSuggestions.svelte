@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { analyzeInput } from './smart-input/analysis';
 	import {
@@ -18,6 +18,7 @@
 	let inputElement: HTMLTextAreaElement | undefined = $state();
 	let selectedSuggestionIndex = $state(-1);
 	let shortcutsActive = $state(false);
+	let lastProcessedInput = '';
 
 	// Load initial value from URL params on mount
 	onMount(() => {
@@ -48,18 +49,18 @@
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
 
 	// Update URL params when input changes
-	async function updateUrlParams(value: string) {
+	function updateUrlParams(value: string) {
 		if (!browser) return;
 
-		const url = new URL($page.url);
+		const url = new URL(window.location.href);
 		if (value.trim()) {
 			url.searchParams.set('q', value);
 		} else {
 			url.searchParams.delete('q');
 		}
 
-		// Use replaceState to avoid adding to browser history
-		await goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+		// Use SvelteKit's replaceState to properly update URL
+		replaceState(url.toString(), {});
 	}
 
 	// Handle keyboard shortcuts
@@ -141,8 +142,12 @@
 		}
 	}
 
-	// React to input changes
+	// React to input changes for suggestions only
 	$effect(() => {
+		// Prevent redundant processing to avoid potential loops
+		if (inputText === lastProcessedInput) return;
+		lastProcessedInput = inputText;
+
 		if (inputText.trim()) {
 			suggestions = analyzeInput(inputText);
 			showSuggestions = suggestions.length > 0;
@@ -153,6 +158,12 @@
 			selectedSuggestionIndex = -1;
 			shortcutsActive = false; // Reset shortcuts when input is empty
 		}
+	});
+
+	// Handle input changes for URL updates (separate from $effect)
+	function handleInputChange(event: Event) {
+		const target = event.target as HTMLTextAreaElement;
+		inputText = target.value;
 
 		// Debounce URL updates to avoid excessive navigation (only on client side)
 		if (browser) {
@@ -161,7 +172,7 @@
 				updateUrlParams(inputText);
 			}, 300);
 		}
-	});
+	}
 </script>
 
 <div class="space-y-4">
@@ -176,7 +187,8 @@
 	<div class="relative">
 		<textarea
 			bind:this={inputElement}
-			bind:value={inputText}
+			value={inputText}
+			oninput={handleInputChange}
 			onkeydown={handleKeydown}
 			placeholder="Try: 2+3*4, 10 meters to feet, 5 kg in pounds, 100°F to celsius, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL... (Press Ctrl+Enter when ready to select)"
 			class="focus:ring-opacity-50 w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 {shortcutsActive
@@ -197,6 +209,11 @@
 				<button
 					onclick={() => {
 						inputText = '';
+						// Clear URL parameter when clearing input
+						if (browser) {
+							clearTimeout(urlUpdateTimeout);
+							updateUrlParams('');
+						}
 					}}
 					class="text-gray-400 hover:text-gray-600"
 					title="Clear input"

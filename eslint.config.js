@@ -27,13 +27,7 @@ export default [
 					varsIgnorePattern: '^_',
 					caughtErrorsIgnorePattern: '^_'
 				}
-			],
-			'svelte/no-at-html-tags': 'warn',
-			'svelte/require-each-key': 'warn',
-			'no-useless-escape': 'warn',
-			'svelte/no-immutable-reactive-statements': 'warn',
-			'svelte/infinite-reactive-loop': 'warn',
-			'no-case-declarations': 'warn'
+			]
 		}
 	},
 	{

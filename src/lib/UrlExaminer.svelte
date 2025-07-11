@@ -48,7 +48,7 @@
 	});
 
 	// Watch for state changes and update URL - debounced to prevent infinite loops
-	let urlUpdateTimeout: NodeJS.Timeout;
+	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		if (typeof window !== 'undefined' && inputText !== undefined) {
 			clearTimeout(urlUpdateTimeout);
@@ -63,7 +63,7 @@
 	let isRebuildingInput = false;
 
 	// Debounced parsing effect to prevent infinite loops
-	let parseTimeout: NodeJS.Timeout;
+	let parseTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		// Skip parsing if we're currently rebuilding the input to prevent circular updates
 		if (isRebuildingInput) {

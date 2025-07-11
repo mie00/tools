@@ -58,7 +58,7 @@
 	});
 
 	// Watch for state changes and update URL - debounced to prevent infinite loops
-	let urlUpdateTimeout: NodeJS.Timeout;
+	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		if (typeof window !== 'undefined' && (activeOperation || inputText)) {
 			clearTimeout(urlUpdateTimeout);

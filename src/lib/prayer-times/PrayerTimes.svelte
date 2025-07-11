@@ -426,7 +426,7 @@
 					try {
 						const times = calculateTimesForProfile(sharedConfig);
 						profilePrayerTimes.set(sharedConfig.id, times);
-						profilePrayerTimes = profilePrayerTimes; // Trigger reactivity
+						profilePrayerTimes = new Map(profilePrayerTimes); // Trigger reactivity with a new reference
 						console.log('Prayer times calculated successfully');
 					} catch (error) {
 						console.error('Error calculating shared prayer times:', error);
@@ -502,7 +502,15 @@
 		try {
 			const stored = localStorage.getItem('prayerProfiles');
 			if (stored) {
-				profiles = JSON.parse(stored);
+				const loadedProfiles: Profile[] = JSON.parse(stored);
+				if (loadedProfiles.length > 0) {
+					const hasActiveProfile = loadedProfiles.some((p) => p.isActive);
+					if (!hasActiveProfile) {
+						// Ensure there's always an active profile if profiles exist
+						loadedProfiles[0].isActive = true;
+					}
+				}
+				profiles = loadedProfiles;
 			}
 		} catch (error) {
 			console.error('Error loading profiles:', error);
@@ -518,16 +526,17 @@
 	}
 
 	function calculateAllPrayerTimes() {
-		profilePrayerTimes.clear();
+		// Rebuild the map each time to ensure reactivity
+		const newMap = new Map<string, PrayerTimes>();
 		for (const profile of profiles) {
 			try {
 				const times = calculateTimesForProfile(profile);
-				profilePrayerTimes.set(profile.id, times);
+				newMap.set(profile.id, times);
 			} catch (error) {
 				console.error(`Error calculating times for profile ${profile.name}:`, error);
 			}
 		}
-		profilePrayerTimes = profilePrayerTimes; // Trigger reactivity
+		profilePrayerTimes = newMap; // Trigger reactivity with a new reference
 	}
 
 	function handleCreateProfile(event: CustomEvent) {

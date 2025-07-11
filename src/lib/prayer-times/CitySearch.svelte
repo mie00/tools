@@ -78,7 +78,7 @@
 	}
 
 	// Debounced search effect to prevent excessive filtering
-	let searchTimeout: NodeJS.Timeout;
+	let searchTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		if (searchQuery !== undefined) {
 			clearTimeout(searchTimeout);

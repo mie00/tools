@@ -300,16 +300,25 @@
 		result = '';
 	}
 
-	// Auto-convert when input or units change - debounced to prevent infinite loops
-	let convertTimeout: NodeJS.Timeout;
+	// Debounce conversion
+	let convertTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
-		if (inputValue && fromUnit && toUnit && selectedCategory) {
+		if (isLoaded) {
 			clearTimeout(convertTimeout);
 			convertTimeout = setTimeout(() => {
 				convert();
-			}, 50);
-		} else {
-			result = '';
+			}, 200);
+		}
+	});
+
+	// Debounce URL update
+	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		if (isLoaded) {
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 300);
 		}
 	});
 
@@ -325,21 +334,6 @@
 		loadFromUrl();
 		loadHistoryFromStorage();
 		isLoaded = true;
-	});
-
-	// Watch for state changes and update URL - debounced to prevent infinite loops
-	let urlUpdateTimeout: NodeJS.Timeout;
-	$effect(() => {
-		if (
-			typeof window !== 'undefined' &&
-			isLoaded &&
-			(inputValue || fromUnit || toUnit || selectedCategory)
-		) {
-			clearTimeout(urlUpdateTimeout);
-			urlUpdateTimeout = setTimeout(() => {
-				updateUrl();
-			}, 100);
-		}
 	});
 </script>
 

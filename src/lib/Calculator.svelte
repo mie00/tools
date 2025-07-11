@@ -5,6 +5,7 @@
 
 	// Type definitions
 	interface HistoryItem {
+		id: string;
 		expression: string;
 		result: number;
 	}
@@ -84,7 +85,7 @@
 	});
 
 	// Watch for expression changes and update URL - debounced to prevent infinite loops
-	let urlUpdateTimeout: NodeJS.Timeout;
+	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		if (typeof window !== 'undefined' && expression !== undefined) {
 			clearTimeout(urlUpdateTimeout);
@@ -128,6 +129,7 @@
 			// Add to history if it's a complete calculation
 			if (cleanExpression && !isError) {
 				const historyItem: HistoryItem = {
+					id: crypto.randomUUID(),
 					expression: expression.trim(),
 					result: evaluated
 				};
@@ -223,8 +225,8 @@
 		}
 	}
 
-	function deleteHistoryItem(index: number) {
-		history = history.filter((_, i) => i !== index);
+	function deleteHistoryItem(id: string) {
+		history = history.filter((item) => item.id !== id);
 		saveHistoryToStorage();
 	}
 
@@ -393,7 +395,7 @@
 				</button>
 			</div>
 			<div class="history-items">
-				{#each history.slice(-5).reverse() as item, index (`${item.expression}-${item.result}`)}
+				{#each history.slice(-5).reverse() as item (item.id)}
 					<div class="history-item">
 						<button class="history-content" onclick={() => useHistoryItem(item)}>
 							<span class="history-expression">{item.expression}</span>
@@ -401,7 +403,7 @@
 						</button>
 						<button
 							class="delete-history-btn"
-							onclick={() => deleteHistoryItem(history.length - 1 - index)}
+							onclick={() => deleteHistoryItem(item.id)}
 							title="Delete this calculation"
 							aria-label="Delete this calculation"
 						>

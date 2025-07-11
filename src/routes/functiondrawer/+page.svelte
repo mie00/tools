@@ -1115,8 +1115,8 @@ evaluate_function()
 		}
 	}
 
-	// Debounced expression change effect to prevent infinite loops
-	let expressionChangeTimeout: NodeJS.Timeout;
+	// Debounce expression changes to avoid excessive history updates
+	let expressionChangeTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
 		if (expression && pyodide && !isLoading) {
 			clearTimeout(expressionChangeTimeout);
