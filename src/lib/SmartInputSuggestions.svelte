@@ -67,6 +67,18 @@
 			description: 'Track stock prices',
 			buildUrl: (input: string) => `/stocktracker?stock=${encodeURIComponent(input.replace('$', ''))}`
 		},
+		translator: {
+			name: 'Language Translator',
+			icon: '🔤',
+			description: 'Translate text between languages',
+			buildUrl: (input: string, targetLang?: string, sourceText?: string, sourceLang?: string) => {
+				const params = new URLSearchParams();
+				params.set('from', sourceLang || 'auto');
+				if (targetLang) params.set('to', targetLang);
+				if (sourceText) params.set('text', sourceText);
+				return `/translator?${params.toString()}`;
+			}
+		},
 		urlexaminer: {
 			name: 'URL Examiner',
 			icon: '🔗',
@@ -254,6 +266,10 @@
 		// Stock symbols
 		const stockSuggestions = analyzeStock(trimmed);
 		suggestions.push(...stockSuggestions);
+
+		// Translation patterns
+		const translationSuggestions = analyzeTranslation(trimmed);
+		suggestions.push(...translationSuggestions);
 
 		// URLs and curl commands
 		const urlSuggestions = analyzeUrl(trimmed);
@@ -453,6 +469,151 @@
 		return suggestions;
 	}
 
+	function analyzeTranslation(input: string): AppSuggestion[] {
+		const suggestions: AppSuggestion[] = [];
+		
+		// Language codes and names for translation detection
+		const languageMap: { [key: string]: string } = {
+			'spanish': 'es',
+			'french': 'fr',
+			'german': 'de',
+			'italian': 'it',
+			'portuguese': 'pt',
+			'russian': 'ru',
+			'japanese': 'ja',
+			'korean': 'ko',
+			'chinese': 'zh',
+			'arabic': 'ar',
+			'hindi': 'hi',
+			'dutch': 'nl',
+			'turkish': 'tr',
+			'english': 'en',
+			// Add language codes as well
+			'es': 'es',
+			'fr': 'fr',
+			'de': 'de',
+			'it': 'it',
+			'pt': 'pt',
+			'ru': 'ru',
+			'ja': 'ja',
+			'ko': 'ko',
+			'zh': 'zh',
+			'ar': 'ar',
+			'hi': 'hi',
+			'nl': 'nl',
+			'tr': 'tr',
+			'en': 'en'
+		};
+		
+		// Check for multi-line translation patterns first
+		const lines = input.split('\n');
+		if (lines.length >= 2) {
+			const firstLine = lines[0].trim();
+			const textToTranslate = lines.slice(1).join('\n').trim();
+			
+			if (textToTranslate) {
+				// Multi-line patterns
+				const multiLinePatterns = [
+					// "translate to Spanish"
+					/^translate\s+to\s+([a-zA-Z]+)$/i,
+					// "translate from English to Spanish"
+					/^translate\s+from\s+([a-zA-Z]+)\s+to\s+([a-zA-Z]+)$/i,
+					// "translate to Spanish:"
+					/^translate\s+to\s+([a-zA-Z]+):?$/i,
+					// "translate from English to Spanish:"
+					/^translate\s+from\s+([a-zA-Z]+)\s+to\s+([a-zA-Z]+):?$/i
+				];
+				
+				for (const pattern of multiLinePatterns) {
+					const match = firstLine.match(pattern);
+					if (match) {
+						let sourceLangInput = '';
+						let targetLangInput = '';
+						
+						if (match.length === 2) {
+							// Pattern: "translate to Spanish"
+							targetLangInput = match[1].toLowerCase();
+						} else if (match.length === 3) {
+							// Pattern: "translate from English to Spanish"
+							sourceLangInput = match[1].toLowerCase();
+							targetLangInput = match[2].toLowerCase();
+						}
+						
+						if (targetLangInput) {
+							const targetLangCode = languageMap[targetLangInput];
+							const sourceLangCode = sourceLangInput ? languageMap[sourceLangInput] : 'auto';
+							
+							if (targetLangCode) {
+								suggestions.push({
+									id: 'translator',
+									name: appConfigs.translator.name,
+									icon: appConfigs.translator.icon,
+									description: appConfigs.translator.description,
+									confidence: 0.98, // Higher confidence for multi-line patterns
+									url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, sourceLangCode),
+									reason: sourceLangInput ? 
+										`Translate from ${sourceLangInput} to ${targetLangInput}` : 
+										`Translate to ${targetLangInput}`
+								});
+								return suggestions; // Return early since we found a match
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// Check for single-line translation patterns
+		const patterns = [
+			// "translate to Spanish"
+			/^translate\s+to\s+([a-zA-Z]+)$/i,
+			// "translate hello to Spanish"
+			/^translate\s+(.+?)\s+to\s+([a-zA-Z]+)$/i,
+			// "translate 'hello world' to spanish"
+			/^translate\s+['"](.+?)['"]\s+to\s+([a-zA-Z]+)$/i,
+			// "translate hello world to spanish"
+			/^translate\s+([^"']+?)\s+to\s+([a-zA-Z]+)$/i
+		];
+		
+		let matchFound = false;
+		
+		for (const pattern of patterns) {
+			const match = input.match(pattern);
+			if (match && !matchFound) {
+				let targetLangInput: string = '';
+				let textToTranslate = '';
+				
+				if (match.length === 2) {
+					// Pattern: "translate to Spanish"
+					targetLangInput = match[1].toLowerCase();
+				} else if (match.length === 3) {
+					// Pattern: "translate hello to Spanish"
+					textToTranslate = match[1].trim();
+					targetLangInput = match[2].toLowerCase();
+				}
+				
+				if (targetLangInput) {
+					const targetLangCode = languageMap[targetLangInput];
+					
+					if (targetLangCode) {
+						suggestions.push({
+							id: 'translator',
+							name: appConfigs.translator.name,
+							icon: appConfigs.translator.icon,
+							description: appConfigs.translator.description,
+							confidence: 0.95,
+							url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, 'auto'),
+							reason: textToTranslate ? `Translate "${textToTranslate}" to ${targetLangInput}` : `Translate to ${targetLangInput}`
+						});
+						matchFound = true;
+					}
+				}
+			}
+		}
+		
+		return suggestions;
+	}
+
 	function analyzeUrl(input: string): AppSuggestion[] {
 		const suggestions: AppSuggestion[] = [];
 		
@@ -579,7 +740,7 @@
 	<div class="relative">
 		<textarea
 			bind:value={inputText}
-			placeholder="Try: 2+3*4, #FF5733, 1234567890, https://example.com, JSON, $AAPL..."
+			placeholder="Try: 2+3*4, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL..."
 			class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
 			rows="3"
 		></textarea>
@@ -633,7 +794,7 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
 			</svg>
 			<p>No specific tools detected for this input</p>
-			<p class="text-sm">Try math expressions, colors, URLs, JSON, or stock symbols</p>
+			<p class="text-sm">Try math expressions, colors, translation commands (single or multi-line), URLs, JSON, or stock symbols</p>
 		</div>
 	{/if}
 </div> 

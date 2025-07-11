@@ -9,26 +9,30 @@
 		result: number;
 	}
 
-	let display: string = '0';
-	let previousValue: number | null = null;
-	let operation: string | null = null;
-	let waitingForOperand: boolean = false;
-	let shouldResetDisplay: boolean = false;
+	let expression: string = '';
+	let result: string = '';
 	let history: HistoryItem[] = [];
+	let inputElement: HTMLInputElement;
+	let isError: boolean = false;
+	let isMobile: boolean = false;
+	let historyLoaded: boolean = false;
 
-	let currentExpression: string = '';
-	let lastCalculation = '';
+	// Detect mobile device
+	onMount(() => {
+		loadFromUrl();
+		loadHistoryFromStorage();
+		// Simple mobile detection
+		isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+		           window.innerWidth <= 768;
+	});
 
 	// URL parameter sync
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-
-			// Set expression parameter based on current state
-			if (currentExpression) {
-				params.set('expression', currentExpression);
-			} else if (display !== '0') {
-				params.set('expression', display.replace(/,/g, ''));
+			
+			if (expression.trim()) {
+				params.set('expression', expression);
 			} else {
 				params.delete('expression');
 			}
@@ -38,442 +42,689 @@
 	}
 
 	function loadFromUrl() {
-		const expression = $page.url.searchParams.get('expression');
-		if (expression) {
-			// Parse and restore calculator state from expression
+		const urlExpression = $page.url.searchParams.get('expression');
+		if (urlExpression) {
+			expression = urlExpression;
+			evaluateExpression();
+		}
+	}
+
+	// History persistence
+	function loadHistoryFromStorage() {
+		if (typeof window !== 'undefined') {
 			try {
-				// If it's just a number, set it as display
-				const num = parseFloat(expression);
-				if (!isNaN(num) && expression === num.toString()) {
-					display = expression;
-					return;
+				const storedHistory = localStorage.getItem('calculator-history');
+				if (storedHistory) {
+					history = JSON.parse(storedHistory);
 				}
+			} catch (error) {
+				console.warn('Failed to load history from localStorage:', error);
+				history = [];
+			}
+			historyLoaded = true;
+		}
+	}
 
-				// If it's an incomplete expression like "9+" or "9+8"
-				const operators = ['+', '−', '×', '÷'];
-				let foundOp = false;
-				let opIndex = -1;
-
-				for (const op of operators) {
-					const index = expression.lastIndexOf(op);
-					if (index > opIndex) {
-						opIndex = index;
-						foundOp = true;
-						operation = op;
-					}
-				}
-
-				if (foundOp && opIndex > 0) {
-					const leftPart = expression.substring(0, opIndex).trim();
-					const rightPart = expression.substring(opIndex + 1).trim();
-
-					const leftNum = parseFloat(leftPart);
-					if (!isNaN(leftNum)) {
-						previousValue = leftNum;
-
-						if (rightPart) {
-							const rightNum = parseFloat(rightPart);
-							if (!isNaN(rightNum)) {
-								display = rightPart;
-								waitingForOperand = false;
-							} else {
-								display = '0';
-								waitingForOperand = true;
-							}
-						} else {
-							display = '0';
-							waitingForOperand = true;
-						}
-						updateExpression();
-					}
-				} else {
-					// If it's just a number or invalid, set as display
-					const num = parseFloat(expression);
-					if (!isNaN(num)) {
-						display = expression;
-					}
-				}
-			} catch (e) {
-				console.warn('Failed to parse expression from URL:', e);
+	function saveHistoryToStorage() {
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('calculator-history', JSON.stringify(history));
+			} catch (error) {
+				console.warn('Failed to save history to localStorage:', error);
 			}
 		}
 	}
 
-	onMount(() => {
-		loadFromUrl();
-	});
+	// Watch for history changes and save to localStorage
+	$: if (typeof window !== 'undefined' && history && historyLoaded) {
+		saveHistoryToStorage();
+	}
 
-	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (currentExpression || display)) {
+	// Watch for expression changes and update URL
+	$: if (typeof window !== 'undefined') {
 		updateUrl();
 	}
 
-	// Format display number with proper spacing and commas
-	function formatDisplay(value: string): string {
-		if (value === 'Error') return value;
-
-		const num = parseFloat(value);
-		if (isNaN(num)) return value;
-
-		// Handle very large or very small numbers with scientific notation
-		if (Math.abs(num) >= 1e9 || (Math.abs(num) < 1e-6 && num !== 0)) {
-			return num.toExponential(5);
+	// Evaluate mathematical expressions with proper operator precedence
+	function evaluateExpression() {
+		if (!expression.trim()) {
+			result = '';
+			isError = false;
+			return;
 		}
 
-		// Format with commas for thousands
-		const parts = num.toString().split('.');
-		parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-		return parts.join('.');
-	}
+		try {
+			// Replace common symbols with JS-friendly operators
+			let cleanExpression = expression
+				.replace(/×/g, '*')
+				.replace(/÷/g, '/')
+				.replace(/−/g, '-')
+				.replace(/[^\d+\-*/().\s]/g, ''); // Remove any non-mathematical characters
 
-	function updateExpression() {
-		if (previousValue !== null && operation) {
-			if (waitingForOperand) {
-				// Just show "9 +" when waiting for the next operand
-				currentExpression = `${formatDisplay(String(previousValue))} ${operation}`;
-			} else {
-				// Show "9 + 5" when the second operand is being entered
-				currentExpression = `${formatDisplay(String(previousValue))} ${operation} ${display.replace(/,/g, '')}`;
+			// Basic security check - only allow numbers, operators, and parentheses
+			if (!/^[\d+\-*/().\s]+$/.test(cleanExpression)) {
+				throw new Error('Invalid characters in expression');
 			}
-		} else if (display !== '0') {
-			currentExpression = display.replace(/,/g, '');
-		} else {
-			currentExpression = '';
+
+			// Evaluate the expression safely
+			const evaluated = Function(`"use strict"; return (${cleanExpression})`)();
+			
+			if (isNaN(evaluated) || !isFinite(evaluated)) {
+				throw new Error('Invalid calculation');
+			}
+
+			result = formatResult(evaluated);
+			isError = false;
+
+			// Add to history if it's a complete calculation
+			if (cleanExpression && !isError) {
+				const historyItem: HistoryItem = {
+					expression: expression.trim(),
+					result: evaluated
+				};
+				
+				// Avoid duplicates
+				if (history.length === 0 || history[history.length - 1].expression !== expression.trim()) {
+					history = [...history, historyItem];
+					// Keep only last 20 items
+					if (history.length > 20) {
+						history = history.slice(-20);
+					}
+				}
+			}
+
+		} catch (error) {
+			result = 'Error';
+			isError = true;
 		}
 	}
 
-	function inputNumber(num: string) {
-		if (waitingForOperand || shouldResetDisplay) {
-			display = String(num);
-			waitingForOperand = false;
-			shouldResetDisplay = false;
-			lastCalculation = '';
+	function formatResult(value: number): string {
+		// Handle very large or very small numbers
+		if (Math.abs(value) >= 1e9 || (Math.abs(value) < 1e-6 && value !== 0)) {
+			return value.toExponential(5);
+		}
+
+		// Format with appropriate decimal places
+		if (value % 1 === 0) {
+			return value.toLocaleString();
 		} else {
-			if (display.replace(/,/g, '').length < 9) {
-				// Limit to 9 digits like Apple
-				display = display === '0' ? String(num) : display.replace(/,/g, '') + num;
+			return value.toLocaleString(undefined, { maximumFractionDigits: 8 });
+		}
+	}
+
+	function handleInput() {
+		evaluateExpression();
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			evaluateExpression();
+		} else if (event.key === 'Escape') {
+			clearAll();
+		}
+	}
+
+	function insertText(text: string) {
+		const cursorPos = inputElement?.selectionStart ?? expression.length;
+		expression = expression.slice(0, cursorPos) + text + expression.slice(cursorPos);
+		// Only set cursor position, don't force focus to prevent jumping
+		setTimeout(() => {
+			if (inputElement && document.activeElement === inputElement) {
+				inputElement.setSelectionRange(cursorPos + text.length, cursorPos + text.length);
+			}
+		}, 0);
+		evaluateExpression();
+	}
+
+	function insertNumber(num: string) {
+		insertText(num);
+	}
+
+	function backspace() {
+		if (expression.length > 0) {
+			const cursorPos = inputElement?.selectionStart ?? expression.length;
+			if (cursorPos > 0) {
+				expression = expression.slice(0, cursorPos - 1) + expression.slice(cursorPos);
+				setTimeout(() => {
+					if (inputElement && document.activeElement === inputElement) {
+						inputElement.setSelectionRange(cursorPos - 1, cursorPos - 1);
+					}
+				}, 0);
+				evaluateExpression();
 			}
 		}
-		updateExpression();
 	}
 
-	function inputDecimal() {
-		if (waitingForOperand || shouldResetDisplay) {
-			display = '0.';
-			waitingForOperand = false;
-			shouldResetDisplay = false;
-			lastCalculation = '';
-		} else if (display.replace(/,/g, '').indexOf('.') === -1) {
-			display = display.replace(/,/g, '') + '.';
+	function clearAll() {
+		expression = '';
+		result = '';
+		isError = false;
+		// Only focus if user was already in the input
+		if (inputElement && document.activeElement === inputElement) {
+			inputElement.focus();
 		}
-		updateExpression();
 	}
 
-	function clear() {
-		display = '0';
-		previousValue = null;
-		operation = null;
-		waitingForOperand = false;
-		shouldResetDisplay = false;
-		currentExpression = '';
-		lastCalculation = '';
+	function useHistoryItem(item: HistoryItem) {
+		expression = item.expression;
+		evaluateExpression();
+		// Only focus if input is visible and user clicked on history
+		if (inputElement && !isMobile) {
+			inputElement.focus();
+		}
 	}
 
-	function allClear() {
-		clear();
+	function deleteHistoryItem(index: number) {
+		history = history.filter((_, i) => i !== index);
+		saveHistoryToStorage();
+	}
+
+	function clearAllHistory() {
 		history = [];
-	}
-
-	function toggleSign() {
-		const num = parseFloat(display.replace(/,/g, ''));
-		if (!isNaN(num) && num !== 0) {
-			display = String(-num);
-		}
-		updateExpression();
-	}
-
-	function percentage() {
-		const num = parseFloat(display.replace(/,/g, ''));
-		if (!isNaN(num)) {
-			display = String(num / 100);
-			shouldResetDisplay = true;
-		}
-		updateExpression();
-	}
-
-	function performOperation(nextOperation: string) {
-		const inputValue = parseFloat(display.replace(/,/g, ''));
-
-		if (previousValue === null) {
-			previousValue = inputValue;
-		} else if (operation && !waitingForOperand) {
-			const currentValue = previousValue || 0;
-			const newValue = calculate(currentValue, inputValue, operation);
-
-			// Add to history
-			history = [
-				...history,
-				{
-					expression: `${currentValue} ${operation} ${inputValue}`,
-					result: newValue
-				}
-			];
-
-			if (isNaN(newValue) || !isFinite(newValue)) {
-				display = 'Error';
-				previousValue = null;
-				operation = null;
-				shouldResetDisplay = true;
-				currentExpression = '';
-				lastCalculation = '';
-				return;
-			}
-
-			display = String(newValue);
-			previousValue = newValue;
-		}
-
-		waitingForOperand = true;
-		operation = nextOperation;
-		updateExpression();
-	}
-
-	function calculate(firstValue: number, secondValue: number, operation: string): number {
-		switch (operation) {
-			case '+':
-				return firstValue + secondValue;
-			case '−':
-				return firstValue - secondValue;
-			case '×':
-				return firstValue * secondValue;
-			case '÷':
-				return secondValue !== 0 ? firstValue / secondValue : NaN;
-			case '=':
-				return secondValue;
-			default:
-				return secondValue;
-		}
-	}
-
-	function handleEquals() {
-		const inputValue = parseFloat(display.replace(/,/g, ''));
-
-		if (previousValue !== null && operation) {
-			const expression = `${formatDisplay(String(previousValue))} ${operation} ${formatDisplay(String(inputValue))}`;
-			const newValue = calculate(previousValue, inputValue, operation);
-
-			// Add to history
-			history = [
-				...history,
-				{
-					expression: `${previousValue} ${operation} ${inputValue}`,
-					result: newValue
-				}
-			];
-
-			if (isNaN(newValue) || !isFinite(newValue)) {
-				display = 'Error';
-				lastCalculation = '';
-			} else {
-				display = String(newValue);
-				lastCalculation = expression;
-			}
-
-			previousValue = null;
-			operation = null;
-			waitingForOperand = true;
-			shouldResetDisplay = true;
-			currentExpression = '';
-		}
-	}
-
-	// Get the appropriate clear button text
-	$: clearButtonText = display !== '0' || previousValue !== null ? 'C' : 'AC';
-
-	function handleClear() {
-		if (clearButtonText === 'AC') {
-			allClear();
-		} else {
-			clear();
-		}
+		saveHistoryToStorage();
 	}
 </script>
 
 <div class="calculator">
-	<!-- Display -->
-	<div class="display">
-		{#if lastCalculation}
-			<div class="expression-text">
-				{lastCalculation}
-			</div>
-		{:else if currentExpression}
-			<div class="expression-text">
-				{currentExpression}
+	<!-- Main Input and Display -->
+	<div class="input-section">
+		<div class="input-container">
+			<input
+				bind:this={inputElement}
+				bind:value={expression}
+				on:input={handleInput}
+				on:keydown={handleKeydown}
+				placeholder="Enter expression like: 1 + 2 * 5 - 2"
+				class="expression-input"
+				type="text"
+				autocomplete="off"
+				inputmode={isMobile ? "none" : "text"}
+				readonly={isMobile}
+			/>
+			<button class="clear-button" on:click={clearAll} title="Clear (Esc)" aria-label="Clear expression">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M18 6L6 18M6 6l12 12"/>
+				</svg>
+			</button>
+		</div>
+		
+		{#if result}
+			<div class="result-container" class:error={isError}>
+				<span class="equals">=</span>
+				<span class="result">{result}</span>
 			</div>
 		{/if}
-		<div class="display-text">
-			{formatDisplay(display)}
+	</div>
+
+	<!-- Desktop: Quick Action Buttons Only -->
+	{#if !isMobile}
+		<div class="actions">
+			<button class="action-btn" on:click={() => insertText('+')} title="Add">
+				<span>+</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('-')} title="Subtract">
+				<span>−</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('*')} title="Multiply">
+				<span>×</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('/')} title="Divide">
+				<span>÷</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('(')} title="Open parenthesis">
+				<span>(</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText(')')} title="Close parenthesis">
+				<span>)</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('**')} title="Power">
+				<span>^</span>
+			</button>
+			<button class="action-btn" on:click={() => insertText('.')} title="Decimal">
+				<span>.</span>
+			</button>
 		</div>
-	</div>
+	{/if}
 
-	<!-- Button Grid -->
-	<div class="button-grid">
-		<!-- Row 1 -->
-		<button class="button function" on:click={handleClear}>
-			{clearButtonText}
-		</button>
-		<button class="button function" on:click={toggleSign}> ± </button>
-		<button class="button function" on:click={percentage}> % </button>
-		<button class="button operator" on:click={() => performOperation('÷')}> ÷ </button>
+	<!-- Mobile: Full Number Pad -->
+	{#if isMobile}
+		<div class="number-pad">
+			<div class="number-row">
+				<button class="number-btn" on:click={() => insertNumber('7')}>7</button>
+				<button class="number-btn" on:click={() => insertNumber('8')}>8</button>
+				<button class="number-btn" on:click={() => insertNumber('9')}>9</button>
+				<button class="number-btn operator" on:click={() => insertText('/')}>÷</button>
+			</div>
+			<div class="number-row">
+				<button class="number-btn" on:click={() => insertNumber('4')}>4</button>
+				<button class="number-btn" on:click={() => insertNumber('5')}>5</button>
+				<button class="number-btn" on:click={() => insertNumber('6')}>6</button>
+				<button class="number-btn operator" on:click={() => insertText('*')}>×</button>
+			</div>
+			<div class="number-row">
+				<button class="number-btn" on:click={() => insertNumber('1')}>1</button>
+				<button class="number-btn" on:click={() => insertNumber('2')}>2</button>
+				<button class="number-btn" on:click={() => insertNumber('3')}>3</button>
+				<button class="number-btn operator" on:click={() => insertText('-')}>−</button>
+			</div>
+			<div class="number-row">
+				<button class="number-btn wide" on:click={() => insertNumber('0')}>0</button>
+				<button class="number-btn" on:click={() => insertText('.')}>.</button>
+				<button class="number-btn operator" on:click={() => insertText('+')}>+</button>
+			</div>
+			<div class="number-row">
+				<button class="number-btn function" on:click={() => insertText('(')} title="Open parenthesis">
+					<span>(</span>
+				</button>
+				<button class="number-btn function" on:click={() => insertText(')')} title="Close parenthesis">
+					<span>)</span>
+				</button>
+				<button class="number-btn function" on:click={backspace} aria-label="Backspace">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M9 9l6 6m0-6l-6 6M21 12H3"/>
+					</svg>
+				</button>
+				<button class="number-btn function" on:click={() => insertText('**')} title="Power">
+					<span>^</span>
+				</button>
+			</div>
+		</div>
+	{/if}
 
-		<!-- Row 2 -->
-		<button class="button number" on:click={() => inputNumber('7')}> 7 </button>
-		<button class="button number" on:click={() => inputNumber('8')}> 8 </button>
-		<button class="button number" on:click={() => inputNumber('9')}> 9 </button>
-		<button class="button operator" on:click={() => performOperation('×')}> × </button>
-
-		<!-- Row 3 -->
-		<button class="button number" on:click={() => inputNumber('4')}> 4 </button>
-		<button class="button number" on:click={() => inputNumber('5')}> 5 </button>
-		<button class="button number" on:click={() => inputNumber('6')}> 6 </button>
-		<button class="button operator" on:click={() => performOperation('−')}> − </button>
-
-		<!-- Row 4 -->
-		<button class="button number" on:click={() => inputNumber('1')}> 1 </button>
-		<button class="button number" on:click={() => inputNumber('2')}> 2 </button>
-		<button class="button number" on:click={() => inputNumber('3')}> 3 </button>
-		<button class="button operator" on:click={() => performOperation('+')}> + </button>
-
-		<!-- Row 5 -->
-		<button class="button number zero" on:click={() => inputNumber('0')}> 0 </button>
-		<button class="button number" on:click={inputDecimal}> . </button>
-		<button class="button operator" on:click={handleEquals}> = </button>
-	</div>
+	<!-- History -->
+	{#if history.length > 0}
+		<div class="history-section">
+			<div class="history-header">
+				<h3>Recent Calculations</h3>
+				<button class="clear-history-btn" on:click={clearAllHistory} title="Clear all history" aria-label="Clear all history">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+					</svg>
+				</button>
+			</div>
+			<div class="history-items">
+				{#each history.slice(-5).reverse() as item, index}
+					<div class="history-item">
+						<button class="history-content" on:click={() => useHistoryItem(item)}>
+							<span class="history-expression">{item.expression}</span>
+							<span class="history-result">= {formatResult(item.result)}</span>
+						</button>
+						<button 
+							class="delete-history-btn" 
+							on:click={() => deleteHistoryItem(history.length - 1 - index)}
+							title="Delete this calculation"
+							aria-label="Delete this calculation"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M18 6L6 18M6 6l12 12"/>
+							</svg>
+						</button>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
 	.calculator {
-		width: 320px;
-		background: #000;
+		max-width: 500px;
+		margin: 0 auto;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		border-radius: 20px;
 		padding: 20px;
-		margin: 0 auto;
-		font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-	}
-
-	.display {
-		background: #000;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 		color: white;
-		text-align: right;
-		padding: 20px 10px;
+		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	}
+
+	.input-section {
 		margin-bottom: 20px;
-		min-height: 100px;
+	}
+
+	.input-container {
+		position: relative;
 		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		overflow: hidden;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 16px;
+		padding: 4px;
+		backdrop-filter: blur(10px);
+		border: 2px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.expression-text {
-		font-size: 20px;
-		font-weight: 300;
-		color: #666;
-		margin-bottom: 8px;
-		min-height: 24px;
-		line-height: 1.2;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.display-text {
-		font-size: 64px;
-		font-weight: 200;
-		line-height: 1;
-		max-width: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.button-grid {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 12px;
-	}
-
-	.button {
-		height: 70px;
+	.expression-input {
+		flex: 1;
+		background: transparent;
 		border: none;
-		border-radius: 35px;
-		font-size: 32px;
-		font-weight: 400;
-		cursor: pointer;
-		transition: all 0.1s ease;
 		outline: none;
-		user-select: none;
-		-webkit-user-select: none;
+		padding: 16px 20px;
+		font-size: 20px;
+		color: white;
+		font-weight: 500;
+		letter-spacing: 0.5px;
+		cursor: text;
+	}
+
+	.expression-input[readonly] {
+		cursor: pointer;
+	}
+
+	.expression-input::placeholder {
+		color: rgba(255, 255, 255, 0.6);
+		font-weight: 400;
+	}
+
+	.clear-button {
+		background: rgba(255, 255, 255, 0.2);
+		border: none;
+		border-radius: 12px;
+		padding: 10px;
+		margin-right: 6px;
+		cursor: pointer;
+		color: white;
+		transition: all 0.2s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.button:active {
-		transform: scale(0.95);
+	.clear-button:hover {
+		background: rgba(255, 255, 255, 0.3);
+		transform: scale(1.05);
 	}
 
-	.button.number {
-		background: #333;
+	.result-container {
+		margin-top: 12px;
+		padding: 16px 20px;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 16px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.result-container.error {
+		background: rgba(255, 107, 107, 0.2);
+		border-color: rgba(255, 107, 107, 0.4);
+	}
+
+	.equals {
+		font-size: 24px;
+		font-weight: 300;
+		opacity: 0.8;
+	}
+
+	.result {
+		font-size: 28px;
+		font-weight: 600;
+		letter-spacing: 0.5px;
+		flex: 1;
+	}
+
+	.actions {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 10px;
+		margin-bottom: 20px;
+	}
+
+	.action-btn {
+		background: rgba(255, 255, 255, 0.15);
+		border: none;
+		border-radius: 12px;
+		padding: 14px;
+		cursor: pointer;
 		color: white;
+		font-size: 18px;
+		font-weight: 600;
+		transition: all 0.2s ease;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.button.number:hover {
-		background: #404040;
+	.action-btn:hover {
+		background: rgba(255, 255, 255, 0.25);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 	}
 
-	.button.function {
-		background: #a6a6a6;
-		color: black;
+	.action-btn:active {
+		transform: translateY(0);
 	}
 
-	.button.function:hover {
-		background: #bfbfbf;
+	/* Number Pad Styles */
+	.number-pad {
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 16px;
+		padding: 16px;
+		margin-bottom: 20px;
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.button.operator {
-		background: #ff9500;
+	.number-row {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 10px;
+		margin-bottom: 10px;
+	}
+
+	.number-row:last-child {
+		margin-bottom: 0;
+	}
+
+	.number-btn {
+		background: rgba(255, 255, 255, 0.2);
+		border: none;
+		border-radius: 12px;
+		padding: 16px;
+		cursor: pointer;
 		color: white;
+		font-size: 20px;
+		font-weight: 600;
+		transition: all 0.2s ease;
+		backdrop-filter: blur(5px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 50px;
 	}
 
-	.button.operator:hover {
-		background: #ffad33;
+	.number-btn:hover {
+		background: rgba(255, 255, 255, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 	}
 
-	.button.zero {
+	.number-btn:active {
+		transform: translateY(0);
+	}
+
+	.number-btn.wide {
 		grid-column: span 2;
-		padding-left: 25px;
-		justify-content: flex-start;
 	}
 
-	/* Responsive text sizing */
-	@media (max-width: 360px) {
+	.number-btn.operator {
+		background: rgba(255, 255, 255, 0.25);
+		font-weight: 700;
+	}
+
+	.number-btn.operator:hover {
+		background: rgba(255, 255, 255, 0.35);
+	}
+
+	.number-btn.function {
+		background: rgba(255, 255, 255, 0.15);
+		font-size: 16px;
+	}
+
+	.number-btn.function:hover {
+		background: rgba(255, 255, 255, 0.25);
+	}
+
+	.history-section {
+		margin-top: 20px;
+	}
+
+	.history-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+
+	.history-header h3 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+		opacity: 0.9;
+	}
+
+	.clear-history-btn {
+		background: rgba(255, 107, 107, 0.2);
+		border: none;
+		border-radius: 8px;
+		padding: 6px;
+		cursor: pointer;
+		color: white;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid rgba(255, 107, 107, 0.3);
+	}
+
+	.clear-history-btn:hover {
+		background: rgba(255, 107, 107, 0.3);
+		transform: scale(1.05);
+	}
+
+	.history-items {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.history-item {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 12px;
+		padding: 3px;
+		backdrop-filter: blur(5px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		transition: all 0.2s ease;
+	}
+
+	.history-item:hover {
+		background: rgba(255, 255, 255, 0.15);
+		transform: translateY(-1px);
+	}
+
+	.history-content {
+		flex: 1;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: white;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		text-align: left;
+		padding: 10px 12px;
+		border-radius: 8px;
+		transition: all 0.2s ease;
+	}
+
+	.history-content:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	.history-expression {
+		font-size: 13px;
+		opacity: 0.9;
+		font-weight: 400;
+	}
+
+	.history-result {
+		font-size: 13px;
+		font-weight: 600;
+		opacity: 0.8;
+	}
+
+	.delete-history-btn {
+		background: rgba(255, 107, 107, 0.2);
+		border: none;
+		border-radius: 8px;
+		padding: 6px;
+		cursor: pointer;
+		color: white;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid rgba(255, 107, 107, 0.3);
+		margin-right: 3px;
+	}
+
+	.delete-history-btn:hover {
+		background: rgba(255, 107, 107, 0.4);
+		transform: scale(1.1);
+	}
+
+	/* Responsive design */
+	@media (max-width: 768px) {
 		.calculator {
-			width: 280px;
-			padding: 15px;
+			margin: 10px;
+			padding: 16px;
+			max-width: none;
 		}
 
-		.display-text {
-			font-size: 48px;
+		.expression-input {
+			font-size: 18px;
+			padding: 14px 16px;
 		}
 
-		.expression-text {
+		.result {
+			font-size: 24px;
+		}
+
+		.number-btn {
+			padding: 14px;
+			font-size: 18px;
+			min-height: 45px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.calculator {
+			padding: 12px;
+		}
+
+		.expression-input {
 			font-size: 16px;
+			padding: 12px 14px;
 		}
 
-		.button {
-			height: 60px;
-			font-size: 28px;
+		.result {
+			font-size: 20px;
+		}
+
+		.number-btn {
+			padding: 12px;
+			font-size: 16px;
+			min-height: 40px;
+		}
+
+		.history-expression,
+		.history-result {
+			font-size: 11px;
 		}
 	}
 </style>

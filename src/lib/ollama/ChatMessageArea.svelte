@@ -5,7 +5,6 @@
 	import { createEventDispatcher } from 'svelte';
 
 	export let activeTopic: ChatTopic | undefined;
-	export let isLoading: boolean;
 
 	let chatContainer: HTMLElement;
 	let groupedMessages: (Message & { grouped?: Message[]; originalIndex: number })[] = [];
@@ -60,33 +59,33 @@
 		tick().then(scrollToBottom);
 	}
 
-	function forward(event: any) {
-		dispatch(event.type, event.detail);
+	function handleEditMessage(event: CustomEvent<{ index: number; content: string }>) {
+		dispatch('editMessage', event.detail);
+	}
+
+	function handleSaveEdit(event: CustomEvent<{ index: number; content: string }>) {
+		dispatch('saveEdit', event.detail);
+	}
+
+	function handleCancelEdit() {
+		dispatch('cancelEdit');
 	}
 </script>
 
-<div bind:this={chatContainer} class="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
+<div bind:this={chatContainer} class="h-full overflow-y-auto p-4 space-y-4 bg-white">
 	{#if activeTopic}
 		{#each groupedMessages as message, loopIndex (message.id)}
 			<ChatMessage
 				{message}
 				idx={message.originalIndex}
-				{isLoading}
-				canRegenerate={!isLoading &&
-					!message.error &&
-					((message.role === 'user' && loopIndex < groupedMessages.length - 1) ||
-						(message.role === 'assistant' && loopIndex === lastAssistantMessageIndex))}
-				on:startEdit={forward}
-				on:cancelEdit={forward}
-				on:saveEdit={forward}
-				on:deleteMessage={forward}
-				on:regenerateAssistant={forward}
-				on:retryLastMessage={forward}
-				on:generateAssistantResponse={forward}
-				on:regenerateFromUser={forward}
+				isLoading={false}
+				canRegenerate={false}
+				on:startEdit={handleEditMessage}
+				on:saveEdit={handleSaveEdit}
+				on:cancelEdit={handleCancelEdit}
 			/>
 		{:else}
-			<p class="text-center text-gray-500">No messages yet. Start the conversation below.</p>
+			<p class="text-center text-gray-500 py-8">No messages yet. Start the conversation below.</p>
 		{/each}
 	{/if}
 </div> 

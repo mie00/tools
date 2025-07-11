@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 
 	export let isLoading: boolean;
+	export let disabled: boolean = false;
 
 	let userInput = '';
 	let textareaElement: HTMLTextAreaElement;
@@ -9,7 +10,7 @@
 	const dispatch = createEventDispatcher();
 
 	function submit() {
-		if (!userInput.trim() || isLoading) return;
+		if (!userInput.trim() || isLoading || disabled) return;
 		dispatch('submit', userInput.trim());
 		userInput = '';
 		if (textareaElement) {
@@ -41,10 +42,10 @@
 				}
 			}}
 			class="w-full p-3 pr-12 border rounded-lg bg-white text-gray-800 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-			placeholder="Ask anything..."
+			placeholder={disabled ? "Model not ready..." : "Ask anything..."}
 			rows="1"
 			style="max-height: 200px;"
-			disabled={isLoading}
+			disabled={isLoading || disabled}
 		></textarea>
 		{#if isLoading}
 			<button
@@ -56,7 +57,7 @@
 		{:else}
 			<button
 				on:click={submit}
-				disabled={!userInput.trim()}
+				disabled={!userInput.trim() || disabled}
 				class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-md bg-blue-500 hover:bg-blue-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
 			>
 				▶️

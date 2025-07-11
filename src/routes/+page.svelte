@@ -12,7 +12,7 @@
 	import Base64 from '$lib/Base64.svelte';
 	import JsonFormatter from '$lib/JsonFormatter.svelte';
 	import Azkar from '$lib/Azkar.svelte';
-	import LLMChat from '$lib/LLMChat.svelte';
+	
 	import UrlExaminer from '$lib/UrlExaminer.svelte';
 	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 
@@ -50,6 +50,12 @@
 			icon: '💱',
 			description: 'Convert currencies with live rates',
 			usesAPI: true
+		},
+		{
+			id: 'translator',
+			name: 'Language Translator',
+			icon: '🌐',
+			description: 'Translate text using Chrome AI - works offline'
 		},
 		{
 			id: 'texttools',
@@ -103,8 +109,8 @@
 		{
 			id: 'llmchat',
 			name: 'LLM Chat',
-			icon: '🤖',
-			description: 'Chat with local Gemma AI using MediaPipe (WebGPU)'
+			icon: '💬',
+			description: 'Chat with AI models - both local (WebGPU) and remote (Ollama)'
 		},
 		{
 			id: 'urlexaminer',
@@ -117,12 +123,6 @@
 			name: 'Prayer Times',
 			icon: '🕌',
 			description: 'Islamic prayer times with location-based calculation methods'
-		},
-		{
-			id: 'ollamachat',
-			name: 'Ollama Chat',
-			icon: '💬',
-			description: 'Chat with local Ollama models with history and configurations'
 		},
 		{
 			id: 'functiondrawer',

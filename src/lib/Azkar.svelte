@@ -57,6 +57,7 @@
 	let activeCategory: string = availableCategories[0] || 'أذكار الصباح';
 	let progress: Record<number, number> = {};
 	let focusedAzkarId: number | null = null;
+	let azkarContainer: HTMLElement;
 
 	// URL parameter sync
 	function updateUrl() {
@@ -169,10 +170,49 @@
 		focusedAzkarId = null; // Clear focus when changing categories
 	}
 
+	// Handle increment button click with focus logic
+	function handleIncrementClick(azkar: any) {
+		const isCurrentlyCompleted = isCompleted(azkar);
+		
+		if (isCurrentlyCompleted) {
+			// If already 100% completed, defocus
+			focusedAzkarId = null;
+		} else {
+			// Increment first
+			incrementCounter(azkar.id);
+			
+			// Check if it's now completed after incrementing
+			const isNowCompleted = (progress[azkar.id] || 0) >= azkar.count;
+			
+			if (isNowCompleted) {
+				// If it just reached 100%, defocus
+				focusedAzkarId = null;
+			} else {
+				// If still not 100%, focus
+				focusedAzkarId = azkar.id;
+			}
+		}
+	}
+
+	// Handle clicking outside to defocus
+	function handleOutsideClick(event: MouseEvent) {
+		if (azkarContainer && !azkarContainer.contains(event.target as Node)) {
+			focusedAzkarId = null;
+		}
+	}
+
 	// Load progress on component mount
 	onMount(() => {
 		loadProgress();
 		loadFromUrl();
+		
+		// Add click outside listener
+		document.addEventListener('click', handleOutsideClick);
+		
+		// Cleanup function
+		return () => {
+			document.removeEventListener('click', handleOutsideClick);
+		};
 	});
 
 	// Watch for state changes and update URL
@@ -181,7 +221,7 @@
 	}
 </script>
 
-<div class="azkar-container">
+<div class="azkar-container" bind:this={azkarContainer}>
 	<!-- Header -->
 	<div class="header">
 		<h2 class="title">أذكار وأدعية</h2>
@@ -236,11 +276,6 @@
 			<div class="progress-fill" style="width: {getCategoryProgress(activeCategory)}%"></div>
 		</div>
 		<div class="progress-actions">
-			{#if focusedAzkarId !== null}
-				<button class="reset-btn focus-clear" on:click={() => (focusedAzkarId = null)}>
-					إلغاء التركيز
-				</button>
-			{/if}
 			<button class="reset-btn category-reset" on:click={() => resetCategory(activeCategory)}>
 				إعادة تعيين الفئة
 			</button>
@@ -265,9 +300,6 @@
 					{#if azkar.reference}
 						<span class="azkar-reference">{azkar.reference}</span>
 					{/if}
-					{#if focusedAzkarId === azkar.id}
-						<span class="focus-indicator">👁️ محور الانتباه</span>
-					{/if}
 				</div>
 
 				<div class="azkar-content">
@@ -288,8 +320,8 @@
 						<div class="counter-controls">
 							<button
 								class="counter-btn increment"
-								on:click|stopPropagation={() => incrementCounter(azkar.id)}
-								disabled={isCompleted(azkar)}
+								on:click|stopPropagation={() => handleIncrementClick(azkar)}
+								disabled={false}
 							>
 								{isCompleted(azkar) ? '✓' : '+'}
 							</button>
@@ -302,15 +334,11 @@
 						</div>
 					</div>
 
-					<div class="progress-indicator">
+					<div class="progress-indicator" style="--progress: {Math.min(
+						((progress[azkar.id] || 0) / azkar.count) * 100,
+						100
+					)}">
 						<div class="progress-circle">
-							<div
-								class="progress-circle-fill"
-								style="--progress: {Math.min(
-									((progress[azkar.id] || 0) / azkar.count) * 100,
-									100
-								)}%"
-							></div>
 							<span class="progress-text">
 								{Math.round(Math.min(((progress[azkar.id] || 0) / azkar.count) * 100, 100))}%
 							</span>
@@ -654,43 +682,52 @@
 		background: #4b5563;
 	}
 
-	.progress-indicator {
-		width: 100px;
-		height: 100px;
-		border-radius: 50%;
-		background: #e5e7eb;
-		position: relative;
+	@property --progress {
+		syntax: '<number>';
+		initial-value: 0;
+		inherits: false;
 	}
 
-	.progress-circle {
+	.progress-indicator {
 		width: 80px;
 		height: 80px;
 		border-radius: 50%;
-		background: #fff;
-		position: absolute;
-		top: 10px;
-		left: 10px;
+		background: conic-gradient(
+			from -90deg,
+			#10b981 0deg,
+			#10b981 calc(var(--progress) * 3.6deg),
+			#e5e7eb calc(var(--progress) * 3.6deg),
+			#e5e7eb 360deg
+		);
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		position: relative;
+		--progress: 0;
+		transition: --progress 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 	}
 
-	.progress-circle-fill {
-		width: var(--progress);
-		height: 100%;
+	.progress-circle {
+		width: 60px;
+		height: 60px;
 		border-radius: 50%;
-		background: #3b82f6;
-		transition: width 0.3s;
+		background: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.progress-text {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		font-size: 1.25rem;
-		font-weight: bold;
-		color: #1f2937;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		direction: ltr;
+	}
+
+	/* Special styling for completed items */
+	.azkar-card.completed .progress-text {
+		color: #059669;
 	}
 
 	/* Reset buttons in progress actions */

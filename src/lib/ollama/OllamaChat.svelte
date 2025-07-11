@@ -6,7 +6,7 @@
 	import 'highlight.js/styles/atom-one-light.css';
 
 	import { persistentTopics, persistentConfig, activeTopicId } from './store';
-	import type { Message, ChatTopic, OllamaConfig } from './types';
+	import type { Message, ChatTopic, ChatConfig, ModelLoadingProgress, FileProgress } from './types';
 
 	import ChatSidebar from './ChatSidebar.svelte';
 	import ChatHeader from './ChatHeader.svelte';
@@ -40,43 +40,148 @@ CONVERSATION:
 
 	// State
 	let topics: ChatTopic[] = [];
-	let config: OllamaConfig;
+	let draftTopic: ChatTopic | undefined = undefined; // Track current draft topic
+	let config: ChatConfig;
 	let currentActiveTopicId: string | null = null;
 
+	// Remote model state
 	let availableModels: string[] = [];
+	let abortController: AbortController | null = null;
+
+	// Local model state
+	let worker: Worker | null = null;
+	let isModelLoaded = false;
+	let loadingProgress: ModelLoadingProgress = {
+		status: 'loading',
+		file: '...',
+		progress: 0
+	};
+	let fileProgress: Record<string, FileProgress> = {};
+	let hasInitializationError = false;
+
+	// Common state
 	let isLoading = false;
 	let error: string | null = null;
 	let showSettings = false;
-	let showTopics = true;
-
-	let abortController: AbortController | null = null;
+	let showTopics = false; // Default to false (collapsed)
+	let mathJaxLoaded = false;
 
 	let activeTopic: ChatTopic | undefined;
-	$: activeTopic = topics.find((t) => t.id === currentActiveTopicId);
+	$: activeTopic = topics.find((t) => t.id === currentActiveTopicId) || (draftTopic?.id === currentActiveTopicId ? draftTopic : undefined);
+	
+	// Sort topics by last updated (newest first)
+	$: sortedTopics = [...topics].sort((a, b) => {
+		const aTime = a.lastUpdated || a.createdAt;
+		const bTime = b.lastUpdated || b.createdAt;
+		return new Date(bTime).getTime() - new Date(aTime).getTime();
+	});
 
 	// Add state for editing
 	let editingIndex: number | null = null;
 	let editingContent = '';
 
-	onMount(() => {
+	// MathJax configuration
+	const initMathJax = () => {
+		if (typeof window !== 'undefined' && !(window as any).MathJax) {
+			(window as any).MathJax = {
+				tex: {
+					inlineMath: [['$', '$'], ['\\(', '\\)']],
+					displayMath: [['$$', '$$'], ['\\[', '\\]']],
+					packages: {'[+]': ['ams', 'newcommand', 'configMacros']},
+					processEscapes: true,
+					processEnvironments: true
+				},
+				svg: {
+					fontCache: 'global'
+				},
+				startup: {
+					ready: () => {
+						(window as any).MathJax.startup.defaultReady();
+						mathJaxLoaded = true;
+					}
+				}
+			};
+
+			// Load MathJax script
+			const script = document.createElement('script');
+			script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+			script.async = true;
+			document.head.appendChild(script);
+		} else if ((window as any).MathJax) {
+			mathJaxLoaded = true;
+		}
+	};
+
+	const typesetMath = async () => {
+		if (mathJaxLoaded && (window as any).MathJax && (window as any).MathJax.typesetPromise) {
+			try {
+				await (window as any).MathJax.typesetPromise();
+			} catch (error) {
+				console.error('MathJax typeset error:', error);
+			}
+		}
+	};
+
+	// Render math when switching topics
+	$: if (activeTopic) {
+		setTimeout(() => typesetMath(), 100);
+	}
+
+	onMount(async () => {
 		// Load from localStorage and migrate old data
 		const savedTopics = localStorage.getItem('ollamaChatTopics');
 		if (savedTopics) {
 			const loadedTopics: ChatTopic[] = JSON.parse(savedTopics);
-			// Migration: Ensure all messages have a unique ID
+			// Migration: Ensure all messages have a unique ID and modelSource
 			loadedTopics.forEach((topic) => {
 				topic.messages.forEach((message) => {
 					if (!message.id) {
 						message.id = crypto.randomUUID();
 					}
 				});
+				// Migration: Add modelSource if it doesn't exist
+				if (!topic.modelSource) {
+					topic.modelSource = 'remote'; // Default to remote for existing topics
+				}
+				// Migration: Add lastUpdated if it doesn't exist
+				if (!topic.lastUpdated) {
+					topic.lastUpdated = topic.createdAt;
+				}
 			});
 			persistentTopics.set(loadedTopics);
 		}
 
 		const savedConfig = localStorage.getItem('ollamaChatConfig');
 		if (savedConfig) {
-			persistentConfig.set(JSON.parse(savedConfig));
+			try {
+				const parsedConfig = JSON.parse(savedConfig);
+				// Migration: Handle old config structure
+				if (parsedConfig.endpoint) {
+					// Old structure, migrate to new structure
+					const migratedConfig: ChatConfig = {
+						ollama: {
+							endpoint: parsedConfig.endpoint,
+							temperature: parsedConfig.temperature || 0.8,
+							topK: parsedConfig.topK || 40
+						},
+						local: {
+							modelPath: 'onnx-community/Qwen3-0.6B-ONNX',
+							maxTokens: 1000,
+							topK: 40,
+							temperature: 0.8,
+							randomSeed: 101
+						},
+						webGpuSupported: false,
+						shaderF16Supported: false,
+						defaultModelSource: 'local'
+					};
+					persistentConfig.set(migratedConfig);
+				} else {
+					persistentConfig.set(parsedConfig);
+				}
+			} catch (e) {
+				console.error('Failed to parse config:', e);
+			}
 		}
 
 		persistentTopics.subscribe((value) => {
@@ -96,81 +201,229 @@ CONVERSATION:
 			currentActiveTopicId = value;
 		});
 
-		if (topics.length === 0) {
+		if (topics.length === 0 && !draftTopic) {
 			createNewTopic();
 		}
 
-		fetchAvailableModels();
+		// Check WebGPU support
+		await checkWebGpuSupport();
+		
+		// Initialize local model if WebGPU is supported
+		if (config.webGpuSupported) {
+			await initializeLocalModel();
+		}
+
+		// Fetch available remote models
+		await fetchAvailableModels();
+		
+		// Initialize MathJax
+		initMathJax();
 	});
+
+	async function checkWebGpuSupport() {
+		if (!(navigator as any).gpu) {
+			config.webGpuSupported = false;
+			return;
+		}
+
+		try {
+			const adapter = await (navigator as any).gpu.requestAdapter();
+			if (adapter) {
+				config.webGpuSupported = true;
+				config.shaderF16Supported = adapter.features.has('shader-f16');
+				persistentConfig.set(config);
+			}
+		} catch (error) {
+			console.error('WebGPU not supported:', error);
+			config.webGpuSupported = false;
+			persistentConfig.set(config);
+		}
+	}
+
+	async function initializeLocalModel() {
+		if (!config.webGpuSupported) return;
+
+		isLoading = true;
+		worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+		
+		worker.onmessage = (event) => {
+			const { type, data } = event.data;
+
+			switch (type) {
+				case 'progress':
+					loadingProgress = data;
+					if (data.file && data.file !== 'complete') {
+						fileProgress[data.file] = {
+							name: data.file,
+							progress: data.progress || 0,
+							loaded: data.loaded || 0,
+							total: data.total || 0
+						};
+						fileProgress = { ...fileProgress };
+					}
+					break;
+				case 'init_done':
+					loadingProgress.status = 'Model loaded successfully!';
+					isModelLoaded = true;
+					isLoading = false;
+					fileProgress = {};
+					break;
+				case 'init_error':
+					loadingProgress.status = `Error: ${data}`;
+					hasInitializationError = true;
+					isLoading = false;
+					fileProgress = {};
+					break;
+				case 'start_generate':
+					break;
+				case 'update':
+					handleLocalModelUpdate(data);
+					break;
+				case 'complete':
+					handleLocalModelComplete();
+					break;
+				case 'generate_error':
+					handleLocalModelError(data);
+					break;
+			}
+		};
+
+		worker.postMessage({ type: 'init', data: { modelPath: config.local.modelPath } });
+	}
+
+	function handleLocalModelUpdate(data: string) {
+		if (activeTopic && activeTopic.messages.length > 0) {
+			const lastMessage = activeTopic.messages[activeTopic.messages.length - 1];
+			if (lastMessage.role === 'assistant') {
+				lastMessage.content += data;
+				lastMessage.isLoading = false;
+				
+				// Handle thinking state
+				const openThink = (lastMessage.content.match(/<think>/g) || []).length;
+				const closeThink = (lastMessage.content.match(/<\/think>/g) || []).length;
+				lastMessage.isThinking = openThink > closeThink;
+				
+				topics = [...topics];
+				persistentTopics.set(topics);
+				// Render math equations
+				setTimeout(() => typesetMath(), 100);
+			}
+		}
+	}
+
+	function handleLocalModelComplete() {
+		if (activeTopic && activeTopic.messages.length > 0) {
+			const lastMessage = activeTopic.messages[activeTopic.messages.length - 1];
+			if (lastMessage.role === 'assistant') {
+				lastMessage.isLoading = false;
+				lastMessage.isThinking = false;
+				topics = [...topics];
+				persistentTopics.set(topics);
+				// Render math equations
+				setTimeout(() => typesetMath(), 100);
+			}
+		}
+		isLoading = false;
+	}
+
+	function handleLocalModelError(data: string) {
+		if (activeTopic && activeTopic.messages.length > 0) {
+			const lastMessage = activeTopic.messages[activeTopic.messages.length - 1];
+			if (lastMessage.role === 'assistant') {
+				lastMessage.content = `Error: ${data}`;
+				lastMessage.error = true;
+				lastMessage.isLoading = false;
+				lastMessage.isThinking = false;
+				topics = [...topics];
+				persistentTopics.set(topics);
+				// Render math equations
+				setTimeout(() => typesetMath(), 100);
+			}
+		}
+		isLoading = false;
+	}
 
 	async function fetchAvailableModels() {
 		try {
-			const response = await fetch(`${config.endpoint}/api/tags`);
+			const response = await fetch(`${config.ollama.endpoint}/api/tags`);
 			if (!response.ok) {
 				throw new Error('Failed to fetch models');
 			}
 			const data = await response.json();
 			availableModels = data.models.map((m: any) => m.name);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'An unknown error occurred';
-			console.error(err);
+			console.error('Failed to fetch Ollama models:', err);
+			// This is not a critical error, just log it
 		}
 	}
 
 	function createNewTopic() {
+		// If there's already a draft topic, save it first (empty draft)
+		if (draftTopic) {
+			// Only save if it has messages, otherwise just discard
+			if (draftTopic.messages.length > 0) {
+				draftTopic.isDraft = false;
+				persistentTopics.update((currentTopics) => [...currentTopics, draftTopic]);
+			}
+		}
+
 		const newTopic: ChatTopic = {
 			id: crypto.randomUUID(),
 			name: `Chat ${topics.length + 1}`,
 			messages: [],
-			systemPrompt: `You are a helpful assistant.
-You go into conversation with the user so you answer.
-Keep your answers short unless the user says otherwise.
+			systemPrompt: `You are a helpful assistant. You go into conversation with the user so you answer. Keep your answers short unless the user says otherwise.
 
 Sometimes you need to know things that can easily be programmed, like the length of a string or the current date and time, etc.
 In that case you can create a code snippet in javascript that calculates the answer and logs it,
 make sure to log it to see the result, and the user will respond back with the output,
-, use this output to write back the actual answer and don't answer by yourself, you need to encapsulate the snippets in <execute> tags,
+use this output to write back the actual answer and don't answer by yourself, you need to encapsulate the snippets in <execute> tags,
 the user will respond with the results enclosed with the tag <answer> so you can continue your answer based on this.
 Do not ask the user to provide an answer or anything after wards, this happens automatically.
 Also do not answer immediately after asking for code execution, instead stop after the closing tag and wait for a user response with the answer.
-For instance, this can be an example conversion (commented, anything in parenthesis, except for console.log(), is meant for explanation in the prompt, do not use it):
-User: how many characters are in the sentence "Hi, my name is mohamed"?
-Assistant: Hmm, let me think... (the user sees this)
-<execute> (the actual user doesn't see this)
-\`\`\` (nor this)
-console.log("Hi, my name is mohamed".length) (nor this, etc)
-\`\`\`
-</execute> (the user doesn't see this and you stop here)
-User: <answer> (the user also doesn't see this)
-22 (nor this)
-</answer>
-Assistant: It seems that the sentence you've mentioned contains 22 characters. (the user sees this as if it's in the same message as the first line "Hmm,")
 
-Think before answering or coding, this usually holds better quality answers. Use <think> tags to enclose your thinking process, this will not be shown to the user as a part of the answer. Make sure that the thinking process is enclosed in a <think> tag and not sent as is. Do not send something like "the user is asking..." without enclosing them in a think tag. For example (with comments):
-User: how many Wenesdays are there usually in one month.
-Assistant:
-<think> (note the think tag here, this is important)
-The user is asking about ... the user probably means one calendar month. The user probably means Wednesdays and it's a typo. how many Wednesdays is equivalent to how many weeks. We can calculate the average number of days in a month and divide by 7 to get the ...
-<think>
-The average ...
+Think before answering, this usually holds better quality answers. Use <think> tags to enclose your thinking process, this will not be shown to the user as a part of the answer. Make sure that the thinking process is enclosed in a <think> tag and not sent as is.
 
 Note that the actual user of the system doesn't see execute or answer tags or what's inside, so you'd need to continue your answer as if these do not exist.
 You don't know anything about "now", the date you have is incorrect, so you'd always need to calculate it.`,
-			model: availableModels[0] || 'llama2',
-			createdAt: new Date().toISOString()
+			model: availableModels[0] || 'local',
+			modelSource: config.defaultModelSource, // Use default from config
+			createdAt: new Date().toISOString(),
+			lastUpdated: new Date().toISOString(),
+			isDraft: true
 		};
-		persistentTopics.update((currentTopics) => [...currentTopics, newTopic]);
+		draftTopic = newTopic;
 		activeTopicId.set(newTopic.id);
 	}
 
 	function stopGeneration() {
-		if (abortController) {
-			abortController.abort();
+		if (activeTopic?.modelSource === 'local') {
+			if (worker) {
+				worker.postMessage({ type: 'interrupt' });
+			}
+		} else {
+			if (abortController) {
+				abortController.abort();
+			}
 		}
 	}
 
 	function deleteTopic(topicIdToDelete: string) {
 		if (!confirm('Are you sure you want to delete this chat?')) {
+			return;
+		}
+
+		// Check if it's a draft topic
+		if (draftTopic && draftTopic.id === topicIdToDelete) {
+			draftTopic = undefined;
+			
+			// If the active topic was the draft, select another one
+			if (currentActiveTopicId === topicIdToDelete) {
+				if (topics.length > 0) {
+					activeTopicId.set(topics[0].id);
+				} else {
+					createNewTopic();
+				}
+			}
 			return;
 		}
 
@@ -185,6 +438,9 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			if (topics.length > 0) {
 				// Select the previous topic or the first one if the deleted one was the first
 				activeTopicId.set(topics[Math.max(0, topicIndex - 1)].id);
+			} else if (draftTopic) {
+				// If no saved topics but there's a draft, switch to it
+				activeTopicId.set(draftTopic.id);
 			} else {
 				// If no topics are left, create a new one
 				createNewTopic();
@@ -208,12 +464,68 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		};
 
 		activeTopic.messages.push(userMessage);
-		persistentTopics.set(topics);
+		activeTopic.lastUpdated = new Date().toISOString();
 
-		await generateAssistantResponse();
+		// If this is a draft topic, save it to persistent storage
+		if (activeTopic.isDraft) {
+			const topicToSave = activeTopic;
+			topicToSave.isDraft = false;
+			draftTopic = undefined;
+			persistentTopics.update((currentTopics) => [...currentTopics, topicToSave]);
+		} else {
+			persistentTopics.set(topics);
+		}
+
+		// Generate response based on model source
+		if (activeTopic.modelSource === 'local') {
+			await generateLocalResponse();
+		} else {
+			await generateRemoteResponse();
+		}
 	}
 
-	async function generateAssistantResponse(/*options?: { appendToMessageIndex?: number }*/) {
+	async function generateLocalResponse() {
+		if (!activeTopic || !worker || !isModelLoaded) return;
+
+		isLoading = true;
+		error = null;
+
+		const assistantMessage: Message = {
+			id: crypto.randomUUID(),
+			role: 'assistant',
+			content: '',
+			timestamp: new Date().toISOString(),
+			isLoading: true
+		};
+
+		activeTopic.messages.push(assistantMessage);
+		activeTopic.lastUpdated = new Date().toISOString();
+		persistentTopics.set(topics);
+
+		const chat_history = activeTopic.messages.slice(0, -1).map((msg) => ({
+			role: msg.role,
+			content: msg.content
+		}));
+
+		// Add system prompt
+		const messagesToSend = [...chat_history];
+		if (activeTopic.systemPrompt) {
+			messagesToSend.unshift({ role: 'system', content: activeTopic.systemPrompt });
+		}
+
+		worker.postMessage({
+			type: 'generate',
+			data: {
+				userInput: activeTopic.messages[activeTopic.messages.length - 2].content,
+				chat_history: messagesToSend,
+				maxTokens: config.local.maxTokens,
+				topK: config.local.topK,
+				temperature: config.local.temperature
+			}
+		});
+	}
+
+	async function generateRemoteResponse() {
 		if (!activeTopic) return;
 
 		isLoading = true;
@@ -229,17 +541,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			messagesToSend.unshift({ role: 'system', content: activeTopic.systemPrompt });
 		}
 
-		let placeholderIndex: number;
-		let placeholderMessage: Message;
-		// let baseContent = '';
-
-		// if (options?.appendToMessageIndex !== undefined) {
-		// 	placeholderIndex = options.appendToMessageIndex;
-		// 	placeholderMessage = activeTopic.messages[placeholderIndex];
-		// 	baseContent = placeholderMessage.content;
-		// 	activeTopic.messages[placeholderIndex].isLoading = true;
-		// } else {
-		placeholderMessage = {
+		const placeholderMessage: Message = {
 			id: crypto.randomUUID(),
 			role: 'assistant',
 			content: '',
@@ -247,12 +549,12 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			isLoading: true
 		};
 		activeTopic.messages.push(placeholderMessage);
-		placeholderIndex = activeTopic.messages.length - 1;
-		// }
+		const placeholderIndex = activeTopic.messages.length - 1;
+		activeTopic.lastUpdated = new Date().toISOString();
 		persistentTopics.set(topics);
 
 		try {
-			const response = await fetch(`${config.endpoint}/api/chat`, {
+			const response = await fetch(`${config.ollama.endpoint}/api/chat`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -260,8 +562,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 					messages: messagesToSend,
 					stream: true,
 					options: {
-						temperature: config.temperature,
-						top_k: config.topK
+						temperature: config.ollama.temperature,
+						top_k: config.ollama.topK
 					}
 				}),
 				signal: abortController.signal
@@ -293,12 +595,10 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 					if (parsed.message?.content) {
 						if (firstChunk) {
 							firstChunk = false;
-							// if (options?.appendToMessageIndex === undefined) {
 							activeTopic.messages[placeholderIndex].isLoading = false;
-							// }
 						}
 						content += parsed.message.content;
-						activeTopic.messages[placeholderIndex].content = content; // baseContent + content;
+						activeTopic.messages[placeholderIndex].content = content;
 
 						// Handle thinking state
 						const openThink = (
@@ -310,15 +610,16 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 						activeTopic.messages[placeholderIndex].isThinking = openThink > closeThink;
 
 						persistentTopics.set(topics);
+						// Render math equations
+						setTimeout(() => typesetMath(), 100);
 					}
 				}
 			}
 
-			// --- Handle Code Execution ---
+			// Handle Code Execution
 			const wasExecuted = await handleCodeExecution(placeholderIndex);
-			// --- End Handle Code Execution ---
 
-			// --- Title Generation ---
+			// Title Generation
 			if (!wasExecuted && activeTopic.name.startsWith('Chat ')) {
 				const conversationLength = activeTopic.messages.reduce(
 					(acc, msg) => acc + msg.content.length,
@@ -328,7 +629,6 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 					generateTitle(activeTopic);
 				}
 			}
-			// --- End Title Generation ---
 		} catch (err) {
 			if (err instanceof Error && err.name === 'AbortError') {
 				console.log('Fetch aborted by user.');
@@ -360,7 +660,6 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			abortController = null;
 			persistentTopics.set(topics);
 			await tick();
-			// Do NOT scroll to bottom here, let user read the response.
 		}
 	}
 
@@ -396,171 +695,211 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 				};
 
 				activeTopic.messages.push(answerMessage);
+				activeTopic.lastUpdated = new Date().toISOString();
 				persistentTopics.set(topics);
 
-				// Regenerate assistant response, as a new message
-				await generateAssistantResponse();
+				// Generate the next response
+				if (activeTopic.modelSource === 'local') {
+					await generateLocalResponse();
+				} else {
+					await generateRemoteResponse();
+				}
 				return true;
 			}
 		}
 		return false;
 	}
 
-	async function retryLastMessage() {
-		if (!activeTopic) return;
-
-		const lastMessage = activeTopic.messages[activeTopic.messages.length - 1];
-		if (lastMessage?.error) {
-			activeTopic.messages.pop(); // Remove the error message
-			persistentTopics.set(topics);
-			await generateAssistantResponse();
-		}
-	}
-
 	async function generateTitle(topic: ChatTopic) {
+		if (!topic || topic.messages.length === 0) return;
+
+		const conversationText = topic.messages
+			.slice(0, 10) // Use first 10 messages
+			.map((msg) => `${msg.role}: ${msg.content}`)
+			.join('\n');
+
+		const titlePrompt = TITLE_GENERATION_PROMPT + conversationText;
+
 		try {
-			const conversationForTitle = topic.messages.map((m) => `${m.role}: ${m.content}`).join('\n');
-			const prompt = `${TITLE_GENERATION_PROMPT}\n${conversationForTitle}`;
+			if (topic.modelSource === 'local') {
+				// For local models, we'd need to implement a separate title generation
+				// For now, skip title generation for local models
+				return;
+			} else {
+				const response = await fetch(`${config.ollama.endpoint}/api/generate`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						model: topic.model,
+						prompt: titlePrompt,
+						stream: false,
+						options: {
+							temperature: 0.3,
+							top_k: 20,
+							num_predict: 50
+						}
+					})
+				});
 
-			const response = await fetch(`${config.endpoint}/api/generate`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					model: topic.model,
-					prompt: prompt,
-					stream: false,
-					options: {
-						temperature: 0.2
+				if (response.ok) {
+					const data = await response.json();
+					const title = data.response?.trim();
+					if (title && title.length > 0) {
+						topic.name = title.replace(/^["']|["']$/g, '').substring(0, 50);
+						topic.lastUpdated = new Date().toISOString();
+						persistentTopics.set(topics);
 					}
-				})
-			});
-
-			if (!response.ok) {
-				const errorData = await response.text();
-				throw new Error(`Title generation failed: ${response.status} ${errorData}`);
-			}
-
-			const data = await response.json();
-			let title = data.response.trim().replace(/["']/g, '');
-
-			// Additional cleaning
-			if (title.toLowerCase().startsWith('title:')) {
-				title = title.substring(6).trim();
-			}
-
-			const topicIndex = topics.findIndex((t) => t.id === topic.id);
-			if (topicIndex !== -1) {
-				topics[topicIndex].name = title;
-				persistentTopics.set(topics);
+				}
 			}
 		} catch (err) {
-			console.error('Error generating title:', err);
-			// Fail silently so it doesn't interrupt user
+			console.error('Failed to generate title:', err);
 		}
 	}
 
-	function startEdit(event: CustomEvent<{ idx: number }>) {
-		const index = event.detail.idx;
-		editingIndex = index;
-		editingContent = activeTopic?.messages[index]?.content || '';
+	// Pass through functions for child components
+	function handleEditMessage(event: CustomEvent<{ index: number; content: string }>) {
+		editingIndex = event.detail.index;
+		editingContent = event.detail.content;
 	}
 
-	function cancelEdit() {
+	function handleSaveEdit(event: CustomEvent<{ index: number; content: string }>) {
+		const { index, content } = event.detail;
+		if (activeTopic && activeTopic.messages[index]) {
+			activeTopic.messages[index].content = content;
+			activeTopic.lastUpdated = new Date().toISOString();
+			persistentTopics.set(topics);
+		}
 		editingIndex = null;
 		editingContent = '';
 	}
 
-	async function saveAndResubmit(event: CustomEvent<{ idx: number; content: string }>) {
-		if (!activeTopic || isLoading) return;
-		const { idx, content } = event.detail;
-
-		// 1. Update the user's message
-		activeTopic.messages[idx].content = content.trim();
-
-		// 2. Remove all subsequent messages
-		activeTopic.messages.splice(idx + 1);
-
-		// 3. Reset editing state
+	function handleCancelEdit() {
 		editingIndex = null;
 		editingContent = '';
-
-		// 4. Regenerate the assistant's response
-		await generateAssistantResponse();
 	}
 
-	function deleteMessage(event: CustomEvent<{ idx: number }>) {
-		const { idx } = event.detail;
-		if (!activeTopic) return;
-		// Remove user message and its assistant response if present
-		activeTopic.messages.splice(idx, 1);
-		if (activeTopic.messages[idx]?.role === 'assistant') {
-			activeTopic.messages.splice(idx, 1);
+	function handleUpdateSystemPrompt(event: CustomEvent<string>) {
+		if (activeTopic) {
+			activeTopic.systemPrompt = event.detail;
+			activeTopic.lastUpdated = new Date().toISOString();
+			persistentTopics.set(topics);
 		}
-		persistentTopics.set(topics);
 	}
 
-	async function regenerateAssistant(event: CustomEvent<{ idx: number }>) {
-		if (!activeTopic || isLoading) return;
-
-		const { idx } = event.detail;
-
-		// remove the assistant message
-		activeTopic.messages.splice(idx);
-		persistentTopics.set(topics);
-
-		await generateAssistantResponse();
+	function handleUpdateModel(event: CustomEvent<string>) {
+		if (activeTopic) {
+			activeTopic.model = event.detail;
+			activeTopic.lastUpdated = new Date().toISOString();
+			persistentTopics.set(topics);
+		}
 	}
 
-	async function regenerateFromUserMessage(event: CustomEvent<{ idx: number }>) {
-		if (!activeTopic || isLoading) return;
-		const { idx } = event.detail;
+	function handleUpdateModelSource(event: CustomEvent<'local' | 'remote'>) {
+		if (activeTopic) {
+			activeTopic.modelSource = event.detail;
+			// Update model to appropriate default
+			if (event.detail === 'local') {
+				activeTopic.model = 'local';
+			} else {
+				activeTopic.model = availableModels[0] || 'llama2';
+			}
+			activeTopic.lastUpdated = new Date().toISOString();
+			persistentTopics.set(topics);
+		}
+	}
 
-		// Remove all subsequent messages
-		activeTopic.messages.splice(idx + 1);
-		persistentTopics.set(topics);
+	function handleUpdateConfig(event: CustomEvent<Partial<ChatConfig>>) {
+		const updatedConfig = { ...config, ...event.detail };
+		persistentConfig.set(updatedConfig);
+	}
 
-		// Regenerate the assistant's response
-		await generateAssistantResponse();
+	function handleRetryInitialization() {
+		if (config.webGpuSupported) {
+			hasInitializationError = false;
+			loadingProgress = { status: 'loading', file: '...', progress: 0 };
+			fileProgress = {};
+			initializeLocalModel();
+		}
 	}
 </script>
 
-<div class="flex h-full bg-white rounded-lg shadow-md">
-	<!-- Sidebar for topics -->
+<div class="flex h-screen bg-gray-100">
+	<!-- Sidebar -->
 	{#if showTopics}
-		<ChatSidebar {topics} {currentActiveTopicId} {createNewTopic} {deleteTopic} />
+		<!-- Backdrop overlay to close sidebar -->
+		<div 
+			class="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
+			on:click={() => (showTopics = false)}
+		></div>
+		
+		<!-- Sidebar panel -->
+		<div class="w-80 bg-white shadow-lg fixed left-0 top-0 bottom-0 z-20 lg:relative lg:z-0">
+					<ChatSidebar
+			topics={draftTopic ? [draftTopic, ...sortedTopics] : sortedTopics}
+			{currentActiveTopicId}
+			{config}
+			{isModelLoaded}
+			{hasInitializationError}
+			{loadingProgress}
+			{fileProgress}
+			on:selectTopic={(e) => activeTopicId.set(e.detail)}
+			on:deleteTopic={(e) => deleteTopic(e.detail)}
+			on:createTopic={createNewTopic}
+			on:toggleTopics={() => (showTopics = !showTopics)}
+			on:updateConfig={handleUpdateConfig}
+			on:retryInitialization={handleRetryInitialization}
+		/>
+		</div>
 	{/if}
 
-	<!-- Main chat area -->
-	<div class="flex flex-col flex-1 h-screen">
-		<ChatHeader
-			{activeTopic}
-			on:toggleTopics={() => (showTopics = !showTopics)}
-			on:toggleSettings={() => (showSettings = !showSettings)}
-		/>
+	<!-- Main Chat Area -->
+	<div class="flex-1 flex flex-col min-h-0">
+		<!-- Header -->
+		<div class="flex-shrink-0">
+			<ChatHeader
+				{activeTopic}
+				{showTopics}
+				{showSettings}
+				{isLoading}
+				on:toggleTopics={() => (showTopics = !showTopics)}
+				on:toggleSettings={() => (showSettings = !showSettings)}
+				on:stopGeneration={stopGeneration}
+			/>
+		</div>
 
-		<!-- Settings -->
-		{#if showSettings && activeTopic}
-			<ChatSettings {activeTopic} {config} {availableModels} />
+		<!-- Settings Panel -->
+		{#if showSettings}
+			<div class="flex-shrink-0 bg-white border-b border-gray-200">
+				<div class="max-h-80 overflow-y-auto">
+					<ChatSettings
+						{activeTopic}
+						{availableModels}
+						on:updateSystemPrompt={handleUpdateSystemPrompt}
+						on:updateModel={handleUpdateModel}
+						on:updateModelSource={handleUpdateModelSource}
+					/>
+				</div>
+			</div>
 		{/if}
 
-		<!-- Chat messages -->
-		{#if config}
+		<!-- Chat Messages -->
+		<div class="flex-1 min-h-0 bg-white overflow-hidden">
 			<ChatMessageArea
 				{activeTopic}
-				{isLoading}
-				on:startEdit={startEdit}
-				on:cancelEdit={cancelEdit}
-				on:saveEdit={saveAndResubmit}
-				on:deleteMessage={deleteMessage}
-				on:regenerateAssistant={regenerateAssistant}
-				on:regenerateFromUser={regenerateFromUserMessage}
+				on:editMessage={handleEditMessage}
+				on:saveEdit={handleSaveEdit}
+				on:cancelEdit={handleCancelEdit}
 			/>
-		{/if}
+		</div>
 
-		<!-- Chat input -->
-		<ChatInput {isLoading} on:submit={submitUserInput} on:stop={stopGeneration} />
+		<!-- Input Area -->
+		<div class="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+			<ChatInput
+				{isLoading}
+				disabled={(!isModelLoaded && activeTopic?.modelSource === 'local') || 
+					(activeTopic?.modelSource === 'remote' && availableModels.length === 0)}
+				on:submit={submitUserInput}
+			/>
+		</div>
 	</div>
-</div>
-
-<style>
-</style> 
+</div> 

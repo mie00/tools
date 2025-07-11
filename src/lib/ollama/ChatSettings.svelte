@@ -1,80 +1,113 @@
 <script lang="ts">
-	import { persistentTopics, persistentConfig } from './store';
-	import type { ChatTopic, OllamaConfig } from './types';
+	import { createEventDispatcher } from 'svelte';
+	import type { ChatTopic } from './types';
 
-	export let activeTopic: ChatTopic;
-	export let config: OllamaConfig;
+	const dispatch = createEventDispatcher();
+
+	export let activeTopic: ChatTopic | undefined;
 	export let availableModels: string[];
 
-	function save() {
-		persistentConfig.set(config);
-		persistentTopics.update((topics) => {
-			const index = topics.findIndex((t) => t.id === activeTopic.id);
-			if (index !== -1) {
-				topics[index] = activeTopic;
-			}
-			return topics;
-		});
+	function handleUpdateSystemPrompt(prompt: string) {
+		dispatch('updateSystemPrompt', prompt);
+	}
+
+	function handleUpdateModel(model: string) {
+		dispatch('updateModel', model);
+	}
+
+	function handleUpdateModelSource(source: 'local' | 'remote') {
+		dispatch('updateModelSource', source);
 	}
 </script>
 
 <div class="p-4 bg-gray-50 border-b border-gray-200">
-	<h3 class="font-semibold mb-2 text-gray-800">Configuration</h3>
-	<div class="grid grid-cols-2 gap-4">
-		<div>
-			<label for="endpoint" class="text-gray-700">Ollama Endpoint</label>
-			<input
-				type="text"
-				id="endpoint"
-				bind:value={config.endpoint}
+	<h3 class="font-semibold mb-4 text-gray-800 flex items-center gap-2">
+		🔧 Chat Settings
+	</h3>
+	
+	{#if activeTopic}
+		<!-- Model Source Selection -->
+		<div class="mb-4">
+			<fieldset>
+				<legend class="block text-sm font-medium text-gray-700 mb-2">Model Source</legend>
+				<div class="flex space-x-4">
+					<label class="flex items-center">
+						<input
+							type="radio"
+							value="local"
+							checked={activeTopic.modelSource === 'local'}
+							on:change={() => handleUpdateModelSource('local')}
+							class="mr-2"
+						/>
+						<span>Local Model</span>
+					</label>
+					<label class="flex items-center">
+						<input
+							type="radio"
+							value="remote"
+							checked={activeTopic.modelSource === 'remote'}
+							on:change={() => handleUpdateModelSource('remote')}
+							class="mr-2"
+						/>
+						<span>Remote Model (Ollama)</span>
+					</label>
+				</div>
+			</fieldset>
+		</div>
+
+		<!-- Model Selection -->
+		<div class="mb-4">
+			<label for="model" class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+			{#if activeTopic.modelSource === 'local'}
+				<input
+					id="model"
+					type="text"
+					value="Qwen3-0.6B-ONNX (Local)"
+					readonly
+					class="w-full p-2 border rounded border-gray-300 bg-gray-100"
+				/>
+				<p class="text-xs text-gray-500 mt-1">
+					ℹ️ Check Global Settings for WebGPU status and model loading
+				</p>
+			{:else}
+				<select
+					id="model"
+					value={activeTopic.model}
+					on:change={(e) => handleUpdateModel((e.target as HTMLSelectElement).value)}
+					class="w-full p-2 border rounded border-gray-300"
+				>
+					{#each availableModels as model}
+						<option value={model}>{model}</option>
+					{:else}
+						<option disabled>No models available</option>
+					{/each}
+				</select>
+				{#if availableModels.length === 0}
+					<p class="text-xs text-gray-500 mt-1">
+						ℹ️ Check Global Settings to configure Ollama endpoint
+					</p>
+				{/if}
+			{/if}
+		</div>
+
+		<!-- System Prompt -->
+		<div class="mb-4">
+			<label for="system-prompt" class="block text-sm font-medium text-gray-700 mb-2">System Prompt</label>
+			<textarea
+				id="system-prompt"
+				value={activeTopic.systemPrompt}
+				on:input={(e) => handleUpdateSystemPrompt((e.target as HTMLTextAreaElement).value)}
+				rows="4"
 				class="w-full p-2 border rounded border-gray-300"
-			/>
+				placeholder="Enter instructions for how the AI should behave in this chat..."
+			></textarea>
+			<p class="text-xs text-gray-500 mt-1">
+				💡 This affects only this chat. Set defaults in Global Settings.
+			</p>
 		</div>
-		<div>
-			<label for="model" class="text-gray-700">Model</label>
-			<select
-				id="model"
-				bind:value={activeTopic.model}
-				class="w-full p-2 border rounded border-gray-300"
-			>
-				{#each availableModels as model}
-					<option value={model}>{model}</option>
-				{/each}
-			</select>
-		</div>
-		<div>
-			<label for="temp" class="text-gray-700">Temperature: {config.temperature}</label>
-			<input
-				type="range"
-				id="temp"
-				min="0"
-				max="1"
-				step="0.1"
-				bind:value={config.temperature}
-				class="w-full"
-			/>
-		</div>
-		<div>
-			<label for="topk" class="text-gray-700">Top K</label>
-			<input
-				type="number"
-				id="topk"
-				bind:value={config.topK}
-				class="w-full p-2 border rounded border-gray-300"
-			/>
-		</div>
-	</div>
-	<div class="mt-4">
-		<label for="system-prompt" class="text-gray-700">System Prompt</label>
-		<textarea
-			id="system-prompt"
-			bind:value={activeTopic.systemPrompt}
-			on:input={save}
-			rows="3"
-			class="w-full p-2 border rounded border-gray-300"
-		></textarea>
-	</div>
-	<button on:click={save} class="mt-2 bg-green-500 hover:bg-green-600 text-white p-2 rounded">
-		Save Config
-	</button>
+	{:else}
+		<p class="text-gray-600 text-center py-8">
+			📝 Select a chat to configure its specific settings
+		</p>
+	{/if}
 </div> 
