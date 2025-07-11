@@ -19,13 +19,20 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'calculator',
-						name: 'Calculator',
-						confidence: expect.any(Number)
-					})
-				);
+				const calculatorSuggestion = result.find((s) => s.id === 'calculator');
+
+				expect(calculatorSuggestion).toBeDefined();
+				expect(calculatorSuggestion).toMatchObject({
+					id: 'calculator',
+					name: 'Calculator',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the expression parameter is correctly encoded in the URL
+				if (calculatorSuggestion) {
+					const url = new URL(calculatorSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('expression')).toBe(input);
+				}
 			});
 		});
 
@@ -34,104 +41,180 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'functiondrawer',
-						name: 'Function Drawer',
-						confidence: expect.any(Number)
-					})
-				);
+				const functionDrawerSuggestion = result.find((s) => s.id === 'functiondrawer');
+
+				expect(functionDrawerSuggestion).toBeDefined();
+				expect(functionDrawerSuggestion).toMatchObject({
+					id: 'functiondrawer',
+					name: 'Function Drawer',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the expression parameter is correctly encoded in the URL
+				if (functionDrawerSuggestion) {
+					const url = new URL(functionDrawerSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('expression')).toBe(input);
+				}
 			});
 		});
 
 		it('should detect unit conversions', () => {
 			const testCases = [
 				// Length
-				'10 meters to feet',
-				'5 km to miles',
-				'100 cm to inches',
-				'2.5 yards to meters',
+				{
+					input: '10 meters to feet',
+					expectedParams: { from: 'meter', to: 'feet', amount: '10' }
+				},
+				{ input: '5 km to miles', expectedParams: { from: 'kilometer', to: 'mile', amount: '5' } },
+				{
+					input: '100 cm to inches',
+					expectedParams: { from: 'centimeter', to: 'inch', amount: '100' }
+				},
+				{
+					input: '2.5 yards to meters',
+					expectedParams: { from: 'yard', to: 'meter', amount: '2.5' }
+				},
 
 				// Weight
-				'5 kg to pounds',
-				'150 lbs to kg',
-				'500 grams to ounces',
+				{ input: '5 kg to pounds', expectedParams: { from: 'kilogram', to: 'pound', amount: '5' } },
+				{
+					input: '150 lbs to kg',
+					expectedParams: { from: 'pound', to: 'kilogram', amount: '150' }
+				},
+				{
+					input: '500 grams to ounces',
+					expectedParams: { from: 'gram', to: 'ounce', amount: '500' }
+				},
 
 				// Temperature
-				'100°F to celsius',
-				'0°C to fahrenheit',
+				{
+					input: '100°F to celsius',
+					expectedParams: { from: 'fahrenheit', to: 'celsius', amount: '100' }
+				},
+				{
+					input: '0°C to fahrenheit',
+					expectedParams: { from: 'celsius', to: 'fahrenheit', amount: '0' }
+				},
 
 				// Speed
-				'50 mph to km/h',
-				'100 km/h to mph',
+				{
+					input: '50 mph to km/h',
+					expectedParams: { from: 'miles_per_hour', to: 'kilometers_per_hour', amount: '50' }
+				},
+				{
+					input: '100 km/h to mph',
+					expectedParams: { from: 'kilometers_per_hour', to: 'miles_per_hour', amount: '100' }
+				},
 
 				// Volume
-				'5 liters to gallons',
-				'1 gallon to liters',
+				{
+					input: '5 liters to gallons',
+					expectedParams: { from: 'liter', to: 'gallon', amount: '5' }
+				},
+				{
+					input: '1 gallon to liters',
+					expectedParams: { from: 'gallon', to: 'liter', amount: '1' }
+				},
 
 				// Different formats
-				'convert 10 meters to feet',
-				'25 kg in pounds'
+				{
+					input: 'convert 10 meters to feet',
+					expectedParams: { from: 'meter', to: 'feet', amount: '10' }
+				},
+				{
+					input: '25 kg in pounds',
+					expectedParams: { from: 'kilogram', to: 'pound', amount: '25' }
+				}
 			];
 
-			testCases.forEach((input) => {
+			testCases.forEach(({ input, expectedParams }) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'unitconverter',
-						name: 'Unit Converter',
-						confidence: expect.any(Number)
-					})
-				);
+				const unitSuggestion = result.find((s) => s.id === 'unitconverter');
+
+				expect(unitSuggestion).toBeDefined();
+				expect(unitSuggestion).toMatchObject({
+					id: 'unitconverter',
+					name: 'Unit Converter',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the conversion parameters are correctly encoded in the URL
+				if (unitSuggestion) {
+					const url = new URL(unitSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('from')).toBe(expectedParams.from);
+					expect(url.searchParams.get('to')).toBe(expectedParams.to);
+					expect(url.searchParams.get('value')).toBe(expectedParams.amount);
+				}
 			});
 		});
 
 		it('should detect color values', () => {
 			const testCases = [
 				// Hex colors (6-digit)
-				'#FF5733',
-				'#000000',
-				'#FFFFFF',
-				'#ff0000',
-				'#00ff00',
-				'#0000ff',
-				'#123abc',
-				'FF5733', // Without hash
+				{ input: '#FF5733', expectedParam: 'hex', expectedValue: '#FF5733' },
+				{ input: '#000000', expectedParam: 'hex', expectedValue: '#000000' },
+				{ input: '#FFFFFF', expectedParam: 'hex', expectedValue: '#FFFFFF' },
+				{ input: '#ff0000', expectedParam: 'hex', expectedValue: '#ff0000' },
+				{ input: '#00ff00', expectedParam: 'hex', expectedValue: '#00ff00' },
+				{ input: '#0000ff', expectedParam: 'hex', expectedValue: '#0000ff' },
+				{ input: '#123abc', expectedParam: 'hex', expectedValue: '#123abc' },
+				{ input: 'FF5733', expectedParam: 'hex', expectedValue: '#FF5733' }, // Without hash (gets # added)
 
 				// Hex colors (3-digit)
-				'#f57',
-				'#000',
-				'#fff',
-				'#f00',
-				'#0f0',
-				'#00f',
-				'abc', // Without hash
+				{ input: '#f57', expectedParam: 'hex', expectedValue: '#ff5577' },
+				{ input: '#000', expectedParam: 'hex', expectedValue: '#000000' },
+				{ input: '#fff', expectedParam: 'hex', expectedValue: '#ffffff' },
+				{ input: '#f00', expectedParam: 'hex', expectedValue: '#ff0000' },
+				{ input: '#0f0', expectedParam: 'hex', expectedValue: '#00ff00' },
+				{ input: '#00f', expectedParam: 'hex', expectedValue: '#0000ff' },
+				{ input: 'abc', expectedParam: 'hex', expectedValue: '#aabbcc' }, // Without hash (gets # added and expanded)
 
 				// RGB colors
-				'rgb(255, 87, 51)',
-				'rgb(0, 0, 0)',
-				'rgb(255, 255, 255)',
-				'RGB(128, 64, 192)',
-				'rgb(255,0,0)', // No spaces
+				{ input: 'rgb(255, 87, 51)', expectedParam: 'rgb', expectedValue: 'rgb(255, 87, 51)' },
+				{ input: 'rgb(0, 0, 0)', expectedParam: 'rgb', expectedValue: 'rgb(0, 0, 0)' },
+				{ input: 'rgb(255, 255, 255)', expectedParam: 'rgb', expectedValue: 'rgb(255, 255, 255)' },
+				{ input: 'RGB(128, 64, 192)', expectedParam: 'rgb', expectedValue: 'RGB(128, 64, 192)' },
+				{ input: 'rgb(255,0,0)', expectedParam: 'rgb', expectedValue: 'rgb(255,0,0)' }, // No spaces
 
 				// HSL colors
-				'hsl(120, 100%, 50%)',
-				'hsl(0, 0%, 0%)',
-				'hsl(0, 0%, 100%)',
-				'HSL(240, 50%, 75%)',
-				'hsl(60,100,50)', // No % signs
-				'hsl(180, 50%, 25%)'
+				{
+					input: 'hsl(120, 100%, 50%)',
+					expectedParam: 'hsl',
+					expectedValue: 'hsl(120, 100%, 50%)'
+				},
+				{ input: 'hsl(0, 0%, 0%)', expectedParam: 'hsl', expectedValue: 'hsl(0, 0%, 0%)' },
+				{ input: 'hsl(0, 0%, 100%)', expectedParam: 'hsl', expectedValue: 'hsl(0, 0%, 100%)' },
+				{ input: 'HSL(240, 50%, 75%)', expectedParam: 'hsl', expectedValue: 'HSL(240, 50%, 75%)' },
+				{ input: 'hsl(60,100,50)', expectedParam: 'hsl', expectedValue: 'hsl(60,100,50)' }, // No % signs
+				{ input: 'hsl(180, 50%, 25%)', expectedParam: 'hsl', expectedValue: 'hsl(180, 50%, 25%)' }
 			];
 
-			testCases.forEach((input) => {
+			testCases.forEach(({ input, expectedParam, expectedValue }) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'colorpicker',
-						name: 'Color Picker',
-						confidence: expect.any(Number)
-					})
-				);
+				const colorSuggestion = result.find((s) => s.id === 'colorpicker');
+
+				expect(colorSuggestion).toBeDefined();
+				expect(colorSuggestion).toMatchObject({
+					id: 'colorpicker',
+					name: 'Color Picker',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the color parameter is correctly encoded in the URL
+				if (colorSuggestion) {
+					const url = new URL(colorSuggestion.url, 'http://example.com');
+					// All colors are converted to hex format
+					const hexParam = url.searchParams.get('hex');
+					expect(hexParam).toBeDefined();
+					// For hex colors, it should match the expected value
+					if (expectedParam === 'hex') {
+						expect(hexParam).toBe(expectedValue);
+					}
+					// For RGB/HSL colors, it should be a valid hex color
+					else if (expectedParam === 'rgb' || expectedParam === 'hsl') {
+						expect(hexParam).toMatch(/^#[0-9A-Fa-f]{6}$/);
+					}
+				}
 			});
 		});
 
@@ -178,13 +261,22 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'stocktracker',
-						name: 'Stock Tracker',
-						confidence: expect.any(Number)
-					})
-				);
+				const stockSuggestion = result.find((s) => s.id === 'stocktracker');
+
+				expect(stockSuggestion).toBeDefined();
+				expect(stockSuggestion).toMatchObject({
+					id: 'stocktracker',
+					name: 'Stock Tracker',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the stock parameter is correctly encoded in the URL
+				if (stockSuggestion) {
+					const url = new URL(stockSuggestion.url, 'http://example.com');
+					// The stock parameter removes the $ symbol
+					const expectedStockSymbol = input.replace('$', '');
+					expect(url.searchParams.get('stock')).toBe(expectedStockSymbol);
+				}
 			});
 		});
 
@@ -225,7 +317,7 @@ describe('Smart Input Analysis', () => {
 				'curl https://api.example.com/data',
 				'curl -X POST https://api.example.com/users',
 				'curl -H "Content-Type: application/json" https://api.example.com',
-				'  curl https://example.com/api/v1/endpoint',
+				'curl https://example.com/api/v1/endpoint',
 
 				// Complex URLs
 				'https://mail.google.com/mail/u/0/#inbox',
@@ -236,13 +328,20 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'urlexaminer',
-						name: 'URL Examiner',
-						confidence: expect.any(Number)
-					})
-				);
+				const urlSuggestion = result.find((s) => s.id === 'urlexaminer');
+
+				expect(urlSuggestion).toBeDefined();
+				expect(urlSuggestion).toMatchObject({
+					id: 'urlexaminer',
+					name: 'URL Examiner',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the input parameter is correctly encoded in the URL
+				if (urlSuggestion) {
+					const url = new URL(urlSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('input')).toBe(input);
+				}
 			});
 		});
 
@@ -290,13 +389,20 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'jsonformat',
-						name: 'JSON Formatter',
-						confidence: expect.any(Number)
-					})
-				);
+				const jsonSuggestion = result.find((s) => s.id === 'jsonformat');
+
+				expect(jsonSuggestion).toBeDefined();
+				expect(jsonSuggestion).toMatchObject({
+					id: 'jsonformat',
+					name: 'JSON Formatter',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the input parameter is correctly encoded in the URL
+				if (jsonSuggestion) {
+					const url = new URL(jsonSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('input')).toBe(input);
+				}
 			});
 		});
 
@@ -319,49 +425,100 @@ describe('Smart Input Analysis', () => {
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'base64',
-						name: 'Base64',
-						confidence: expect.any(Number)
-					})
-				);
+				const base64Suggestion = result.find((s) => s.id === 'base64');
+
+				expect(base64Suggestion).toBeDefined();
+				expect(base64Suggestion).toMatchObject({
+					id: 'base64',
+					name: 'Base64',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the input parameter is correctly encoded in the URL
+				if (base64Suggestion) {
+					const url = new URL(base64Suggestion.url, 'http://example.com');
+					expect(url.searchParams.get('input')).toBe(input);
+					// Also verify that the operation parameter is set to decode
+					expect(url.searchParams.get('operation')).toBe('decode');
+				}
 			});
 		});
 
 		it('should detect translation commands', () => {
 			const testCases = [
 				// Basic translation patterns
-				'translate hello to spanish',
-				'translate "Good morning" to french',
-				'translate this text to german',
-				'translate welcome to italian',
+				{ input: 'translate hello to spanish', expectedText: 'hello', expectedTo: 'es' },
+				{
+					input: 'translate "Good morning" to french',
+					expectedText: '"Good morning"',
+					expectedTo: 'fr'
+				},
+				{ input: 'translate this text to german', expectedText: 'this text', expectedTo: 'de' },
+				{ input: 'translate welcome to italian', expectedText: 'welcome', expectedTo: 'it' },
 
 				// Different target languages
-				'translate hello to russian',
-				'translate hello to japanese',
-				'translate hello to dutch',
+				{ input: 'translate hello to russian', expectedText: 'hello', expectedTo: 'ru' },
+				{ input: 'translate hello to japanese', expectedText: 'hello', expectedTo: 'ja' },
+				{ input: 'translate hello to dutch', expectedText: 'hello', expectedTo: 'nl' },
 
 				// Shorthand "tr" commands
-				'tr "Hello world" en es',
-				'tr goodbye en fr',
-				'tr welcome en it',
+				{
+					input: 'tr "Hello world" en es',
+					expectedText: 'Hello world',
+					expectedFrom: 'en',
+					expectedTo: 'es'
+				},
+				{
+					input: 'tr goodbye en fr',
+					expectedText: 'goodbye',
+					expectedFrom: 'en',
+					expectedTo: 'fr'
+				},
+				{
+					input: 'tr welcome en it',
+					expectedText: 'welcome',
+					expectedFrom: 'en',
+					expectedTo: 'it'
+				},
 
 				// Various quote styles
-				'translate "hello world" to spanish',
-				"translate 'hello world' to spanish",
-				'translate hello world to spanish'
+				{
+					input: 'translate "hello world" to spanish',
+					expectedText: '"hello world"',
+					expectedTo: 'es'
+				},
+				{
+					input: "translate 'hello world' to spanish",
+					expectedText: "'hello world'",
+					expectedTo: 'es'
+				},
+				{
+					input: 'translate hello world to spanish',
+					expectedText: 'hello world',
+					expectedTo: 'es'
+				}
 			];
 
-			testCases.forEach((input) => {
+			testCases.forEach(({ input, expectedText, expectedFrom, expectedTo }) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'translator',
-						name: 'Language Translator',
-						confidence: expect.any(Number)
-					})
-				);
+				const translationSuggestion = result.find((s) => s.id === 'translator');
+
+				expect(translationSuggestion).toBeDefined();
+				expect(translationSuggestion).toMatchObject({
+					id: 'translator',
+					name: 'Language Translator',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the translation parameters are correctly encoded in the URL
+				if (translationSuggestion) {
+					const url = new URL(translationSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('text')).toBe(expectedText);
+					expect(url.searchParams.get('to')).toBe(expectedTo);
+					if (expectedFrom) {
+						expect(url.searchParams.get('from')).toBe(expectedFrom);
+					}
+				}
 			});
 		});
 
@@ -372,13 +529,21 @@ How are you?
 Good morning`;
 
 			const result = analyzeInput(multiLineInput);
-			expect(result).toContainEqual(
-				expect.objectContaining({
-					id: 'translator',
-					name: 'Language Translator',
-					confidence: expect.any(Number)
-				})
-			);
+			const translationSuggestion = result.find((s) => s.id === 'translator');
+
+			expect(translationSuggestion).toBeDefined();
+			expect(translationSuggestion).toMatchObject({
+				id: 'translator',
+				name: 'Language Translator',
+				confidence: expect.any(Number)
+			});
+
+			// Verify the translation parameters are correctly encoded in the URL
+			if (translationSuggestion) {
+				const url = new URL(translationSuggestion.url, 'http://example.com');
+				expect(url.searchParams.get('text')).toBe('Hello world\nHow are you?\nGood morning');
+				expect(url.searchParams.get('to')).toBe('es');
+			}
 		});
 
 		it('should detect epoch timestamps', () => {
@@ -400,13 +565,20 @@ Good morning`;
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'datetime',
-						name: 'Date & Time',
-						confidence: expect.any(Number)
-					})
-				);
+				const datetimeSuggestion = result.find((s) => s.id === 'datetime');
+
+				expect(datetimeSuggestion).toBeDefined();
+				expect(datetimeSuggestion).toMatchObject({
+					id: 'datetime',
+					name: 'Date & Time',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the timestamp parameter is correctly encoded in the URL
+				if (datetimeSuggestion) {
+					const url = new URL(datetimeSuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('epoch')).toBe(input);
+				}
 			});
 		});
 
@@ -465,76 +637,166 @@ Good morning`;
 
 			testCases.forEach((input) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'datetime',
-						name: 'Date & Time',
-						confidence: expect.any(Number)
-					})
-				);
+				const datetimeSuggestion = result.find((s) => s.id === 'datetime');
+
+				expect(datetimeSuggestion).toBeDefined();
+				expect(datetimeSuggestion).toMatchObject({
+					id: 'datetime',
+					name: 'Date & Time',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the time parameter is correctly encoded in the URL
+				if (datetimeSuggestion) {
+					const url = new URL(datetimeSuggestion.url, 'http://example.com');
+					// The time parameter contains the normalized time, not the original input
+					expect(url.searchParams.get('time')).toBeDefined();
+					expect(url.searchParams.get('time')).toMatch(/\d{1,2}:\d{2}/);
+				}
 			});
 		});
 
 		it('should detect currency conversions', () => {
 			const testCases = [
 				// Major currency pairs
-				'100 USD to EUR',
-				'50 GBP to USD',
-				'25.50 CAD to USD',
-				'1000 EUR to GBP',
-				'500 JPY to USD',
-				'75 AUD to USD',
-				'200 CHF to EUR',
-				'150 USD to JPY',
+				{ input: '100 USD to EUR', expectedAmount: '100', expectedFrom: 'USD', expectedTo: 'EUR' },
+				{ input: '50 GBP to USD', expectedAmount: '50', expectedFrom: 'GBP', expectedTo: 'USD' },
+				{
+					input: '25.50 CAD to USD',
+					expectedAmount: '25.50',
+					expectedFrom: 'CAD',
+					expectedTo: 'USD'
+				},
+				{
+					input: '1000 EUR to GBP',
+					expectedAmount: '1000',
+					expectedFrom: 'EUR',
+					expectedTo: 'GBP'
+				},
+				{ input: '500 JPY to USD', expectedAmount: '500', expectedFrom: 'JPY', expectedTo: 'USD' },
+				{ input: '75 AUD to USD', expectedAmount: '75', expectedFrom: 'AUD', expectedTo: 'USD' },
+				{ input: '200 CHF to EUR', expectedAmount: '200', expectedFrom: 'CHF', expectedTo: 'EUR' },
+				{ input: '150 USD to JPY', expectedAmount: '150', expectedFrom: 'USD', expectedTo: 'JPY' },
 
 				// Cryptocurrency (if supported)
-				'1 BTC to USD',
-				'10 ETH to USD',
-				'1000 USD to BTC',
+				{ input: '1 BTC to USD', expectedAmount: '1', expectedFrom: 'BTC', expectedTo: 'USD' },
+				{ input: '10 ETH to USD', expectedAmount: '10', expectedFrom: 'ETH', expectedTo: 'USD' },
+				{
+					input: '1000 USD to BTC',
+					expectedAmount: '1000',
+					expectedFrom: 'USD',
+					expectedTo: 'BTC'
+				},
 
 				// Asian currencies
-				'1000 CNY to USD',
-				'50000 KRW to USD',
-				'5000 INR to USD',
-				'100 SGD to USD',
-				'1000 THB to USD',
+				{
+					input: '1000 CNY to USD',
+					expectedAmount: '1000',
+					expectedFrom: 'CNY',
+					expectedTo: 'USD'
+				},
+				{
+					input: '50000 KRW to USD',
+					expectedAmount: '50000',
+					expectedFrom: 'KRW',
+					expectedTo: 'USD'
+				},
+				{
+					input: '5000 INR to USD',
+					expectedAmount: '5000',
+					expectedFrom: 'INR',
+					expectedTo: 'USD'
+				},
+				{ input: '100 SGD to USD', expectedAmount: '100', expectedFrom: 'SGD', expectedTo: 'USD' },
+				{
+					input: '1000 THB to USD',
+					expectedAmount: '1000',
+					expectedFrom: 'THB',
+					expectedTo: 'USD'
+				},
 
 				// Emerging markets
-				'100 BRL to USD',
-				'500 MXN to USD',
-				'1000 RUB to USD',
-				'200 ZAR to USD',
-				'150 TRY to USD',
+				{ input: '100 BRL to USD', expectedAmount: '100', expectedFrom: 'BRL', expectedTo: 'USD' },
+				{ input: '500 MXN to USD', expectedAmount: '500', expectedFrom: 'MXN', expectedTo: 'USD' },
+				{
+					input: '1000 RUB to USD',
+					expectedAmount: '1000',
+					expectedFrom: 'RUB',
+					expectedTo: 'USD'
+				},
+				{ input: '200 ZAR to USD', expectedAmount: '200', expectedFrom: 'ZAR', expectedTo: 'USD' },
+				{ input: '150 TRY to USD', expectedAmount: '150', expectedFrom: 'TRY', expectedTo: 'USD' },
 
 				// Different formats
-				'100.50 USD to EUR',
-				'1,000 EUR to USD',
-				'25 USD in EUR',
-				'50 GBP → USD',
+				{
+					input: '100.50 USD to EUR',
+					expectedAmount: '100.50',
+					expectedFrom: 'USD',
+					expectedTo: 'EUR'
+				},
+				{
+					input: '1000 EUR to USD',
+					expectedAmount: '1000',
+					expectedFrom: 'EUR',
+					expectedTo: 'USD'
+				},
+				{ input: '25 USD in EUR', expectedAmount: '25', expectedFrom: 'USD', expectedTo: 'EUR' },
+				{ input: '50 GBP → USD', expectedAmount: '50', expectedFrom: 'GBP', expectedTo: 'USD' },
 
 				// No amount specified
-				'USD to EUR',
-				'GBP to JPY',
-				'EUR to CAD',
+				{ input: 'USD to EUR', expectedAmount: null, expectedFrom: 'USD', expectedTo: 'EUR' },
+				{ input: 'GBP to JPY', expectedAmount: null, expectedFrom: 'GBP', expectedTo: 'JPY' },
+				{ input: 'EUR to CAD', expectedAmount: null, expectedFrom: 'EUR', expectedTo: 'CAD' },
 
 				// Regional currencies
-				'100 SEK to USD',
-				'200 NOK to USD',
-				'150 DKK to USD',
-				'75 PLN to USD',
-				'300 CZK to USD',
-				'10000 HUF to USD'
+				{ input: '100 SEK to USD', expectedAmount: '100', expectedFrom: 'SEK', expectedTo: 'USD' },
+				{ input: '200 NOK to USD', expectedAmount: '200', expectedFrom: 'NOK', expectedTo: 'USD' },
+				{ input: '150 DKK to USD', expectedAmount: '150', expectedFrom: 'DKK', expectedTo: 'USD' },
+				{ input: '75 PLN to USD', expectedAmount: '75', expectedFrom: 'PLN', expectedTo: 'USD' },
+				{ input: '300 CZK to USD', expectedAmount: '300', expectedFrom: 'CZK', expectedTo: 'USD' },
+				{
+					input: '10000 HUF to USD',
+					expectedAmount: '10000',
+					expectedFrom: 'HUF',
+					expectedTo: 'USD'
+				},
+
+				// Mixed case currencies (should be converted to uppercase)
+				{ input: '100 usd to eur', expectedAmount: '100', expectedFrom: 'USD', expectedTo: 'EUR' },
+				{ input: '50 Gbp to USD', expectedAmount: '50', expectedFrom: 'GBP', expectedTo: 'USD' },
+				{ input: '25 cad to Usd', expectedAmount: '25', expectedFrom: 'CAD', expectedTo: 'USD' },
+				{
+					input: '1000 eur to gbp',
+					expectedAmount: '1000',
+					expectedFrom: 'EUR',
+					expectedTo: 'GBP'
+				},
+				{ input: '75 aud to usd', expectedAmount: '75', expectedFrom: 'AUD', expectedTo: 'USD' },
+				{ input: 'usd to eur', expectedAmount: null, expectedFrom: 'USD', expectedTo: 'EUR' },
+				{ input: 'gbp to jpy', expectedAmount: null, expectedFrom: 'GBP', expectedTo: 'JPY' },
+				{ input: 'Eur to Cad', expectedAmount: null, expectedFrom: 'EUR', expectedTo: 'CAD' }
 			];
 
-			testCases.forEach((input) => {
+			testCases.forEach(({ input, expectedAmount, expectedFrom, expectedTo }) => {
 				const result = analyzeInput(input);
-				expect(result).toContainEqual(
-					expect.objectContaining({
-						id: 'currencyconverter',
-						name: 'Currency Converter',
-						confidence: expect.any(Number)
-					})
-				);
+				const currencySuggestion = result.find((s) => s.id === 'currencyconverter');
+
+				expect(currencySuggestion).toBeDefined();
+				expect(currencySuggestion).toMatchObject({
+					id: 'currencyconverter',
+					name: 'Currency Converter',
+					confidence: expect.any(Number)
+				});
+
+				// Verify the currency parameters are correctly encoded in the URL
+				if (currencySuggestion) {
+					const url = new URL(currencySuggestion.url, 'http://example.com');
+					expect(url.searchParams.get('from')).toBe(expectedFrom);
+					expect(url.searchParams.get('to')).toBe(expectedTo);
+					if (expectedAmount) {
+						expect(url.searchParams.get('amount')).toBe(expectedAmount);
+					}
+				}
 			});
 		});
 
@@ -679,66 +941,125 @@ Good morning`;
 });
 
 describe('URL Generation', () => {
-	it('should generate correct URLs for different inputs', () => {
+	it('should generate correct URLs with proper parameters for different inputs', () => {
 		const testCases = [
 			{
 				input: '2+3*4',
 				expectedId: 'calculator',
-				expectedUrlPattern: /calculator\?expression=/
+				expectedParams: { expression: '2+3*4' }
 			},
 			{
 				input: '10 meters to feet',
 				expectedId: 'unitconverter',
-				expectedUrlPattern: /unitconverter\?/
+				expectedParams: { value: '10', from: 'meter', to: 'feet' }
 			},
 			{
 				input: '#FF5733',
 				expectedId: 'colorpicker',
-				expectedUrlPattern: /colorpicker\?hex=/
+				expectedParams: { hex: '#FF5733' }
 			},
 			{
 				input: '$AAPL',
 				expectedId: 'stocktracker',
-				expectedUrlPattern: /stocktracker\?stock=/
+				expectedParams: { stock: 'AAPL' }
 			},
 			{
 				input: 'https://example.com',
 				expectedId: 'urlexaminer',
-				expectedUrlPattern: /urlexaminer\?input=/
+				expectedParams: { input: 'https://example.com' }
 			},
 			{
 				input: '{"key": "value"}',
 				expectedId: 'jsonformat',
-				expectedUrlPattern: /jsonformat\?input=/
+				expectedParams: { input: '{"key": "value"}' }
 			},
 			{
 				input: 'SGVsbG8gV29ybGQ=',
 				expectedId: 'base64',
-				expectedUrlPattern: /base64\?input=/
+				expectedParams: { input: 'SGVsbG8gV29ybGQ=' }
 			},
 			{
 				input: 'translate hello to spanish',
 				expectedId: 'translator',
-				expectedUrlPattern: /translator\?/
+				expectedParams: { text: 'hello', to: 'es' }
+			},
+			{
+				input: '1634567890',
+				expectedId: 'datetime',
+				expectedParams: { epoch: '1634567890' }
+			},
+			{
+				input: '100 USD to EUR',
+				expectedId: 'currencyconverter',
+				expectedParams: { amount: '100', from: 'USD', to: 'EUR' }
+			},
+			{
+				input: '50 usd to eur',
+				expectedId: 'currencyconverter',
+				expectedParams: { amount: '50', from: 'USD', to: 'EUR' }
 			}
 		];
 
-		testCases.forEach(({ input, expectedId, expectedUrlPattern }) => {
+		testCases.forEach(({ input, expectedId, expectedParams }) => {
 			const result = analyzeInput(input);
 			const suggestion = result.find((s) => s.id === expectedId);
 
 			expect(suggestion).toBeDefined();
-			expect(suggestion?.url).toMatch(expectedUrlPattern);
+			if (suggestion) {
+				const url = new URL(suggestion.url, 'http://example.com');
+
+				// Verify all expected parameters are present with correct values
+				Object.entries(expectedParams).forEach(([key, value]) => {
+					expect(url.searchParams.get(key)).toBe(value);
+				});
+			}
 		});
 	});
 
-	it('should properly encode URL parameters', () => {
-		const result = analyzeInput('{"key with spaces": "value & more"}');
-		const jsonSuggestion = result.find((s) => s.id === 'jsonformat');
+	it('should properly encode URL parameters with special characters', () => {
+		const testCases = [
+			{
+				input: '{"key with spaces": "value & more"}',
+				expectedId: 'jsonformat',
+				expectedParam: 'input',
+				expectedValue: '{"key with spaces": "value & more"}'
+			},
+			{
+				input: 'translate "Hello, world!" to french',
+				expectedId: 'translator',
+				expectedParams: { text: '"Hello, world!"', to: 'fr' }
+			},
+			{
+				input: '5 + 3 * (2 - 1)',
+				expectedId: 'calculator',
+				expectedParam: 'expression',
+				expectedValue: '5 + 3 * (2 - 1)'
+			},
+			{
+				input: 'https://example.com/path?param=value&other=test',
+				expectedId: 'urlexaminer',
+				expectedParam: 'input',
+				expectedValue: 'https://example.com/path?param=value&other=test'
+			}
+		];
 
-		expect(jsonSuggestion?.url).toContain(
-			encodeURIComponent('{"key with spaces": "value & more"}')
-		);
+		testCases.forEach(({ input, expectedId, expectedParam, expectedValue, expectedParams }) => {
+			const result = analyzeInput(input);
+			const suggestion = result.find((s) => s.id === expectedId);
+
+			expect(suggestion).toBeDefined();
+			if (suggestion) {
+				const url = new URL(suggestion.url, 'http://example.com');
+
+				if (expectedParams) {
+					Object.entries(expectedParams).forEach(([key, value]) => {
+						expect(url.searchParams.get(key)).toBe(value);
+					});
+				} else if (expectedParam && expectedValue) {
+					expect(url.searchParams.get(expectedParam)).toBe(expectedValue);
+				}
+			}
+		});
 	});
 });
 

@@ -628,10 +628,10 @@ function analyzeCurrency(input: string): AppSuggestion[] {
 	// Check for currency patterns - be more precise to avoid false positives
 	const trimmed = input.trim();
 
-	// More specific currency patterns
+	// More specific currency patterns - case insensitive but normalize to uppercase
 	const currencyConversionPattern =
-		/(?:(\d+(?:\.\d+)?)\s*([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))|(?:([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))/i;
-	const currencyAmountPattern = /^(\d+(?:\.\d+)?)\s*([A-Z]{3})$/i;
+		/(?:(\d+(?:\.\d+)?)\s*([A-Za-z]{3})\s*(?:to|in|→)\s*([A-Za-z]{3}))|(?:([A-Za-z]{3})\s*(?:to|in|→)\s*([A-Za-z]{3}))/i;
+	const currencyAmountPattern = /^(\d+(?:\.\d+)?)\s*([A-Za-z]{3})$/i;
 
 	// Match conversion patterns or standalone currency amounts
 	let match = trimmed.match(currencyConversionPattern);
@@ -641,8 +641,8 @@ function analyzeCurrency(input: string): AppSuggestion[] {
 
 	if (match) {
 		const amount = match[1] || match[6];
-		const from = match[2] || match[4] || match[7];
-		const to = match[3] || match[5];
+		const from = (match[2] || match[4] || match[7])?.toUpperCase();
+		const to = (match[3] || match[5])?.toUpperCase();
 
 		suggestions.push({
 			id: 'currencyconverter',
