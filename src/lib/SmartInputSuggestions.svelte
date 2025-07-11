@@ -22,6 +22,12 @@
 			if (queryParam) {
 				inputText = queryParam;
 				shortcutsActive = true; // Auto-enable shortcuts when loaded from URL
+				// Focus the textarea to enable keyboard shortcuts immediately
+				tick().then(() => {
+					if (inputElement) {
+						inputElement.focus();
+					}
+				});
 			}
 		}
 	});
@@ -119,7 +125,14 @@
 	function selectSuggestion(index: number) {
 		if (index >= 0 && index < suggestions.length) {
 			const suggestion = suggestions[index];
-			window.open(suggestion.url, '_blank');
+			// Check if URL is external (starts with http/https) or internal
+			if (suggestion.url.startsWith('http://') || suggestion.url.startsWith('https://')) {
+				// External URL - use window.location
+				window.location.href = suggestion.url;
+			} else {
+				// Internal URL - use goto
+				goto(suggestion.url);
+			}
 		}
 	}
 
