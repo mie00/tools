@@ -83,28 +83,38 @@
 		<div class="flex-1 overflow-y-auto">
 			<ul>
 				{#each topics as topic (topic.id)}
-					<li
-						class="relative rounded {currentActiveTopicId === topic.id
-							? 'bg-blue-100'
-							: ''} hover:bg-gray-100 cursor-pointer"
-						on:click={() => handleSelectTopic(topic.id)}
-					>
-						<div class="flex justify-between items-center p-2">
-							<div class="flex items-center gap-2 truncate {currentActiveTopicId === topic.id
-								? 'text-blue-700'
-								: 'text-gray-600'}">
-								{#if topic.isDraft}
-									<span class="text-orange-500 text-xs">●</span>
-								{/if}
-								<span class="truncate">{topic.name}</span>
+					<li class="relative">
+						<div
+							class="w-full text-left rounded {currentActiveTopicId === topic.id
+								? 'bg-blue-100'
+								: ''} hover:bg-gray-100 cursor-pointer"
+							role="button"
+							tabindex="0"
+							on:click={() => handleSelectTopic(topic.id)}
+							on:keydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									handleSelectTopic(topic.id);
+								}
+							}}
+						>
+							<div class="flex justify-between items-center p-2">
+								<div class="flex items-center gap-2 truncate {currentActiveTopicId === topic.id
+									? 'text-blue-700'
+									: 'text-gray-600'}">
+									{#if topic.isDraft}
+										<span class="text-orange-500 text-xs">●</span>
+									{/if}
+									<span class="truncate">{topic.name}</span>
+								</div>
+								<button
+									on:click|stopPropagation={() => handleDeleteTopic(topic.id)}
+									class="text-gray-400 hover:text-red-600 p-1 rounded-full flex-shrink-0 z-10"
+									title="Delete Chat"
+								>
+									🗑️
+								</button>
 							</div>
-							<button
-								on:click|stopPropagation={() => handleDeleteTopic(topic.id)}
-								class="text-gray-400 hover:text-red-600 p-1 rounded-full flex-shrink-0 z-10"
-								title="Delete Chat"
-							>
-								🗑️
-							</button>
 						</div>
 					</li>
 				{/each}

@@ -362,8 +362,9 @@ CONVERSATION:
 		if (draftTopic) {
 			// Only save if it has messages, otherwise just discard
 			if (draftTopic.messages.length > 0) {
-				draftTopic.isDraft = false;
-				persistentTopics.update((currentTopics) => [...currentTopics, draftTopic]);
+				const topicToSave = { ...draftTopic };
+				topicToSave.isDraft = false;
+				persistentTopics.update((currentTopics) => [...currentTopics, topicToSave]);
 			}
 		}
 
@@ -467,8 +468,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		activeTopic.lastUpdated = new Date().toISOString();
 
 		// If this is a draft topic, save it to persistent storage
-		if (activeTopic.isDraft) {
-			const topicToSave = activeTopic;
+		if (activeTopic.isDraft && draftTopic) {
+			const topicToSave = { ...draftTopic };
 			topicToSave.isDraft = false;
 			draftTopic = undefined;
 			persistentTopics.update((currentTopics) => [...currentTopics, topicToSave]);
@@ -829,7 +830,16 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		<!-- Backdrop overlay to close sidebar -->
 		<div 
 			class="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
+			role="button"
+			tabindex="0"
+			aria-label="Close sidebar"
 			on:click={() => (showTopics = false)}
+			on:keydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					showTopics = false;
+				}
+			}}
 		></div>
 		
 		<!-- Sidebar panel -->

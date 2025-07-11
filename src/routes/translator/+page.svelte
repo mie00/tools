@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	// Note: This component uses experimental Chrome AI APIs (LanguageDetector and Translator)
 	// which are available in Chrome 138+ but don't have TypeScript definitions yet.
 	// The linter errors are expected and the functionality works in compatible browsers.
@@ -84,12 +84,12 @@
 	// Speech synthesis state
 	let isSpeakingInput = false;
 	let isSpeakingOutput = false;
-	let voices = [];
-	let synth = null;
+	let voices: SpeechSynthesisVoice[] = [];
+	let synth: SpeechSynthesis | null = null;
 
 	// Language detector and translator instances
-	let detector = null;
-	let translator = null;
+	let detector: any = null;
+	let translator: any = null;
 
 	// Supported languages for translation
 	const supportedLanguages = [
@@ -134,7 +134,7 @@
 		try {
 			// Check Language Detector API
 			if ('LanguageDetector' in self) {
-				const detectorAvailability = await self.LanguageDetector.availability();
+				const detectorAvailability = await (self as any).LanguageDetector.availability();
 				if (detectorAvailability !== 'unavailable') {
 					detectorAvailable = true;
 					await initializeDetector();
@@ -158,17 +158,17 @@
 	async function initializeDetector() {
 		try {
 			// @ts-ignore - Chrome AI API is experimental
-			const availability = await self.LanguageDetector.availability();
+			const availability = await (self as any).LanguageDetector.availability();
 			
 			if (availability === 'available') {
 				// @ts-ignore - Chrome AI API is experimental
-				detector = await self.LanguageDetector.create();
+				detector = await (self as any).LanguageDetector.create();
 			} else if (availability === 'downloadable' || availability === 'downloading') {
 				isDownloading = true;
 				// @ts-ignore - Chrome AI API is experimental
-				detector = await self.LanguageDetector.create({
-					monitor(m) {
-						m.addEventListener('downloadprogress', (e) => {
+				detector = await (self as any).LanguageDetector.create({
+					monitor(m: any) {
+						m.addEventListener('downloadprogress', (e: any) => {
 							downloadProgress = Math.round(e.loaded * 100);
 						});
 					}
@@ -194,12 +194,12 @@
 				const langName = supportedLanguages.find(lang => lang.code === detectedLanguage)?.name || detectedLanguage;
 				detectedLanguage = `${langName} (${confidence}% confidence)`;
 			}
-		} catch (err) {
+		} catch (err: any) {
 			error = 'Error detecting language: ' + err.message;
 		}
 	}
 
-	let translationTimeout;
+	let translationTimeout: ReturnType<typeof setTimeout>;
 
 	async function translateText() {
 		if (!inputText.trim()) {
@@ -238,7 +238,7 @@
 
 			// Check if translator is available for the language pair
 			// @ts-ignore - Chrome AI API is experimental
-			const translatorAvailability = await self.Translator.availability({
+			const translatorAvailability = await (self as any).Translator.availability({
 				sourceLanguage: actualSourceLanguage,
 				targetLanguage: targetLanguage
 			});
@@ -260,11 +260,11 @@
 				if (translatorAvailability === 'downloadable' || translatorAvailability === 'downloading') {
 					isDownloading = true;
 					// @ts-ignore - Chrome AI API is experimental
-					translator = await self.Translator.create({
+					translator = await (self as any).Translator.create({
 						sourceLanguage: actualSourceLanguage,
 						targetLanguage: targetLanguage,
-						monitor(m) {
-							m.addEventListener('downloadprogress', (e) => {
+						monitor(m: any) {
+							m.addEventListener('downloadprogress', (e: any) => {
 								downloadProgress = Math.round(e.loaded * 100);
 							});
 						}
@@ -273,7 +273,7 @@
 					isDownloading = false;
 				} else {
 					// @ts-ignore - Chrome AI API is experimental
-					translator = await self.Translator.create({
+					translator = await (self as any).Translator.create({
 						sourceLanguage: actualSourceLanguage,
 						targetLanguage: targetLanguage
 					});
@@ -367,12 +367,12 @@
 			
 			// Listen for voices changed event (Chrome compatibility)
 			synth.addEventListener('voiceschanged', () => {
-				voices = synth.getVoices();
+				voices = synth?.getVoices() || [];
 			});
 		}
 	}
 
-	function findBestVoice(languageCode) {
+	function findBestVoice(languageCode: string) {
 		if (!voices.length) return null;
 		
 		// First try exact match
@@ -388,7 +388,7 @@
 		return voices.find(v => v.default) || voices[0];
 	}
 
-	function speakText(text, languageCode, isInput = true) {
+	function speakText(text: string, languageCode: string, isInput = true) {
 		if (!synth || !text.trim()) return;
 		
 		// Stop any current speech

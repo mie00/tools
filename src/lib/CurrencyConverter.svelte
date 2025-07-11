@@ -254,25 +254,10 @@
 
 	<!-- Converter Interface -->
 	<div class="grid gap-6">
-		<!-- Amount Input -->
-		<div class="space-y-2">
-			<label for="amount-input" class="block text-sm font-medium text-gray-700">Amount</label>
-			<input
-				id="amount-input"
-				type="number"
-				bind:value={amount}
-				on:input={handleInput}
-				min="0"
-				step="0.01"
-				class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-				placeholder="Enter amount"
-			/>
-		</div>
-
 		<!-- Currency Selectors -->
-		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2">
+		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-5">
 			<!-- From Currency -->
-			<div class="space-y-2">
+			<div class="space-y-2 md:col-span-2">
 				<label for="from-currency" class="block text-sm font-medium text-gray-700">From</label>
 				<select
 					id="from-currency"
@@ -287,7 +272,7 @@
 			</div>
 
 			<!-- Swap Button -->
-			<div class="flex justify-center md:justify-start">
+			<div class="flex justify-center md:justify-center">
 				<button
 					on:click={swapCurrencies}
 					aria-label="Swap currencies"
@@ -306,7 +291,7 @@
 			</div>
 
 			<!-- To Currency -->
-			<div class="space-y-2">
+			<div class="space-y-2 md:col-span-2">
 				<label for="to-currency" class="block text-sm font-medium text-gray-700">To</label>
 				<select
 					id="to-currency"
@@ -319,6 +304,21 @@
 					{/each}
 				</select>
 			</div>
+		</div>
+
+		<!-- Amount Input -->
+		<div class="space-y-2">
+			<label for="amount-input" class="block text-sm font-medium text-gray-700">Amount</label>
+			<input
+				id="amount-input"
+				type="number"
+				bind:value={amount}
+				on:input={handleInput}
+				min="0"
+				step="0.01"
+				class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+				placeholder="Enter amount"
+			/>
 		</div>
 
 		<!-- Result Display -->

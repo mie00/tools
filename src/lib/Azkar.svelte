@@ -571,29 +571,6 @@
 		font-weight: 500;
 	}
 
-	.focus-indicator {
-		font-size: 0.875rem;
-		color: #f59e0b;
-		font-weight: 600;
-		background: rgba(245, 158, 11, 0.1);
-		padding: 0.25rem 0.5rem;
-		border-radius: 9999px;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		animation: pulse 2s infinite;
-	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 1;
-		}
-		50% {
-			opacity: 0.7;
-		}
-	}
-
 	.azkar-content {
 		margin-bottom: 1rem;
 	}
@@ -740,15 +717,6 @@
 		cursor: pointer;
 		transition: all 0.2s;
 		font-family: inherit;
-	}
-
-	.reset-btn.focus-clear {
-		background: #f59e0b;
-		color: white;
-	}
-
-	.reset-btn.focus-clear:hover {
-		background: #d97706;
 	}
 
 	.reset-btn.category-reset {

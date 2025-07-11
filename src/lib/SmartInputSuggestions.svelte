@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	interface AppSuggestion {
 		id: string;
@@ -14,6 +17,9 @@
 	let inputText = '';
 	let suggestions: AppSuggestion[] = [];
 	let showSuggestions = false;
+	let inputElement: HTMLTextAreaElement;
+	let selectedSuggestionIndex = -1;
+	let shortcutsActive = false;
 
 	// App configurations for URL parameter mapping
 	const appConfigs = {
@@ -21,18 +27,36 @@
 			name: 'Calculator',
 			icon: '🧮',
 			description: 'Simple calculator',
+			shortcut: 'c',
 			buildUrl: (input: string) => `/calculator?expression=${encodeURIComponent(input)}`
 		},
 		functiondrawer: {
 			name: 'Function Drawer',
 			icon: '📈',
 			description: 'Draw mathematical functions',
+			shortcut: 'f',
 			buildUrl: (input: string) => `/functiondrawer?expression=${encodeURIComponent(input)}`
+		},
+		unitconverter: {
+			name: 'Unit Converter',
+			icon: '📐',
+			description: 'Convert between units',
+			shortcut: 'u',
+			buildUrl: (input: string, category?: string, from?: string, to?: string) => {
+				const params = new URLSearchParams();
+				if (category) params.set('category', category);
+				if (from) params.set('from', from);
+				if (to) params.set('to', to);
+				const match = input.match(/(\d+(?:\.\d+)?)/);
+				if (match) params.set('value', match[1]);
+				return `/unitconverter?${params.toString()}`;
+			}
 		},
 		datetime: {
 			name: 'Date & Time',
 			icon: '🕐',
 			description: 'Current time and epoch converter',
+			shortcut: 'd',
 			buildUrl: (input: string, type: 'epoch' | 'time' = 'epoch', timezone?: string) => {
 				const params = new URLSearchParams();
 				params.set(type, input);
@@ -46,6 +70,7 @@
 			name: 'Currency Converter',
 			icon: '💱',
 			description: 'Convert currencies',
+			shortcut: 'm',
 			buildUrl: (input: string, from?: string, to?: string) => {
 				const params = new URLSearchParams();
 				if (from) params.set('from', from);
@@ -59,18 +84,21 @@
 			name: 'Color Picker',
 			icon: '🎨',
 			description: 'Color utilities',
+			shortcut: 'p',
 			buildUrl: (input: string) => `/colorpicker?hex=${encodeURIComponent(input)}`
 		},
 		stocktracker: {
 			name: 'Stock Tracker',
 			icon: '📈',
 			description: 'Track stock prices',
+			shortcut: 's',
 			buildUrl: (input: string) => `/stocktracker?stock=${encodeURIComponent(input.replace('$', ''))}`
 		},
 		translator: {
 			name: 'Language Translator',
 			icon: '🔤',
 			description: 'Translate text between languages',
+			shortcut: 't',
 			buildUrl: (input: string, targetLang?: string, sourceText?: string, sourceLang?: string) => {
 				const params = new URLSearchParams();
 				params.set('from', sourceLang || 'auto');
@@ -83,19 +111,29 @@
 			name: 'URL Examiner',
 			icon: '🔗',
 			description: 'Analyze URLs',
+			shortcut: 'w',
 			buildUrl: (input: string) => `/urlexaminer?input=${encodeURIComponent(input)}`
 		},
 		base64: {
 			name: 'Base64',
 			icon: '🔐',
 			description: 'Encode/decode Base64',
+			shortcut: 'b',
 			buildUrl: (input: string) => `/base64?input=${encodeURIComponent(input)}&operation=decode`
 		},
 		jsonformat: {
 			name: 'JSON Formatter',
 			icon: '📋',
 			description: 'Format and validate JSON',
+			shortcut: 'j',
 			buildUrl: (input: string) => `/jsonformat?input=${encodeURIComponent(input)}`
+		},
+		googlesearch: {
+			name: 'Google Search',
+			icon: '🔍',
+			description: 'Search on Google',
+			shortcut: 'g',
+			buildUrl: (input: string) => `https://www.google.com/search?q=${encodeURIComponent(input)}`
 		}
 	};
 
@@ -247,6 +285,10 @@
 		const mathSuggestions = analyzeMath(trimmed);
 		suggestions.push(...mathSuggestions);
 
+		// Unit conversions
+		const unitSuggestions = analyzeUnit(trimmed);
+		suggestions.push(...unitSuggestions);
+
 		// Epoch time detection
 		const epochSuggestions = analyzeEpoch(trimmed);
 		suggestions.push(...epochSuggestions);
@@ -282,6 +324,10 @@
 		// JSON strings
 		const jsonSuggestions = analyzeJson(trimmed);
 		suggestions.push(...jsonSuggestions);
+
+		// Google search (always available as fallback)
+		const googleSuggestions = analyzeGoogleSearch(trimmed);
+		suggestions.push(...googleSuggestions);
 
 		// Sort by confidence score descending
 		return suggestions.sort((a, b) => b.confidence - a.confidence);
@@ -332,6 +378,147 @@
 		}
 		
 		return suggestions;
+	}
+
+	function analyzeUnit(input: string): AppSuggestion[] {
+		const suggestions: AppSuggestion[] = [];
+		
+		// Unit mappings for different categories
+		const unitMappings = {
+			length: {
+				units: ['meter', 'meters', 'm', 'km', 'kilometer', 'kilometers', 'cm', 'centimeter', 'centimeters', 'mm', 'millimeter', 'millimeters', 'inch', 'inches', 'in', 'feet', 'foot', 'ft', 'yard', 'yards', 'yd', 'mile', 'miles', 'mi'],
+				category: 'length'
+			},
+			weight: {
+				units: ['kilogram', 'kilograms', 'kg', 'gram', 'grams', 'g', 'pound', 'pounds', 'lb', 'lbs', 'ounce', 'ounces', 'oz', 'ton', 'tons', 't', 'stone', 'st'],
+				category: 'weight'
+			},
+			temperature: {
+				units: ['celsius', 'fahrenheit', 'kelvin', '°c', '°f', 'k', 'degrees'],
+				category: 'temperature'
+			},
+			volume: {
+				units: ['liter', 'liters', 'l', 'milliliter', 'milliliters', 'ml', 'gallon', 'gallons', 'gal', 'quart', 'quarts', 'qt', 'pint', 'pints', 'pt', 'cup', 'cups', 'fluid_ounce', 'fl_oz', 'floz'],
+				category: 'volume'
+			},
+			area: {
+				units: ['square_meter', 'square_meters', 'm²', 'square_kilometer', 'square_kilometers', 'km²', 'square_centimeter', 'square_centimeters', 'cm²', 'square_foot', 'square_feet', 'ft²', 'square_inch', 'square_inches', 'in²', 'acre', 'acres', 'hectare', 'hectares', 'ha'],
+				category: 'area'
+			}
+		};
+		
+		// Convert patterns: "10 meters to feet", "5 kg in pounds", "100°F to celsius"
+		const conversionPatterns = [
+			// Pattern: "10 meters to feet"
+			/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
+			// Pattern: "10 m to ft"
+			/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
+			// Pattern: "convert 10 meters to feet"
+			/convert\s+(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
+			// Pattern: "10 meters"
+			/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)$/i
+		];
+		
+		let match = null;
+		let patternIndex = -1;
+		
+		for (let i = 0; i < conversionPatterns.length; i++) {
+			match = input.match(conversionPatterns[i]);
+			if (match) {
+				patternIndex = i;
+				break;
+			}
+		}
+		
+		if (match) {
+			const value = match[1];
+			const fromUnit = match[2].toLowerCase();
+			const toUnit = match[3] ? match[3].toLowerCase() : '';
+			
+			// Find which category the units belong to
+			let category = '';
+			let fromUnitNormalized = '';
+			let toUnitNormalized = '';
+			
+			// Check each category to find matching units
+			for (const [cat, data] of Object.entries(unitMappings)) {
+				const fromMatch = data.units.find(unit => unit.toLowerCase() === fromUnit);
+				const toMatch = toUnit ? data.units.find(unit => unit.toLowerCase() === toUnit) : null;
+				
+				if (fromMatch && (toMatch || patternIndex === 3)) { // Last pattern doesn't need 'to' unit
+					category = data.category;
+					fromUnitNormalized = normalizeUnit(fromUnit, category);
+					toUnitNormalized = toUnit ? normalizeUnit(toUnit, category) : '';
+					break;
+				}
+			}
+			
+			if (category) {
+				const confidence = toUnit ? 0.9 : 0.75; // Higher confidence if both units are specified
+				const reason = toUnit ? 
+					`Convert ${value} ${fromUnit} to ${toUnit}` :
+					`Convert ${value} ${fromUnit} to another unit`;
+				
+				suggestions.push({
+					id: 'unitconverter',
+					name: appConfigs.unitconverter.name,
+					icon: appConfigs.unitconverter.icon,
+					description: appConfigs.unitconverter.description,
+					confidence: confidence,
+					url: appConfigs.unitconverter.buildUrl(input, category, fromUnitNormalized, toUnitNormalized),
+					reason: reason
+				});
+			}
+		}
+		
+		return suggestions;
+	}
+
+	// Helper function to normalize unit names to match the converter's expected format
+	function normalizeUnit(unit: string, category: string): string {
+		const normalizations: Record<string, Record<string, string>> = {
+			length: {
+				'meters': 'meter', 'm': 'meter',
+				'kilometers': 'kilometer', 'km': 'kilometer',
+				'centimeters': 'centimeter', 'cm': 'centimeter',
+				'millimeters': 'millimeter', 'mm': 'millimeter',
+				'inches': 'inch', 'in': 'inch',
+				'foot': 'feet', 'ft': 'feet',
+				'yards': 'yard', 'yd': 'yard',
+				'miles': 'mile', 'mi': 'mile'
+			},
+			weight: {
+				'kilograms': 'kilogram', 'kg': 'kilogram',
+				'grams': 'gram', 'g': 'gram',
+				'pounds': 'pound', 'lb': 'pound', 'lbs': 'pound',
+				'ounces': 'ounce', 'oz': 'ounce',
+				'tons': 'ton', 't': 'ton',
+				'st': 'stone'
+			},
+			temperature: {
+				'°c': 'celsius', '°f': 'fahrenheit', 'k': 'kelvin'
+			},
+			volume: {
+				'liters': 'liter', 'l': 'liter',
+				'milliliters': 'milliliter', 'ml': 'milliliter',
+				'gallons': 'gallon', 'gal': 'gallon',
+				'quarts': 'quart', 'qt': 'quart',
+				'pints': 'pint', 'pt': 'pint',
+				'cups': 'cup',
+				'fl_oz': 'fluid_ounce', 'floz': 'fluid_ounce'
+			},
+			area: {
+				'square_meters': 'square_meter', 'm²': 'square_meter',
+				'square_kilometers': 'square_kilometer', 'km²': 'square_kilometer',
+				'square_centimeters': 'square_centimeter', 'cm²': 'square_centimeter',
+				'square_feet': 'square_foot', 'ft²': 'square_foot',
+				'square_inches': 'square_inch', 'in²': 'square_inch',
+				'acres': 'acre', 'hectares': 'hectare', 'ha': 'hectare'
+			}
+		};
+		
+		const categoryNormalizations = normalizations[category] || {};
+		return categoryNormalizations[unit.toLowerCase()] || unit.toLowerCase();
 	}
 
 	function analyzeEpoch(input: string): AppSuggestion[] {
@@ -704,14 +891,161 @@
 		return suggestions;
 	}
 
+	function analyzeGoogleSearch(input: string): AppSuggestion[] {
+		const suggestions: AppSuggestion[] = [];
+		
+		// Always suggest Google search as a fallback option with very low confidence
+		// This ensures it appears at the bottom of the suggestions list
+		suggestions.push({
+			id: 'googlesearch',
+			name: appConfigs.googlesearch.name,
+			icon: appConfigs.googlesearch.icon,
+			description: appConfigs.googlesearch.description,
+			confidence: 0.1, // Very low confidence to ensure it appears last
+			url: appConfigs.googlesearch.buildUrl(input),
+			reason: `Search "${input}" on Google`
+		});
+		
+		return suggestions;
+	}
+
+	// Load initial value from URL params on mount
+	onMount(() => {
+		if (browser) {
+			const urlParams = new URLSearchParams($page.url.search);
+			const queryParam = urlParams.get('q');
+			if (queryParam) {
+				inputText = queryParam;
+				shortcutsActive = true; // Auto-enable shortcuts when loaded from URL
+			}
+		}
+	});
+
+	// Cleanup on component destruction
+	onDestroy(() => {
+		if (urlUpdateTimeout) {
+			clearTimeout(urlUpdateTimeout);
+		}
+	});
+
+	// Debounced URL update
+	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
+	
+	// Update URL params when input changes
+	async function updateUrlParams(value: string) {
+		if (!browser) return;
+		
+		const url = new URL($page.url);
+		if (value.trim()) {
+			url.searchParams.set('q', value);
+		} else {
+			url.searchParams.delete('q');
+		}
+		
+		// Use replaceState to avoid adding to browser history
+		await goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+	}
+
+	// Create shortcut mapping
+	function getShortcutMapping(): Record<string, string> {
+		const mapping: Record<string, string> = {};
+		for (const [id, config] of Object.entries(appConfigs)) {
+			mapping[config.shortcut] = id;
+		}
+		return mapping;
+	}
+
+	// Handle keyboard shortcuts
+	function handleKeydown(event: KeyboardEvent) {
+		// Handle Ctrl+Enter to toggle shortcut mode
+		if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+			event.preventDefault();
+			shortcutsActive = !shortcutsActive;
+			if (shortcutsActive) {
+				selectedSuggestionIndex = -1; // Reset selection when entering shortcut mode
+			}
+			return;
+		}
+
+		// Handle Escape to exit shortcut mode
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			shortcutsActive = false;
+			selectedSuggestionIndex = -1;
+			return;
+		}
+
+		// If shortcuts are not active, only handle Ctrl+Enter and Escape
+		if (!shortcutsActive) {
+			return;
+		}
+
+		if (!showSuggestions || suggestions.length === 0) return;
+
+		// Handle letter shortcuts for direct selection (only when shortcuts are active)
+		if (event.key.length === 1 && event.key >= 'a' && event.key <= 'z') {
+			const shortcutMapping = getShortcutMapping();
+			const suggestionId = shortcutMapping[event.key];
+			
+			if (suggestionId) {
+				// Find the suggestion with this ID
+				const suggestionIndex = suggestions.findIndex(s => s.id === suggestionId);
+				if (suggestionIndex >= 0) {
+					event.preventDefault();
+					selectSuggestion(suggestionIndex);
+					return;
+				}
+			}
+		}
+
+		// Handle arrow keys for navigation
+		if (event.key === 'ArrowDown') {
+			event.preventDefault();
+			selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+			return;
+		}
+
+		if (event.key === 'ArrowUp') {
+			event.preventDefault();
+			selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+			return;
+		}
+
+		// Handle Enter to select highlighted suggestion
+		if (event.key === 'Enter' && selectedSuggestionIndex >= 0) {
+			event.preventDefault();
+			selectSuggestion(selectedSuggestionIndex);
+			return;
+		}
+	}
+
+	// Function to select a suggestion and navigate to it
+	function selectSuggestion(index: number) {
+		if (index >= 0 && index < suggestions.length) {
+			const suggestion = suggestions[index];
+			window.open(suggestion.url, '_blank');
+		}
+	}
+
 	// React to input changes
 	$: {
 		if (inputText.trim()) {
 			suggestions = analyzeInput(inputText);
 			showSuggestions = suggestions.length > 0;
+			selectedSuggestionIndex = -1; // Reset selection when suggestions change
 		} else {
 			suggestions = [];
 			showSuggestions = false;
+			selectedSuggestionIndex = -1;
+			shortcutsActive = false; // Reset shortcuts when input is empty
+		}
+		
+		// Debounce URL updates to avoid excessive navigation (only on client side)
+		if (browser) {
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrlParams(inputText);
+			}, 300);
 		}
 	}
 
@@ -739,35 +1073,56 @@
 	<!-- Input Area -->
 	<div class="relative">
 		<textarea
+			bind:this={inputElement}
 			bind:value={inputText}
-			placeholder="Try: 2+3*4, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL..."
-			class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none"
+			on:keydown={handleKeydown}
+			placeholder="Try: 2+3*4, 10 meters to feet, 5 kg in pounds, 100°F to celsius, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL... (Press Ctrl+Enter when ready to select)"
+			class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none {shortcutsActive ? 'bg-blue-50 border-blue-300' : ''}"
 			rows="3"
 		></textarea>
 		
 		{#if inputText.trim()}
-			<button
-				on:click={() => { inputText = ''; }}
-				class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-				title="Clear input"
-				aria-label="Clear input"
-			>
-				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-				</svg>
-			</button>
+			<div class="absolute top-2 right-2 flex items-center space-x-2">
+				{#if shortcutsActive}
+					<div class="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs text-blue-700 font-medium">
+						Shortcuts Active
+					</div>
+				{/if}
+				<button
+					on:click={() => { inputText = ''; }}
+					class="text-gray-400 hover:text-gray-600"
+					title="Clear input"
+					aria-label="Clear input"
+				>
+					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
 		{/if}
 	</div>
 
 	<!-- Suggestions -->
 	{#if showSuggestions}
 		<div class="space-y-2">
-			<h3 class="font-medium text-gray-700">Suggested Tools:</h3>
+			<h3 class="font-medium text-gray-700">
+				Suggested Tools:
+				<span class="text-xs text-gray-500 ml-2">
+					{#if shortcutsActive}
+						Press letter shortcuts to select, ↑↓ to navigate, Enter to open, Esc to exit
+					{:else}
+						Press Ctrl+Enter to activate shortcuts
+					{/if}
+				</span>
+			</h3>
 			<div class="space-y-2">
-				{#each suggestions as suggestion}
+				{#each suggestions as suggestion, index}
 					<a
 						href={suggestion.url}
-						class="flex items-center justify-between rounded-lg border border-gray-200 p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+						class="flex items-center justify-between rounded-lg border border-gray-200 p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors {shortcutsActive && index === selectedSuggestionIndex ? 'border-blue-500 bg-blue-50' : ''}"
+						data-sveltekit-preload-data={suggestion.id === 'googlesearch' ? 'false' : 'hover'}
+						on:mouseenter={() => shortcutsActive && (selectedSuggestionIndex = index)}
+						on:mouseleave={() => shortcutsActive && (selectedSuggestionIndex = -1)}
 					>
 						<div class="flex items-center space-x-3">
 							<div class="text-2xl">{suggestion.icon}</div>
@@ -776,13 +1131,20 @@
 								<div class="text-sm text-gray-600">{suggestion.reason}</div>
 							</div>
 						</div>
-						<div class="text-right">
-							<div class="text-sm font-medium {getConfidenceColor(suggestion.confidence)}">
-								{getConfidenceLabel(suggestion.confidence)}
+						<div class="flex items-center space-x-3">
+							<div class="text-right">
+								<div class="text-sm font-medium {getConfidenceColor(suggestion.confidence)}">
+									{getConfidenceLabel(suggestion.confidence)}
+								</div>
+								<div class="text-xs text-gray-500">
+									{Math.round(suggestion.confidence * 100)}% match
+								</div>
 							</div>
-							<div class="text-xs text-gray-500">
-								{Math.round(suggestion.confidence * 100)}% match
-							</div>
+							{#if shortcutsActive}
+								<div class="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-medium border {index === selectedSuggestionIndex ? 'bg-blue-100 border-blue-300 text-blue-600' : ''}">
+									{(appConfigs as any)[suggestion.id]?.shortcut || '?'}
+								</div>
+							{/if}
 						</div>
 					</a>
 				{/each}
@@ -794,7 +1156,7 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
 			</svg>
 			<p>No specific tools detected for this input</p>
-			<p class="text-sm">Try math expressions, colors, translation commands (single or multi-line), URLs, JSON, or stock symbols</p>
+			<p class="text-sm">Try math expressions, unit conversions, colors, translation commands (single or multi-line), URLs, JSON, or stock symbols</p>
 		</div>
 	{/if}
 </div> 
