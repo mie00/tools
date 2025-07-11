@@ -57,10 +57,14 @@
 		loadFromUrl();
 	});
 
-	// Watch for state changes and update URL
+	// Watch for state changes and update URL - debounced to prevent infinite loops
+	let urlUpdateTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (typeof window !== 'undefined' && (activeOperation || inputText)) {
-			updateUrl();
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 100);
 		}
 	});
 

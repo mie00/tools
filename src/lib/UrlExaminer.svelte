@@ -47,41 +47,67 @@
 		loadFromUrl();
 	});
 
-	// Watch for state changes and update URL
+	// Watch for state changes and update URL - debounced to prevent infinite loops
+	let urlUpdateTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (typeof window !== 'undefined' && inputText !== undefined) {
-			updateUrl();
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 100);
 		}
 	});
 
+	// Track the last input value to detect if we're in a rebuild cycle
+	let lastInputValue = '';
+	let isRebuildingInput = false;
+
+	// Debounced parsing effect to prevent infinite loops
+	let parseTimeout: NodeJS.Timeout;
 	$effect(() => {
-		// Reset states for each new input
-		urlComponents = {};
-		searchParams = [];
-		parsedCurl = null;
-		error = '';
-
-		const trimmedInput = inputText.trim();
-
-		if (trimmedInput) {
-			if (trimmedInput.toLowerCase().startsWith('curl')) {
-				try {
-					const curlResult = parseCurl(trimmedInput);
-					parsedCurl = curlResult;
-					if (curlResult.url) {
-						// Now parse the URL from the curl command
-						parseUrl(curlResult.url);
-					} else {
-						// curl command is valid but has no URL
-						error = 'cURL command does not contain a URL to examine.';
-					}
-				} catch (e: any) {
-					error = e.message || 'Failed to parse cURL command.';
-				}
-			} else {
-				parseUrl(trimmedInput);
-			}
+		// Skip parsing if we're currently rebuilding the input to prevent circular updates
+		if (isRebuildingInput) {
+			return;
 		}
+
+		// Also skip if the input hasn't actually changed (helps prevent unnecessary processing)
+		if (inputText === lastInputValue) {
+			return;
+		}
+
+		clearTimeout(parseTimeout);
+		parseTimeout = setTimeout(() => {
+			// Reset states for each new input
+			urlComponents = {};
+			searchParams = [];
+			parsedCurl = null;
+			error = '';
+
+			const trimmedInput = inputText.trim();
+
+			if (trimmedInput) {
+				if (trimmedInput.toLowerCase().startsWith('curl')) {
+					try {
+						const curlResult = parseCurl(trimmedInput);
+						parsedCurl = curlResult;
+						if (curlResult.url) {
+							// Now parse the URL from the curl command
+							parseUrl(curlResult.url);
+						} else {
+							// curl command is valid but has no URL
+							error = 'cURL command does not contain a URL to examine.';
+						}
+					} catch (e: any) {
+						error = e.message || 'Failed to parse cURL command.';
+					}
+				} else {
+					parseUrl(trimmedInput);
+				}
+			}
+
+			// Update the last input value after processing
+			lastInputValue = inputText;
+		}, 150);
 	});
 
 	function parseUrl(url: string) {
@@ -186,6 +212,9 @@
 	}
 
 	function rebuildAndUpdateInput() {
+		// Set flag to prevent circular parsing while we update the input
+		isRebuildingInput = true;
+
 		if (parsedCurl) {
 			if (Object.keys(urlComponents).length > 0) {
 				parsedCurl.url = rebuildUrl();
@@ -194,6 +223,14 @@
 		} else if (Object.keys(urlComponents).length > 0) {
 			inputText = rebuildUrl();
 		}
+
+		// Update the last input value to match the rebuilt input
+		lastInputValue = inputText;
+
+		// Reset flag after a brief delay to allow reactive updates to settle
+		setTimeout(() => {
+			isRebuildingInput = false;
+		}, 50);
 	}
 
 	function startEditing(key: string, value: string) {

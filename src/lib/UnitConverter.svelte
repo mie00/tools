@@ -300,10 +300,14 @@
 		result = '';
 	}
 
-	// Auto-convert when input or units change
+	// Auto-convert when input or units change - debounced to prevent infinite loops
+	let convertTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (inputValue && fromUnit && toUnit && selectedCategory) {
-			convert();
+			clearTimeout(convertTimeout);
+			convertTimeout = setTimeout(() => {
+				convert();
+			}, 50);
 		} else {
 			result = '';
 		}
@@ -323,14 +327,18 @@
 		isLoaded = true;
 	});
 
-	// Watch for state changes and update URL
+	// Watch for state changes and update URL - debounced to prevent infinite loops
+	let urlUpdateTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (
 			typeof window !== 'undefined' &&
 			isLoaded &&
 			(inputValue || fromUnit || toUnit || selectedCategory)
 		) {
-			updateUrl();
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 100);
 		}
 	});
 </script>

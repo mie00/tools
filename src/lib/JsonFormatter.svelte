@@ -292,10 +292,14 @@
 		}
 	}
 
-	// Auto-process when input changes
+	// Auto-process when input changes - debounced to prevent infinite loops
+	let processTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (inputJson !== undefined) {
-			processJson();
+			clearTimeout(processTimeout);
+			processTimeout = setTimeout(() => {
+				processJson();
+			}, 100);
 		}
 	});
 </script>

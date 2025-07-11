@@ -215,10 +215,14 @@
 		};
 	});
 
-	// Watch for state changes and update URL
+	// Watch for state changes and update URL - debounced to prevent infinite loops
+	let urlUpdateTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (typeof window !== 'undefined' && activeCategory) {
-			updateUrl();
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 100);
 		}
 	});
 </script>

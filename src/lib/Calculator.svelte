@@ -38,7 +38,7 @@
 				params.delete('expression');
 			}
 
-			goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
+			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
@@ -83,10 +83,14 @@
 		}
 	});
 
-	// Watch for expression changes and update URL
+	// Watch for expression changes and update URL - debounced to prevent infinite loops
+	let urlUpdateTimeout: NodeJS.Timeout;
 	$effect(() => {
 		if (typeof window !== 'undefined' && expression !== undefined) {
-			updateUrl();
+			clearTimeout(urlUpdateTimeout);
+			urlUpdateTimeout = setTimeout(() => {
+				updateUrl();
+			}, 100);
 		}
 	});
 

@@ -20,20 +20,40 @@
 	let filteredResults: SearchResult[] = $state([]);
 	let showDropdown = $state(false);
 
-	function handleSearch(query: string) {
-		searchQuery = query;
-
+	function performSearch(query: string) {
 		if (!query.trim()) {
 			filteredResults = [];
 			showDropdown = false;
 			return;
 		}
 
-		filteredResults = cities.filter(
-			(city: SearchResult) =>
-				city.name.toLowerCase().includes(query.toLowerCase()) ||
-				city.country.toLowerCase().includes(query.toLowerCase())
-		);
+		const searchTerm = query.toLowerCase();
+
+		filteredResults = cities.filter((city: SearchResult) => {
+			// Search in primary name and country
+			if (
+				city.name.toLowerCase().includes(searchTerm) ||
+				city.country.toLowerCase().includes(searchTerm)
+			) {
+				return true;
+			}
+
+			// Search in alternative names if they exist
+			if (city.altnames) {
+				for (const langCode in city.altnames) {
+					const altNamesArray = city.altnames[langCode];
+					if (
+						altNamesArray &&
+						altNamesArray.some((altName) => altName.toLowerCase().includes(searchTerm))
+					) {
+						return true;
+					}
+				}
+			}
+
+			return false;
+		});
+
 		showDropdown = filteredResults.length > 0;
 	}
 
@@ -57,8 +77,15 @@
 		}
 	}
 
+	// Debounced search effect to prevent excessive filtering
+	let searchTimeout: NodeJS.Timeout;
 	$effect(() => {
-		handleSearch(searchQuery);
+		if (searchQuery !== undefined) {
+			clearTimeout(searchTimeout);
+			searchTimeout = setTimeout(() => {
+				performSearch(searchQuery);
+			}, 150);
+		}
 	});
 </script>
 
@@ -82,7 +109,6 @@
 			class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg"
 		>
 			{#each filteredResults as result (`${result.lat}-${result.lng}-${result.name}`)}
-				{console.log(result)}
 				<button
 					type="button"
 					class="w-full border-b border-gray-100 px-4 py-2 text-left last:border-b-0 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
