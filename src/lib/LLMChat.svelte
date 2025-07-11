@@ -435,7 +435,10 @@ Think before answering, this usually holds better quality answers. Use <think> t
 				{#each topics as topic}
 					<div
 						class="p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-100 {currentActiveTopicId === topic.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}"
+						role="button"
+						tabindex="0"
 						on:click={() => (currentActiveTopicId = topic.id)}
+						on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { currentActiveTopicId = topic.id; } }}
 					>
 						<div class="flex justify-between items-center">
 							<div class="flex-1 min-w-0">
@@ -446,6 +449,7 @@ Think before answering, this usually holds better quality answers. Use <think> t
 							</div>
 							<button
 								on:click|stopPropagation={() => deleteTopic(topic.id)}
+								aria-label="Delete topic {topic.name}"
 								class="ml-2 text-gray-400 hover:text-red-500 transition-colors"
 							>
 								<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -466,6 +470,7 @@ Think before answering, this usually holds better quality answers. Use <think> t
 			<div class="flex items-center gap-4">
 				<button
 					on:click={() => (showTopics = !showTopics)}
+					aria-label="Toggle topics sidebar"
 					class="p-2 text-gray-500 hover:text-gray-700 transition-colors"
 				>
 					<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

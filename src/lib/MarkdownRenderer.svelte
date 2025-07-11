@@ -73,6 +73,18 @@
 
 	async function handleClick(event: MouseEvent) {
 		const target = event.target as HTMLElement;
+		handleButtonClick(target);
+	}
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			const target = event.target as HTMLElement;
+			handleButtonClick(target);
+		}
+	}
+
+	function handleButtonClick(target: HTMLElement) {
 		if (target.classList.contains('exec-btn')) {
 			const id = target.dataset.id;
 			if (!id) return;
@@ -100,7 +112,14 @@
 	}
 </script>
 
-<div class="prose {proseClass}" bind:this={mainEl} on:click={handleClick}>
+<div 
+	class="prose {proseClass}" 
+	bind:this={mainEl} 
+	role="button" 
+	tabindex="0"
+	on:click={handleClick}
+	on:keydown={handleKeyDown}
+>
 	{#each parts as part}
 		{#if part.type === 'markdown'}
 			{@html marked(part.content)}

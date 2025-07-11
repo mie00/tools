@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import { page } from '$app/stores';
 
 	let pyodide: any;
 	let canvas: HTMLCanvasElement;
@@ -269,15 +270,31 @@ result
 				// Load history from localStorage first
 				loadHistoryFromStorage();
 				
+				// Check for URL parameter expression
+				const urlExpression = $page.url.searchParams.get('expression');
+				if (urlExpression) {
+					expression = decodeURIComponent(urlExpression);
+				}
+				
 				await initPyodide();
 				setupCanvas();
 				
-				// Load the last history entry if available
-				if (history.length > 0) {
+				// If we have a URL expression, use it instead of history
+				if (urlExpression) {
+					// Parse the URL expression
+					parseExpression();
+					
+					// Create history entry for URL expression if valid
+					if (expression.trim() && isValidExpression(expression.trim())) {
+						const urlEntry = createHistoryEntry('From URL');
+						addToHistory(urlEntry);
+					}
+				} else if (history.length > 0) {
+					// Load the last history entry if available and no URL expression
 					const lastEntry = history[history.length - 1];
 					loadHistoryEntry(lastEntry);
 				} else {
-					// Parse default expression if no history
+					// Parse default expression if no history and no URL expression
 					parseExpression();
 					
 					// Create initial history entry if expression is valid
@@ -1271,7 +1288,6 @@ evaluate_function()
 													}}
 													class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 													placeholder="Enter name..."
-													autofocus
 												/>
 											{:else}
 												<button

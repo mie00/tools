@@ -502,8 +502,9 @@
 			<!-- Custom Time Input -->
 			<div class="mb-6 grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="block text-sm font-medium mb-2">Time</label>
+					<label for="custom-time-input" class="block text-sm font-medium mb-2">Time</label>
 					<input
+						id="custom-time-input"
 						type="time"
 						bind:value={customTimeInput}
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
@@ -511,8 +512,9 @@
 					/>
 				</div>
 				<div>
-					<label class="block text-sm font-medium mb-2">Source Timezone</label>
+					<label for="custom-timezone-select" class="block text-sm font-medium mb-2">Source Timezone</label>
 					<select
+						id="custom-timezone-select"
 						bind:value={customTimezone}
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
 						on:change={updateUrl}

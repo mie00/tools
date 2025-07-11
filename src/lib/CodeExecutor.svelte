@@ -29,15 +29,16 @@
 </script>
 
 {#if type === 'html'}
-	<iframe title="HTML Output" sandbox="allow-scripts" srcdoc={code} class="w-full h-64 border" />
+	<iframe title="HTML Output" sandbox="allow-scripts" srcdoc={code} class="w-full h-64 border"></iframe>
 {:else if type === 'js'}
 	<div class="text-black">
 		<iframe
 			bind:this={iframe}
+			title="JavaScript Execution Frame"
 			srcdoc={`<script>self.onmessage = (e) => { const { code, port } = e.data; const log = (...args) => { port.postMessage(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' ')); }; const originalLog = console.log; console.log = log; try { new Function(code)(); } catch (err) { port.postMessage(err.toString()); } finally { console.log = originalLog; port.close(); } };<\/script>`}
 			class="hidden"
 			on:load={executeJs}
-		/>
+		></iframe>
 		<pre class="p-2 mt-2 text-sm bg-gray-100 border rounded max-h-64 overflow-auto">{@html output || 'Executing...'}</pre>
 	</div>
 {/if} 

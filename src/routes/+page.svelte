@@ -14,6 +14,7 @@
 	import Azkar from '$lib/Azkar.svelte';
 	import LLMChat from '$lib/LLMChat.svelte';
 	import UrlExaminer from '$lib/UrlExaminer.svelte';
+	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 
 	let selectedTool: string | null = null;
 	let draggedIndex: number | null = null;
@@ -293,6 +294,13 @@
 			<p class="text-lg text-gray-600">A collection of useful utilities</p>
 			<p class="mt-2 text-sm text-gray-500">💡 Drag and drop to reorder your tools</p>
 		</header>
+
+		<!-- Smart Input Suggestions Section -->
+		<div class="mb-12 max-w-3xl mx-auto">
+			<div class="rounded-2xl bg-white p-6 shadow-lg">
+				<SmartInputSuggestions />
+			</div>
+		</div>
 
 		<div class="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
 			{#each tools as tool, index (tool.id)}
