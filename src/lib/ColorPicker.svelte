@@ -3,14 +3,14 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 
-	let selectedColor = '#3b82f6';
-	let hexInput = '#3b82f6';
-	let rgbR = 59;
-	let rgbG = 130;
-	let rgbB = 246;
-	let hslH = 217;
-	let hslS = 91;
-	let hslL = 60;
+	let selectedColor = $state('#3b82f6');
+	let hexInput = $state('#3b82f6');
+	let rgbR = $state(59);
+	let rgbG = $state(130);
+	let rgbB = $state(246);
+	let hslH = $state(217);
+	let hslS = $state(91);
+	let hslL = $state(60);
 
 	// Predefined color palette
 	const colorPalette = [
@@ -182,9 +182,9 @@
 	}
 
 	// Generate color variants
-	$: lighterColor = `hsl(${hslH}, ${hslS}%, ${Math.min(100, hslL + 20)}%)`;
-	$: darkerColor = `hsl(${hslH}, ${hslS}%, ${Math.max(0, hslL - 20)}%)`;
-	$: complementaryColor = `hsl(${(hslH + 180) % 360}, ${hslS}%, ${hslL}%)`;
+	const lighterColor = $derived(`hsl(${hslH}, ${hslS}%, ${Math.min(100, hslL + 20)}%)`);
+	const darkerColor = $derived(`hsl(${hslH}, ${hslS}%, ${Math.max(0, hslL - 20)}%)`);
+	const complementaryColor = $derived(`hsl(${(hslH + 180) % 360}, ${hslS}%, ${hslL}%)`);
 </script>
 
 <div class="space-y-6">
@@ -212,12 +212,12 @@
 					id="hex-input"
 					type="text"
 					bind:value={hexInput}
-					on:input={updateFromHex}
+					oninput={updateFromHex}
 					class="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
 					placeholder="#000000"
 				/>
 				<button
-					on:click={() => copyToClipboard(hexInput)}
+					onclick={() => copyToClipboard(hexInput)}
 					class="rounded-lg bg-blue-500 px-3 py-2 text-white transition-colors hover:bg-blue-600"
 				>
 					📋
@@ -235,7 +235,7 @@
 					min="0"
 					max="255"
 					bind:value={rgbR}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-full accent-red-500"
 				/>
 				<input
@@ -243,7 +243,7 @@
 					min="0"
 					max="255"
 					bind:value={rgbG}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-full accent-green-500"
 				/>
 				<input
@@ -251,7 +251,7 @@
 					min="0"
 					max="255"
 					bind:value={rgbB}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-full accent-blue-500"
 				/>
 			</div>
@@ -261,7 +261,7 @@
 					min="0"
 					max="255"
 					bind:value={rgbR}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<input
@@ -269,7 +269,7 @@
 					min="0"
 					max="255"
 					bind:value={rgbG}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<input
@@ -277,11 +277,11 @@
 					min="0"
 					max="255"
 					bind:value={rgbB}
-					on:input={updateFromRgb}
+					oninput={updateFromRgb}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<button
-					on:click={() => copyToClipboard(`rgb(${rgbR}, ${rgbG}, ${rgbB})`)}
+					onclick={() => copyToClipboard(`rgb(${rgbR}, ${rgbG}, ${rgbB})`)}
 					class="rounded bg-blue-500 px-2 py-1 text-white transition-colors hover:bg-blue-600"
 				>
 					📋
@@ -299,7 +299,7 @@
 					min="0"
 					max="360"
 					bind:value={hslH}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-full"
 				/>
 				<input
@@ -307,7 +307,7 @@
 					min="0"
 					max="100"
 					bind:value={hslS}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-full"
 				/>
 				<input
@@ -315,7 +315,7 @@
 					min="0"
 					max="100"
 					bind:value={hslL}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-full"
 				/>
 			</div>
@@ -325,7 +325,7 @@
 					min="0"
 					max="360"
 					bind:value={hslH}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<input
@@ -333,7 +333,7 @@
 					min="0"
 					max="100"
 					bind:value={hslS}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<input
@@ -341,11 +341,11 @@
 					min="0"
 					max="100"
 					bind:value={hslL}
-					on:input={updateFromHsl}
+					oninput={updateFromHsl}
 					class="w-16 rounded border px-2 py-1"
 				/>
 				<button
-					on:click={() => copyToClipboard(`hsl(${hslH}, ${hslS}%, ${hslL}%)`)}
+					onclick={() => copyToClipboard(`hsl(${hslH}, ${hslS}%, ${hslL}%)`)}
 					class="rounded bg-blue-500 px-2 py-1 text-white transition-colors hover:bg-blue-600"
 				>
 					📋
@@ -361,7 +361,7 @@
 			{#each colorPalette as color (color)}
 				<button
 					aria-label="Select color {color}"
-					on:click={() => selectPaletteColor(color)}
+					onclick={() => selectPaletteColor(color)}
 					class="h-10 w-full rounded-lg border-2 transition-transform hover:scale-110 {selectedColor ===
 					color
 						? 'border-gray-800'

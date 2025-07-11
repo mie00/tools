@@ -1,27 +1,33 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-
-	export let showModal: boolean = false;
-	export let apiKeyInput: string = '';
-	export let apiKeyError: string = '';
-	export let isValidating: boolean = false;
-
-	const dispatch = createEventDispatcher<{
-		submit: string;
-		cancel: void;
-		close: void;
+	let {
+		showModal = $bindable(),
+		apiKeyInput = $bindable(),
+		apiKeyError = $bindable(),
+		isValidating = $bindable(),
+		onsubmit,
+		oncancel
+	} = $props<{
+		showModal?: boolean;
+		apiKeyInput?: string;
+		apiKeyError?: string;
+		isValidating?: boolean;
+		onsubmit: (_apiKey: string) => void;
+		oncancel: () => void;
 	}>();
 
 	function handleSubmit() {
-		dispatch('submit', apiKeyInput.trim());
+		if (apiKeyInput?.trim()) {
+			onsubmit(apiKeyInput.trim());
+		}
 	}
 
 	function handleCancel() {
-		dispatch('cancel');
+		oncancel();
 	}
 
 	function handleClose() {
-		dispatch('close');
+		// This function is no longer needed as createEventDispatcher is removed
+		// Keeping it for now in case it's called elsewhere, but it will do nothing.
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -39,8 +45,8 @@
 	<!-- Modal Backdrop -->
 	<div
 		class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
-		on:click={handleClose}
-		on:keydown={handleKeydown}
+		onclick={handleClose}
+		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="api-key-title"
@@ -86,7 +92,7 @@
 						id="api-key-input"
 						type="text"
 						bind:value={apiKeyInput}
-						on:keydown={handleKeydown}
+						onkeydown={handleKeydown}
 						placeholder="Your Alpha Vantage API key"
 						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
 						disabled={isValidating}
@@ -118,7 +124,7 @@
 				<!-- Action Buttons -->
 				<div class="flex space-x-3">
 					<button
-						on:click={handleSubmit}
+						onclick={handleSubmit}
 						disabled={!apiKeyInput.trim() || isValidating}
 						class="flex flex-1 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 					>
@@ -144,7 +150,7 @@
 						{/if}
 					</button>
 					<button
-						on:click={handleCancel}
+						onclick={handleCancel}
 						disabled={isValidating}
 						class="flex-1 rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
 					>

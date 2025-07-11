@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let isLoading: boolean;
-	export let disabled: boolean = false;
+	let {
+		isLoading,
+		disabled = false
+	}: {
+		isLoading: boolean;
+		disabled: boolean;
+	} = $props();
 
-	let userInput = '';
+	let userInput = $state('');
 	let textareaElement: HTMLTextAreaElement;
 
 	const dispatch = createEventDispatcher();
@@ -34,8 +39,8 @@
 		<textarea
 			bind:this={textareaElement}
 			bind:value={userInput}
-			on:input={autoResize}
-			on:keydown={(e) => {
+			oninput={autoResize}
+			onkeydown={(e) => {
 				if (e.key === 'Enter' && !e.shiftKey) {
 					e.preventDefault();
 					submit();
@@ -49,14 +54,14 @@
 		></textarea>
 		{#if isLoading}
 			<button
-				on:click={stop}
+				onclick={stop}
 				class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md bg-red-500 p-2 text-white hover:bg-red-600"
 			>
 				⏹️
 			</button>
 		{:else}
 			<button
-				on:click={submit}
+				onclick={submit}
 				disabled={!userInput.trim() || disabled}
 				class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-gray-400"
 			>

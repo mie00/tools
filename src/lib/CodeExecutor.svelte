@@ -1,11 +1,38 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	export let code: string;
-	export let type: 'js' | 'html';
+	const { code, type } = $props<{
+		code: string;
+		type: 'js' | 'html';
+	}>();
 
-	let iframe: HTMLIFrameElement;
-	let output = '';
+	/* eslint-disable no-useless-escape */
+	const SRC_DOC = `<script>
+        self.onmessage = (e) => {
+            const {
+                code,
+                port
+            } = e.data;
+            const log = (...args) => {
+                port.postMessage(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' '));
+            };
+            const originalLog = console.log;
+            console.log = log;
+            try {
+                new Function(code)();
+            } catch (err) {
+                port.postMessage(err.toString());
+            } finally {
+                console.log = originalLog;
+                port.close();
+            }
+        };
+    <\/script>
+    `;
+	/* eslint-enable no-useless-escape */
+
+	let iframe: HTMLIFrameElement = $state() as HTMLIFrameElement;
+	let output = $state('');
 
 	function executeJs() {
 		if (!iframe) return;
@@ -36,10 +63,12 @@
 		<iframe
 			bind:this={iframe}
 			title="JavaScript Executor"
-			srcdoc={`<script>self.onmessage = (e) => { const { code, port } = e.data; const log = (...args) => { port.postMessage(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' ')); }; const originalLog = console.log; console.log = log; try { new Function(code)(); } catch (err) { port.postMessage(err.toString()); } finally { console.log = originalLog; port.close(); } };</script>`}
+			srcdoc={SRC_DOC}
 			class="hidden"
-			on:load={executeJs}
+			onload={executeJs}
 		></iframe>
+		<!-- Safe: output is from sandboxed iframe execution -->
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		<pre class="mt-2 max-h-64 overflow-auto rounded border bg-gray-100 p-2 text-sm">{@html output ||
 				'Executing...'}</pre>
 	</div>

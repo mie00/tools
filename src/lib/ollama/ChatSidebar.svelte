@@ -1,42 +1,61 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { ChatTopic, ChatConfig, ModelLoadingProgress, FileProgress } from './types';
 	import GlobalSettings from './GlobalSettings.svelte';
 
-	const dispatch = createEventDispatcher();
+	const {
+		topics = [],
+		currentActiveTopicId = null,
+		config,
+		isModelLoaded = false,
+		hasInitializationError = false,
+		loadingProgress,
+		fileProgress = {},
+		onselectTopic,
+		oncreateTopic,
+		ondeleteTopic,
+		ontoggleTopics,
+		onupdateConfig,
+		onretryInitialization
+	} = $props<{
+		topics?: ChatTopic[];
+		currentActiveTopicId?: string | null;
+		config: ChatConfig;
+		isModelLoaded?: boolean;
+		hasInitializationError?: boolean;
+		loadingProgress: ModelLoadingProgress;
+		fileProgress?: Record<string, FileProgress>;
+		onselectTopic: (_topicId: string) => void;
+		oncreateTopic: () => void;
+		ondeleteTopic: (_topicId: string) => void;
+		ontoggleTopics: () => void;
+		onupdateConfig: (_updates: Partial<ChatConfig>) => void;
+		onretryInitialization: () => void;
+	}>();
 
-	export let topics: ChatTopic[] = [];
-	export let currentActiveTopicId: string | null = null;
-	export let config: ChatConfig;
-	export let isModelLoaded: boolean = false;
-	export let hasInitializationError: boolean = false;
-	export let loadingProgress: ModelLoadingProgress;
-	export let fileProgress: Record<string, FileProgress> = {};
-
-	let showGlobalSettings = false;
+	let showGlobalSettings = $state(false);
 
 	function handleSelectTopic(topicId: string) {
-		dispatch('selectTopic', topicId);
+		onselectTopic(topicId);
 	}
 
 	function handleCreateTopic() {
-		dispatch('createTopic');
+		oncreateTopic();
 	}
 
 	function handleDeleteTopic(topicId: string) {
-		dispatch('deleteTopic', topicId);
+		ondeleteTopic(topicId);
 	}
 
 	function handleToggleTopics() {
-		dispatch('toggleTopics');
+		ontoggleTopics();
 	}
 
-	function handleUpdateConfig(event: CustomEvent<Partial<ChatConfig>>) {
-		dispatch('updateConfig', event.detail);
+	function handleUpdateConfig(updates: Partial<ChatConfig>) {
+		onupdateConfig(updates);
 	}
 
 	function handleRetryInitialization() {
-		dispatch('retryInitialization');
+		onretryInitialization();
 	}
 </script>
 
@@ -45,14 +64,14 @@
 		<h2 class="text-lg font-semibold text-gray-700">Chats</h2>
 		<div class="flex items-center gap-2">
 			<button
-				on:click={() => (showGlobalSettings = !showGlobalSettings)}
+				onclick={() => (showGlobalSettings = !showGlobalSettings)}
 				class="text-gray-600 hover:text-gray-800"
 				title="Global Settings"
 			>
 				⚙️
 			</button>
 			<button
-				on:click={handleToggleTopics}
+				onclick={handleToggleTopics}
 				class="text-gray-600 hover:text-gray-800"
 				title="Close sidebar"
 			>
@@ -69,13 +88,13 @@
 				{hasInitializationError}
 				{loadingProgress}
 				{fileProgress}
-				on:updateConfig={handleUpdateConfig}
-				on:retryInitialization={handleRetryInitialization}
+				onupdateConfig={handleUpdateConfig}
+				onretryInitialization={handleRetryInitialization}
 			/>
 		</div>
 	{:else}
 		<button
-			on:click={handleCreateTopic}
+			onclick={handleCreateTopic}
 			class="mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
 		>
 			+ New Chat
@@ -90,8 +109,8 @@
 								: ''} cursor-pointer hover:bg-gray-100"
 							role="button"
 							tabindex="0"
-							on:click={() => handleSelectTopic(topic.id)}
-							on:keydown={(e) => {
+							onclick={() => handleSelectTopic(topic.id)}
+							onkeydown={(e) => {
 								if (e.key === 'Enter' || e.key === ' ') {
 									e.preventDefault();
 									handleSelectTopic(topic.id);
@@ -110,7 +129,10 @@
 									<span class="truncate">{topic.name}</span>
 								</div>
 								<button
-									on:click|stopPropagation={() => handleDeleteTopic(topic.id)}
+									onclick={(e) => {
+										e.stopPropagation();
+										handleDeleteTopic(topic.id);
+									}}
 									class="z-10 flex-shrink-0 rounded-full p-1 text-gray-400 hover:text-red-600"
 									title="Delete Chat"
 								>

@@ -3,15 +3,15 @@
 
 	// Type definitions (JSQRResult was removed as it's not used)
 
-	let fileInput: HTMLInputElement;
-	let videoElement: HTMLVideoElement;
-	let canvasElement: HTMLCanvasElement;
-	let result: string = '';
-	let error: string = '';
-	let loading: boolean = false;
-	let isScanning: boolean = false;
-	let stream: MediaStream | null = null;
-	let jsQRLib: any = null;
+	let fileInput: HTMLInputElement | undefined = $state();
+	let videoElement: HTMLVideoElement | undefined = $state();
+	let canvasElement: HTMLCanvasElement | undefined = $state();
+	let result: string = $state('');
+	let error: string = $state('');
+	let loading: boolean = $state(false);
+	let isScanning: boolean = $state(false);
+	let stream: MediaStream | null = $state(null);
+	let jsQRLib: any = $state(null);
 
 	onMount(async () => {
 		try {
@@ -38,10 +38,12 @@
 				video: { facingMode: 'environment' }
 			});
 
-			videoElement.srcObject = stream;
-			videoElement.play();
-			isScanning = true;
-			scanQRCode();
+			if (videoElement) {
+				videoElement.srcObject = stream;
+				videoElement.play();
+				isScanning = true;
+				scanQRCode();
+			}
 		} catch (err: unknown) {
 			error = 'Camera access denied or not available';
 			console.error('Camera error:', err);
@@ -56,11 +58,13 @@
 			stream = null;
 		}
 		isScanning = false;
-		videoElement.srcObject = null;
+		if (videoElement) {
+			videoElement.srcObject = null;
+		}
 	}
 
 	function scanQRCode() {
-		if (!isScanning || !jsQRLib) return;
+		if (!isScanning || !jsQRLib || !videoElement || !canvasElement) return;
 
 		if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
 			const canvas = canvasElement;
@@ -155,7 +159,7 @@
 		<div class="space-y-4">
 			{#if !isScanning}
 				<button
-					on:click={startCamera}
+					onclick={startCamera}
 					disabled={loading}
 					class="rounded-lg bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50"
 				>
@@ -163,7 +167,7 @@
 				</button>
 			{:else}
 				<button
-					on:click={stopCamera}
+					onclick={stopCamera}
 					class="rounded-lg bg-red-500 px-4 py-2 font-medium text-white hover:bg-red-600"
 				>
 					Stop Camera
@@ -193,7 +197,7 @@
 				bind:this={fileInput}
 				type="file"
 				accept="image/*"
-				on:change={handleFileUpload}
+				onchange={handleFileUpload}
 				disabled={loading}
 				class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
 			/>
@@ -217,7 +221,7 @@
 
 				<div class="flex flex-wrap gap-2">
 					<button
-						on:click={copyToClipboard}
+						onclick={copyToClipboard}
 						class="rounded-lg bg-gray-500 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600"
 					>
 						📋 Copy
@@ -225,7 +229,7 @@
 
 					{#if isUrl(result)}
 						<button
-							on:click={openLink}
+							onclick={openLink}
 							class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
 						>
 							🔗 Open Link

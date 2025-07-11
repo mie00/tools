@@ -6,30 +6,30 @@
 	let pyodide: any;
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
-	let expression = 'a * sin(x) + b';
-	let variables: Record<string, number> = {};
-	let extractedVars: string[] = [];
-	let isLoading = false;
-	let error = '';
-	let xMin = -10;
-	let xMax = 10;
-	let yMin = -10;
-	let yMax = 10;
-	let resolution = 500;
-	let showPresets = false;
+	let expression = $state('a * sin(x) + b');
+	let variables: Record<string, number> = $state({});
+	let extractedVars: string[] = $state([]);
+	let isLoading = $state(false);
+	let error = $state('');
+	let xMin = $state(-10);
+	let xMax = $state(10);
+	let yMin = $state(-10);
+	let yMax = $state(10);
+	let resolution = $state(500);
+	let showPresets = $state(false);
 
 	// Animation state
-	let hasTimeVariable = false;
-	let tmin = 0;
-	let tmax = 6.28; // 2π
-	let speed = 1; // cycles per second
-	let isAnimating = false;
+	let hasTimeVariable = $state(false);
+	let tmin = $state(0);
+	let tmax = $state(6.28); // 2π
+	let speed = $state(1); // cycles per second
+	let isAnimating = $state(false);
 	let animationId: number | null = null;
 	let animationStartTime = 0;
 
 	// Canvas interaction state
-	let isDragging = false;
-	let dragMode: 'pan' | 'zoom' = 'pan';
+	let isDragging = $state(false);
+	let dragMode: 'pan' | 'zoom' = $state('pan');
 	let dragStart = { x: 0, y: 0 };
 	let dragStartView = { xMin: 0, xMax: 0, yMin: 0, yMax: 0 };
 	let lastTouchDistance = 0;
@@ -67,10 +67,10 @@
 		timestamp: number;
 	}
 
-	let history: HistoryEntry[] = [];
-	let currentHistoryId: string | null = null;
-	let showHistory = false;
-	let isLoadingFromHistory = false;
+	let history: HistoryEntry[] = $state([]);
+	let currentHistoryId: string | null = $state(null);
+	let showHistory = $state(false);
+	let isLoadingFromHistory = $state(false);
 
 	// History management functions
 	function generateHistoryId(): string {
@@ -222,8 +222,8 @@ result
 	}
 
 	// Rename entry state
-	let renamingEntryId: string | null = null;
-	let renameValue = '';
+	let renamingEntryId: string | null = $state(null);
+	let renameValue = $state('');
 
 	function startRename(entry: HistoryEntry) {
 		renamingEntryId = entry.id;
@@ -1115,9 +1115,11 @@ evaluate_function()
 		}
 	}
 
-	$: if (expression && pyodide && !isLoading) {
-		handleExpressionChange();
-	}
+	$effect(() => {
+		if (expression && pyodide && !isLoading) {
+			handleExpressionChange();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -1158,7 +1160,7 @@ evaluate_function()
 						Presets:
 						{#each presetFunctions.slice(0, 4) as preset, i (preset.name)}
 							<button
-								on:click={() => loadPreset(preset)}
+								onclick={() => loadPreset(preset)}
 								disabled={isLoading}
 								class="mr-2 text-blue-600 underline hover:text-blue-800"
 							>
@@ -1166,7 +1168,7 @@ evaluate_function()
 							</button>
 						{/each}
 						<button
-							on:click={() => (showPresets = !showPresets)}
+							onclick={() => (showPresets = !showPresets)}
 							disabled={isLoading}
 							class="text-gray-600 underline hover:text-gray-800"
 						>
@@ -1193,7 +1195,7 @@ evaluate_function()
 					<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 						{#each presetFunctions as preset (preset.name)}
 							<button
-								on:click={() => loadPreset(preset)}
+								onclick={() => loadPreset(preset)}
 								disabled={isLoading}
 								class="rounded-lg border border-gray-200 bg-white p-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
 							>
@@ -1269,14 +1271,14 @@ evaluate_function()
 					<h3 class="text-lg font-medium text-gray-800">History</h3>
 					<div class="flex items-center gap-2">
 						<button
-							on:click={checkpointCurrent}
+							onclick={checkpointCurrent}
 							disabled={isLoading}
 							class="rounded bg-purple-100 px-3 py-1 text-sm text-purple-700 transition-colors hover:bg-purple-200"
 						>
 							📌 Checkpoint
 						</button>
 						<button
-							on:click={() => (showHistory = !showHistory)}
+							onclick={() => (showHistory = !showHistory)}
 							disabled={isLoading}
 							class="rounded bg-gray-100 px-3 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-200"
 						>
@@ -1305,8 +1307,8 @@ evaluate_function()
 												<input
 													type="text"
 													bind:value={renameValue}
-													on:blur={finishRename}
-													on:keydown={(e) => {
+													onblur={finishRename}
+													onkeydown={(e) => {
 														if (e.key === 'Enter') finishRename();
 														if (e.key === 'Escape') cancelRename();
 													}}
@@ -1315,7 +1317,7 @@ evaluate_function()
 												/>
 											{:else}
 												<button
-													on:click={() => loadHistoryEntry(entry)}
+													onclick={() => loadHistoryEntry(entry)}
 													disabled={isLoading}
 													class="w-full text-left"
 												>
@@ -1336,14 +1338,14 @@ evaluate_function()
 										<div class="flex flex-shrink-0 items-center gap-1">
 											{#if renamingEntryId === entry.id}
 												<button
-													on:click={finishRename}
+													onclick={finishRename}
 													class="p-1 text-green-600 hover:text-green-800"
 													title="Save name"
 												>
 													✓
 												</button>
 												<button
-													on:click={cancelRename}
+													onclick={cancelRename}
 													class="p-1 text-gray-600 hover:text-gray-800"
 													title="Cancel"
 												>
@@ -1351,14 +1353,14 @@ evaluate_function()
 												</button>
 											{:else}
 												<button
-													on:click={() => startRename(entry)}
+													onclick={() => startRename(entry)}
 													class="p-1 text-blue-600 hover:text-blue-800"
 													title="Rename"
 												>
 													✏️
 												</button>
 												<button
-													on:click={() => removeHistoryEntry(entry.id)}
+													onclick={() => removeHistoryEntry(entry.id)}
 													class="p-1 text-red-600 hover:text-red-800"
 													title="Remove"
 												>
@@ -1398,7 +1400,7 @@ evaluate_function()
 								id={varName}
 								type="number"
 								bind:value={variables[varName]}
-								on:input={handleVariableChange}
+								oninput={handleVariableChange}
 								step="0.1"
 								disabled={isLoading}
 								class="w-16 flex-shrink-0 rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -1410,9 +1412,9 @@ evaluate_function()
 									class="relative h-5 w-full cursor-grab overflow-hidden rounded bg-gray-200 transition-colors select-none hover:bg-gray-300 active:cursor-grabbing"
 									class:bg-blue-100={variableDragState.isDragging &&
 										variableDragState.variable === varName}
-									on:mousedown={(e) => handleVariableMouseDown(e, varName)}
-									on:touchstart={(e) => handleVariableTouchStart(e, varName)}
-									on:contextmenu={(e) => e.preventDefault()}
+									onmousedown={(e) => handleVariableMouseDown(e, varName)}
+									ontouchstart={(e) => handleVariableTouchStart(e, varName)}
+									oncontextmenu={(e) => e.preventDefault()}
 									role="slider"
 									aria-label="Drag to change {varName} value"
 									aria-valuemin="-10"
@@ -1491,14 +1493,14 @@ evaluate_function()
 				{/if}
 				<div class="mt-3 flex justify-center gap-3">
 					<button
-						on:click={resetView}
+						onclick={resetView}
 						disabled={isLoading}
 						class="rounded bg-blue-100 px-3 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-200"
 					>
 						Reset View
 					</button>
 					<button
-						on:click={exportAsImage}
+						onclick={exportAsImage}
 						disabled={isLoading}
 						class="rounded bg-green-100 px-3 py-1 text-xs text-green-700 transition-colors hover:bg-green-200"
 					>

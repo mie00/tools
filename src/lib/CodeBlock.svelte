@@ -2,27 +2,31 @@
 	import CodeExecutor from './CodeExecutor.svelte';
 	import hljs from 'highlight.js';
 
-	export let code: string;
-	export let lang: string;
+	const { code, lang } = $props<{
+		code: string;
+		lang: string;
+	}>();
 
-	let showExecutor = false;
+	let showExecutor = $state(false);
 
 	function handleClick() {
 		showExecutor = !showExecutor;
 	}
 
-	$: highlightedCode = hljs.getLanguage(lang)
-		? hljs.highlight(code, { language: lang }).value
-		: hljs.highlightAuto(code).value;
+	const highlightedCode = $derived(
+		hljs.getLanguage(lang)
+			? hljs.highlight(code, { language: lang }).value
+			: hljs.highlightAuto(code).value
+	);
 </script>
 
 <div class="code-block-wrapper">
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	<!-- Safe: highlightedCode is sanitized by highlight.js -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	<pre><code class="hljs language-{lang}">{@html highlightedCode}</code></pre>
 	{#if lang === 'js' || lang === 'javascript' || lang === 'html'}
 		<div class="button-container">
-			<button class="exec-btn" on:click={handleClick}>
+			<button class="exec-btn" onclick={handleClick}>
 				{#if showExecutor}
 					❌
 				{:else if lang === 'html'}

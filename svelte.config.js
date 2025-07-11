@@ -9,5 +9,8 @@ export default {
 			precompress: false,
 			strict: true
 		})
+	},
+	compilerOptions: {
+		runes: true
 	}
 };

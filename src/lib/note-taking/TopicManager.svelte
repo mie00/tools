@@ -1,9 +1,15 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let topics: string[] = ['Main'];
-	export let selectedTopic: string = 'Main';
-	export let showNewTopicInput: boolean = false;
+	let {
+		topics = ['Main'],
+		selectedTopic = 'Main',
+		showNewTopicInput = false
+	}: {
+		topics: string[];
+		selectedTopic: string;
+		showNewTopicInput: boolean;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		topicSelected: string;
@@ -12,7 +18,7 @@
 		noteMoved: { noteId: number; newTopic: string };
 	}>();
 
-	let newTopicName = '';
+	let newTopicName = $state('');
 
 	function selectTopic(topic: string) {
 		selectedTopic = topic;
@@ -52,7 +58,7 @@
 		{#each topics as topic (topic)}
 			<div class="flex items-center">
 				<button
-					on:click={() => selectTopic(topic)}
+					onclick={() => selectTopic(topic)}
 					class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedTopic ===
 					topic
 						? 'bg-blue-600 text-white'
@@ -62,7 +68,7 @@
 				</button>
 				{#if topic !== 'Main'}
 					<button
-						on:click={() => deleteTopic(topic)}
+						onclick={() => deleteTopic(topic)}
 						class="ml-2 text-red-500 hover:text-red-700"
 						title="Delete topic"
 						aria-label="Delete topic {topic}"
@@ -76,13 +82,13 @@
 		{#if showNewTopicInput}
 			<input
 				bind:value={newTopicName}
-				on:keydown={handleKeydown}
+				onkeydown={handleKeydown}
 				placeholder="Topic name"
 				class="rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 			/>
 			<div class="flex gap-1">
 				<button
-					on:click={addTopic}
+					onclick={addTopic}
 					disabled={!newTopicName.trim()}
 					class="rounded-full bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
 					title="Add topic"
@@ -91,7 +97,7 @@
 					✓
 				</button>
 				<button
-					on:click={() => {
+					onclick={() => {
 						showNewTopicInput = false;
 						newTopicName = '';
 					}}
@@ -104,7 +110,7 @@
 			</div>
 		{:else}
 			<button
-				on:click={() => (showNewTopicInput = true)}
+				onclick={() => (showNewTopicInput = true)}
 				class="rounded-full bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
 				title="Add new topic"
 				aria-label="Add new topic"

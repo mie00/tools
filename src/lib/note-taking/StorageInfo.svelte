@@ -3,10 +3,17 @@
 	import type { StorageInfo } from './StorageManager';
 	import type { Note } from './NoteOperations';
 
-	export let storageInfo: StorageInfo;
-	export let showStorageWarning: boolean = false;
-	export let notes: Note[] = [];
-	export let formatBytes: (_bytes: number) => string;
+	let {
+		storageInfo,
+		showStorageWarning = false,
+		notes = [],
+		formatBytes
+	}: {
+		storageInfo: StorageInfo;
+		showStorageWarning: boolean;
+		notes: Note[];
+		formatBytes: (_bytes: number) => string;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		clearAllData: void;
@@ -21,8 +28,10 @@
 		dispatch('clearMediaNotes');
 	}
 
-	$: usagePercentage = storageInfo.quota > 0 ? (storageInfo.used / storageInfo.quota) * 100 : 0;
-	$: mediaNotesCount = notes.filter((n) => n.media).length;
+	let usagePercentage = $derived(
+		storageInfo.quota > 0 ? (storageInfo.used / storageInfo.quota) * 100 : 0
+	);
+	let mediaNotesCount = $derived(notes.filter((n) => n.media).length);
 </script>
 
 <!-- Storage Warning -->
@@ -52,14 +61,14 @@
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#if mediaNotesCount > 0}
 						<button
-							on:click={clearMediaNotes}
+							onclick={clearMediaNotes}
 							class="rounded-md bg-orange-600 px-3 py-1 text-sm text-white hover:bg-orange-700"
 						>
 							Clear Media Notes ({mediaNotesCount})
 						</button>
 					{/if}
 					<button
-						on:click={clearAllData}
+						onclick={clearAllData}
 						class="rounded-md border border-orange-600 px-3 py-1 text-sm text-orange-600 hover:bg-orange-600 hover:text-white"
 					>
 						Clear All Data
@@ -115,14 +124,14 @@
 		<div class="mt-4 flex flex-wrap gap-2">
 			{#if mediaNotesCount > 0}
 				<button
-					on:click={clearMediaNotes}
+					onclick={clearMediaNotes}
 					class="rounded-md bg-yellow-600 px-3 py-1 text-sm text-white hover:bg-yellow-700"
 				>
 					Clear Media Notes
 				</button>
 			{/if}
 			<button
-				on:click={clearAllData}
+				onclick={clearAllData}
 				class="rounded-md bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
 			>
 				Clear All Data

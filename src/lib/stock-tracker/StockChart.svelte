@@ -1,18 +1,33 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { ChartPoint, TimeWindow } from './StockApiManager';
 
-	export let chartData: ChartPoint[] = [];
-	export let timeWindows: TimeWindow[] = [];
-	export let selectedTimeWindow: string = '1d';
-	export let loading: boolean = false;
-	export let error: string = '';
-	export let symbol: string = '';
-
-	const dispatch = createEventDispatcher<{
-		timeWindowChanged: string;
-		refresh: void;
+	let {
+		data,
+		timeWindows,
+		selectedTimeWindow = $bindable(),
+		loading = $bindable(),
+		error = $bindable(),
+		symbol,
+		ontimeWindowChanged,
+		onrefresh
+	} = $props<{
+		data: ChartPoint[];
+		timeWindows: TimeWindow[];
+		selectedTimeWindow?: string;
+		loading?: boolean;
+		error?: string;
+		symbol: string;
+		ontimeWindowChanged: (_timeWindow: string) => void;
+		onrefresh: () => void;
 	}>();
+
+	function handleTimeWindowChange(timeWindow: string) {
+		ontimeWindowChanged(timeWindow);
+	}
+
+	function handleRefresh() {
+		onrefresh();
+	}
 
 	function formatCurrency(value: number): string {
 		return new Intl.NumberFormat('en-US', {
@@ -23,22 +38,14 @@
 		}).format(value);
 	}
 
-	function changeTimeWindow(windowId: string) {
-		dispatch('timeWindowChanged', windowId);
-	}
-
-	function refreshChart() {
-		dispatch('refresh');
-	}
-
-	$: minPrice = chartData.length > 0 ? Math.min(...chartData.map((p) => p.price)) : 0;
-	$: maxPrice = chartData.length > 0 ? Math.max(...chartData.map((p) => p.price)) : 0;
-	$: currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].price : 0;
-	$: firstPrice = chartData.length > 0 ? chartData[0].price : 0;
-	$: periodChange = currentPrice - firstPrice;
-	$: periodChangePercent = firstPrice > 0 ? (periodChange / firstPrice) * 100 : 0;
-	$: highPrice = chartData.length > 0 ? Math.max(...chartData.map((p) => p.high)) : 0;
-	$: lowPrice = chartData.length > 0 ? Math.min(...chartData.map((p) => p.low)) : 0;
+	let minPrice = $derived(data.length > 0 ? Math.min(...data.map((p: ChartPoint) => p.price)) : 0);
+	let maxPrice = $derived(data.length > 0 ? Math.max(...data.map((p: ChartPoint) => p.price)) : 0);
+	let currentPrice = $derived(data.length > 0 ? data[data.length - 1].price : 0);
+	let firstPrice = $derived(data.length > 0 ? data[0].price : 0);
+	let periodChange = $derived(currentPrice - firstPrice);
+	let periodChangePercent = $derived(firstPrice > 0 ? (periodChange / firstPrice) * 100 : 0);
+	let highPrice = $derived(data.length > 0 ? Math.max(...data.map((p: ChartPoint) => p.high)) : 0);
+	let lowPrice = $derived(data.length > 0 ? Math.min(...data.map((p: ChartPoint) => p.low)) : 0);
 </script>
 
 <div class="rounded-xl border border-gray-200 bg-white p-4 md:p-6">
@@ -52,7 +59,7 @@
 			<div class="flex flex-wrap gap-2">
 				{#each timeWindows as timeWindow (timeWindow.id)}
 					<button
-						on:click={() => changeTimeWindow(timeWindow.id)}
+						onclick={() => handleTimeWindowChange(timeWindow.id)}
 						class="rounded-lg px-3 py-1 text-sm transition-colors {selectedTimeWindow ===
 						timeWindow.id
 							? 'bg-blue-600 text-white'
@@ -65,7 +72,7 @@
 
 			<!-- Refresh Button -->
 			<button
-				on:click={refreshChart}
+				onclick={handleRefresh}
 				class="rounded border border-blue-200 px-3 py-1 text-sm text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
 				title="Refresh chart data"
 				aria-label="Refresh chart data"
@@ -112,13 +119,13 @@
 			<p class="font-medium text-red-600">Failed to load chart</p>
 			<p class="text-sm text-red-500">{error}</p>
 			<button
-				on:click={refreshChart}
+				onclick={handleRefresh}
 				class="mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 			>
 				Retry
 			</button>
 		</div>
-	{:else if chartData.length > 0}
+	{:else if data.length > 0}
 		<div class="space-y-6">
 			<!-- Chart Container -->
 			<div class="w-full overflow-x-auto">
@@ -126,17 +133,15 @@
 					class="h-64 min-w-full rounded-lg border border-gray-200 bg-gradient-to-b from-blue-50 to-gray-50 p-2 sm:h-80 sm:p-4 lg:h-96"
 				>
 					<div class="flex h-full items-end justify-between gap-1">
-						{#each chartData as point, i (i)}
+						{#each data as point, i (i)}
 							{@const height =
-								chartData.length > 1
-									? ((point.price - minPrice) / (maxPrice - minPrice)) * 85 + 10
-									: 50}
-							{@const isPositive = i === 0 || point.price >= chartData[i - 1]?.price}
+								data.length > 1 ? ((point.price - minPrice) / (maxPrice - minPrice)) * 85 + 10 : 50}
+							{@const isPositive = i === 0 || point.price >= data[i - 1]?.price}
 							<div
 								class="group relative cursor-pointer rounded-t-sm transition-all duration-300 hover:opacity-80 {isPositive
 									? 'bg-green-500 hover:bg-green-600'
 									: 'bg-red-500 hover:bg-red-600'}"
-								style="height: {height}%; flex: 1; min-width: {chartData.length > 50
+								style="height: {height}%; flex: 1; min-width: {data.length > 50
 									? '3px'
 									: '8px'}; max-width: 20px;"
 							>
@@ -184,7 +189,7 @@
 				<div class="text-center">
 					<div class="text-xs tracking-wide text-gray-500 uppercase">Data Points</div>
 					<div class="text-lg font-semibold text-gray-700">
-						{chartData.length}
+						{data.length}
 					</div>
 				</div>
 			</div>
@@ -223,7 +228,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each chartData.slice().reverse() as point (point.fullDate || point.date)}
+							{#each data.slice().reverse() as point (point.fullDate || point.date)}
 								<tr class="border-b border-gray-100 hover:bg-gray-50">
 									<td class="px-4 py-2 text-gray-700">{point.fullDate || point.date}</td>
 									<td class="px-4 py-2 text-right font-medium text-gray-900"

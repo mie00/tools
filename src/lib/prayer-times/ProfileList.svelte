@@ -4,9 +4,15 @@
 	import { calculationMethods } from './constants';
 	import { getNextPrayerForProfile, formatTime } from './utils';
 
-	export let profiles: Profile[] = [];
-	export let profilePrayerTimes: Map<string, PrayerTimes> = new Map();
-	export let sharingInProgress: boolean = false;
+	let {
+		profiles = [],
+		profilePrayerTimes = new Map(),
+		sharingInProgress = false
+	}: {
+		profiles: Profile[];
+		profilePrayerTimes: Map<string, PrayerTimes>;
+		sharingInProgress: boolean;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		activate: Profile;
@@ -48,7 +54,7 @@
 	<div class="mb-4 flex items-center justify-between">
 		<h3 class="text-xl font-bold text-gray-800">Prayer Profiles</h3>
 		<button
-			on:click={handleCreateNew}
+			onclick={handleCreateNew}
 			class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
 		>
 			Add Profile
@@ -61,10 +67,10 @@
 				class="cursor-pointer rounded-lg border p-4 transition-all duration-200 {profile.isActive
 					? 'border-blue-500 bg-blue-50'
 					: 'border-gray-200 hover:border-gray-300 hover:shadow-md'}"
-				on:click={() => handleActivate(profile)}
+				onclick={() => handleActivate(profile)}
 				role="button"
 				tabindex="0"
-				on:keydown={(e) => e.key === 'Enter' && handleActivate(profile)}
+				onkeydown={(e) => e.key === 'Enter' && handleActivate(profile)}
 			>
 				<div class="flex items-start justify-between">
 					<div class="flex-1">
@@ -99,7 +105,7 @@
 					</div>
 					<div class="flex items-center space-x-2">
 						<button
-							on:click={(e) => handleShare(e, profile)}
+							onclick={(e) => handleShare(e, profile)}
 							class="p-1 text-sm text-green-600 hover:text-green-700 {sharingInProgress
 								? 'cursor-wait opacity-50'
 								: ''}"
@@ -109,14 +115,14 @@
 							{sharingInProgress ? '⏳' : '🔗'}
 						</button>
 						<button
-							on:click={(e) => handleEdit(e, profile)}
+							onclick={(e) => handleEdit(e, profile)}
 							class="p-1 text-sm text-blue-600 hover:text-blue-700"
 							title="Edit Profile"
 						>
 							✏️
 						</button>
 						<button
-							on:click={(e) => handleDelete(e, profile.id)}
+							onclick={(e) => handleDelete(e, profile.id)}
 							class="p-1 text-sm text-red-600 hover:text-red-700"
 							title="Delete Profile"
 						>

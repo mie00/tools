@@ -3,26 +3,31 @@
 	import { formatTime, getNextPrayerForProfile } from './utils';
 	import { calculationMethods } from './constants';
 
-	export let activeProfile: Profile;
-	export let prayerTimes: PrayerTimes;
+	let {
+		activeProfile,
+		prayerTimes
+	}: {
+		activeProfile: Profile;
+		prayerTimes: PrayerTimes;
+	} = $props();
 
-	let _currentTime = new Date();
+	let _currentTime = $state(new Date());
 
 	// Update current time every minute
 	setInterval(() => {
 		_currentTime = new Date();
 	}, 60000);
 
-	$: nextPrayer = getNextPrayerForProfile(activeProfile, prayerTimes);
+	let nextPrayer = $derived(getNextPrayerForProfile(activeProfile, prayerTimes));
 
-	$: prayers = [
+	let prayers = $derived([
 		{ name: 'Fajr', time: prayerTimes.fajr, arabic: 'الفجر' },
 		{ name: 'Sunrise', time: prayerTimes.sunrise, arabic: 'الشروق' },
 		{ name: 'Dhuhr', time: prayerTimes.dhuhr, arabic: 'الظهر' },
 		{ name: 'Asr', time: prayerTimes.asr, arabic: 'العصر' },
 		{ name: 'Maghrib', time: prayerTimes.maghrib, arabic: 'المغرب' },
 		{ name: 'Isha', time: prayerTimes.isha, arabic: 'العشاء' }
-	];
+	]);
 </script>
 
 <div class="rounded-xl bg-white p-8 shadow-lg">

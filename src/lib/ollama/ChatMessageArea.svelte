@@ -2,28 +2,19 @@
 	import { onMount, tick } from 'svelte';
 	import type { ChatTopic, Message } from './types';
 	import ChatMessage from './ChatMessage.svelte';
-	import { createEventDispatcher } from 'svelte';
 
-	export let activeTopic: ChatTopic | undefined;
+	const { activeTopic, oneditMessage, onsaveEdit, oncancelEdit } = $props<{
+		activeTopic: ChatTopic | undefined;
+		oneditMessage: (_detail: { index: number; content: string }) => void;
+		onsaveEdit: (_detail: { index: number; content: string }) => void;
+		oncancelEdit: () => void;
+	}>();
 
 	let chatContainer: HTMLElement;
-	let groupedMessages: (Message & { grouped?: Message[]; originalIndex: number })[] = [];
 	let _lastAssistantMessageIndex = -1;
 
-	const dispatch = createEventDispatcher();
-
-	function scrollToBottom() {
-		if (chatContainer) {
-			chatContainer.scrollTop = chatContainer.scrollHeight;
-		}
-	}
-
-	onMount(() => {
-		scrollToBottom();
-	});
-
-	$: {
-		const newGroupedMessages = [];
+	const groupedMessages = $derived.by(() => {
+		const newGroupedMessages: (Message & { grouped?: Message[]; originalIndex: number })[] = [];
 		if (activeTopic) {
 			const messages = activeTopic.messages;
 			let i = 0;
@@ -53,22 +44,34 @@
 				}
 			}
 		}
-		groupedMessages = newGroupedMessages;
+		return newGroupedMessages;
+	});
+
+	$effect(() => {
 		_lastAssistantMessageIndex = groupedMessages.findLastIndex((m) => m.role === 'assistant');
-
 		tick().then(scrollToBottom);
+	});
+
+	function scrollToBottom() {
+		if (chatContainer) {
+			chatContainer.scrollTop = chatContainer.scrollHeight;
+		}
 	}
 
-	function handleEditMessage(event: CustomEvent<{ index: number; content: string }>) {
-		dispatch('editMessage', event.detail);
+	onMount(() => {
+		scrollToBottom();
+	});
+
+	function handleEditMessage(detail: { idx: number; content: string }) {
+		oneditMessage({ index: detail.idx, content: detail.content });
 	}
 
-	function handleSaveEdit(event: CustomEvent<{ index: number; content: string }>) {
-		dispatch('saveEdit', event.detail);
+	function handleSaveEdit(detail: { idx: number; content: string }) {
+		onsaveEdit({ index: detail.idx, content: detail.content });
 	}
 
 	function handleCancelEdit() {
-		dispatch('cancelEdit');
+		oncancelEdit();
 	}
 </script>
 
@@ -80,9 +83,9 @@
 				idx={message.originalIndex}
 				isLoading={false}
 				canRegenerate={false}
-				on:startEdit={handleEditMessage}
-				on:saveEdit={handleSaveEdit}
-				on:cancelEdit={handleCancelEdit}
+				onstartEdit={handleEditMessage}
+				onsaveEdit={handleSaveEdit}
+				oncancelEdit={handleCancelEdit}
 			/>
 		{:else}
 			<p class="text-center text-gray-500 py-8">No messages yet. Start the conversation below.</p>

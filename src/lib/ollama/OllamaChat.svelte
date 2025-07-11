@@ -39,43 +39,46 @@ CONVERSATION:
 `;
 
 	// State
-	let topics: ChatTopic[] = [];
-	let draftTopic: ChatTopic | undefined = undefined; // Track current draft topic
-	let config: ChatConfig;
-	let currentActiveTopicId: string | null = null;
+	let topics: ChatTopic[] = $state([]);
+	let draftTopic: ChatTopic | undefined = $state(undefined); // Track current draft topic
+	let config: ChatConfig = $state() as ChatConfig;
+	let currentActiveTopicId: string | null = $state(null);
 
 	// Remote model state
-	let availableModels: string[] = [];
+	let availableModels: string[] = $state([]);
 	let abortController: AbortController | null = null;
 
 	// Local model state
 	let worker: Worker | null = null;
-	let isModelLoaded = false;
-	let loadingProgress: ModelLoadingProgress = {
+	let isModelLoaded = $state(false);
+	let loadingProgress: ModelLoadingProgress = $state({
 		status: 'loading',
 		file: '...',
 		progress: 0
-	};
-	let fileProgress: Record<string, FileProgress> = {};
-	let hasInitializationError = false;
+	});
+	let fileProgress: Record<string, FileProgress> = $state({});
+	let hasInitializationError = $state(false);
 
 	// Common state
-	let isLoading = false;
+	let isLoading = $state(false);
 	let _error: string | null = null;
-	let showSettings = false;
-	let showTopics = false; // Default to false (collapsed)
+	let showSettings = $state(false);
+	let showTopics = $state(false); // Default to false (collapsed)
 	let mathJaxLoaded = false;
 
-	let activeTopic: ChatTopic | undefined;
-	$: activeTopic =
-		topics.find((t) => t.id === currentActiveTopicId) ||
-		(draftTopic?.id === currentActiveTopicId ? draftTopic : undefined);
+	const activeTopic: ChatTopic | undefined = $derived.by(() => {
+		const foundTopic = topics.find((t: ChatTopic) => t.id === currentActiveTopicId);
+		if (foundTopic) return foundTopic;
+		return draftTopic?.id === currentActiveTopicId ? draftTopic : undefined;
+	});
 
 	// Sort topics by last updated (newest first)
-	$: sortedTopics = [...topics].sort((a, b) => {
-		const aTime = a.lastUpdated || a.createdAt;
-		const bTime = b.lastUpdated || b.createdAt;
-		return new Date(bTime).getTime() - new Date(aTime).getTime();
+	const sortedTopics = $derived.by(() => {
+		return [...topics].sort((a, b) => {
+			const aTime = a.lastUpdated || a.createdAt;
+			const bTime = b.lastUpdated || b.createdAt;
+			return new Date(bTime).getTime() - new Date(aTime).getTime();
+		});
 	});
 
 	// Editing state
@@ -131,9 +134,11 @@ CONVERSATION:
 	};
 
 	// Render math when switching topics
-	$: if (activeTopic) {
-		setTimeout(() => typesetMath(), 100);
-	}
+	$effect(() => {
+		if (activeTopic) {
+			setTimeout(() => typesetMath(), 100);
+		}
+	});
 
 	onMount(async () => {
 		// Load from localStorage and migrate old data
@@ -766,13 +771,13 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 	}
 
 	// Pass through functions for child components
-	function handleEditMessage(event: CustomEvent<{ index: number; content: string }>) {
-		_editingIndex = event.detail.index;
-		_editingContent = event.detail.content;
+	function handleEditMessage(detail: { index: number; content: string }) {
+		_editingIndex = detail.index;
+		_editingContent = detail.content;
 	}
 
-	function handleSaveEdit(event: CustomEvent<{ index: number; content: string }>) {
-		const { index, content } = event.detail;
+	function handleSaveEdit(detail: { index: number; content: string }) {
+		const { index, content } = detail;
 		if (activeTopic && activeTopic.messages[index]) {
 			activeTopic.messages[index].content = content;
 			activeTopic.lastUpdated = new Date().toISOString();
@@ -787,27 +792,27 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		_editingContent = '';
 	}
 
-	function handleUpdateSystemPrompt(event: CustomEvent<string>) {
+	function handleUpdateSystemPrompt(prompt: string) {
 		if (activeTopic) {
-			activeTopic.systemPrompt = event.detail;
+			activeTopic.systemPrompt = prompt;
 			activeTopic.lastUpdated = new Date().toISOString();
 			persistentTopics.set(topics);
 		}
 	}
 
-	function handleUpdateModel(event: CustomEvent<string>) {
+	function handleUpdateModel(model: string) {
 		if (activeTopic) {
-			activeTopic.model = event.detail;
+			activeTopic.model = model;
 			activeTopic.lastUpdated = new Date().toISOString();
 			persistentTopics.set(topics);
 		}
 	}
 
-	function handleUpdateModelSource(event: CustomEvent<'local' | 'remote'>) {
+	function handleUpdateModelSource(source: 'local' | 'remote') {
 		if (activeTopic) {
-			activeTopic.modelSource = event.detail;
+			activeTopic.modelSource = source;
 			// Update model to appropriate default
-			if (event.detail === 'local') {
+			if (source === 'local') {
 				activeTopic.model = 'local';
 			} else {
 				activeTopic.model = availableModels[0] || 'llama2';
@@ -817,8 +822,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		}
 	}
 
-	function handleUpdateConfig(event: CustomEvent<Partial<ChatConfig>>) {
-		const updatedConfig = { ...config, ...event.detail };
+	function handleUpdateConfig(updates: Partial<ChatConfig>) {
+		const updatedConfig = { ...config, ...updates };
 		persistentConfig.set(updatedConfig);
 	}
 
@@ -829,6 +834,34 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			fileProgress = {};
 			initializeLocalModel();
 		}
+	}
+
+	function handleSelectTopic(topicId: string) {
+		activeTopicId.set(topicId);
+	}
+
+	function handleDeleteTopic(topicId: string) {
+		deleteTopic(topicId);
+	}
+
+	function handleCreateTopic() {
+		createNewTopic();
+	}
+
+	function handleToggleTopics() {
+		showTopics = !showTopics;
+	}
+
+	function handleToggleSettings() {
+		showSettings = !showSettings;
+	}
+
+	function handleStopGeneration() {
+		stopGeneration();
+	}
+
+	function handleSubmitUserInput(event: CustomEvent<string>) {
+		submitUserInput(event);
 	}
 </script>
 
@@ -841,8 +874,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			role="button"
 			tabindex="0"
 			aria-label="Close sidebar"
-			on:click={() => (showTopics = false)}
-			on:keydown={(e) => {
+			onclick={() => (showTopics = false)}
+			onkeydown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
 					e.preventDefault();
 					showTopics = false;
@@ -860,12 +893,12 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 				{hasInitializationError}
 				{loadingProgress}
 				{fileProgress}
-				on:selectTopic={(e) => activeTopicId.set(e.detail)}
-				on:deleteTopic={(e) => deleteTopic(e.detail)}
-				on:createTopic={createNewTopic}
-				on:toggleTopics={() => (showTopics = !showTopics)}
-				on:updateConfig={handleUpdateConfig}
-				on:retryInitialization={handleRetryInitialization}
+				onselectTopic={handleSelectTopic}
+				ondeleteTopic={handleDeleteTopic}
+				oncreateTopic={handleCreateTopic}
+				ontoggleTopics={handleToggleTopics}
+				onupdateConfig={handleUpdateConfig}
+				onretryInitialization={handleRetryInitialization}
 			/>
 		</div>
 	{/if}
@@ -879,9 +912,9 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 				{showTopics}
 				{showSettings}
 				{isLoading}
-				on:toggleTopics={() => (showTopics = !showTopics)}
-				on:toggleSettings={() => (showSettings = !showSettings)}
-				on:stopGeneration={stopGeneration}
+				on:toggleTopics={handleToggleTopics}
+				on:toggleSettings={handleToggleSettings}
+				on:stopGeneration={handleStopGeneration}
 			/>
 		</div>
 
@@ -892,9 +925,9 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 					<ChatSettings
 						{activeTopic}
 						{availableModels}
-						on:updateSystemPrompt={handleUpdateSystemPrompt}
-						on:updateModel={handleUpdateModel}
-						on:updateModelSource={handleUpdateModelSource}
+						onupdateSystemPrompt={handleUpdateSystemPrompt}
+						onupdateModel={handleUpdateModel}
+						onupdateModelSource={handleUpdateModelSource}
 					/>
 				</div>
 			</div>
@@ -904,9 +937,9 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		<div class="min-h-0 flex-1 overflow-hidden bg-white">
 			<ChatMessageArea
 				{activeTopic}
-				on:editMessage={handleEditMessage}
-				on:saveEdit={handleSaveEdit}
-				on:cancelEdit={handleCancelEdit}
+				oneditMessage={handleEditMessage}
+				onsaveEdit={handleSaveEdit}
+				oncancelEdit={handleCancelEdit}
 			/>
 		</div>
 
@@ -916,7 +949,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 				{isLoading}
 				disabled={(!isModelLoaded && activeTopic?.modelSource === 'local') ||
 					(activeTopic?.modelSource === 'remote' && availableModels.length === 0)}
-				on:submit={submitUserInput}
+				on:submit={handleSubmitUserInput}
 			/>
 		</div>
 	</div>

@@ -2,10 +2,17 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { ChatTopic } from './types';
 
-	export let activeTopic: ChatTopic | undefined;
-	export let showTopics: boolean = true;
-	export let showSettings: boolean = false;
-	export let isLoading: boolean = false;
+	let {
+		activeTopic,
+		showTopics = true,
+		showSettings = false,
+		isLoading = false
+	}: {
+		activeTopic: ChatTopic | undefined;
+		showTopics: boolean;
+		showSettings: boolean;
+		isLoading: boolean;
+	} = $props();
 
 	const dispatch = createEventDispatcher();
 
@@ -25,7 +32,7 @@
 <header class="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4">
 	<div class="flex items-center">
 		<button
-			on:click={toggleTopics}
+			onclick={toggleTopics}
 			class="mr-4 text-gray-500 hover:text-gray-800"
 			title="Toggle sidebar"
 		>
@@ -41,14 +48,14 @@
 	<div class="flex items-center space-x-2">
 		{#if isLoading}
 			<button
-				on:click={stopGeneration}
+				onclick={stopGeneration}
 				class="text-red-500 hover:text-red-700"
 				title="Stop generation"
 			>
 				⏹️
 			</button>
 		{/if}
-		<button on:click={toggleSettings} class="text-gray-500 hover:text-gray-800" title="Settings">
+		<button onclick={toggleSettings} class="text-gray-500 hover:text-gray-800" title="Settings">
 			{showSettings ? '⚙️' : '⚙️'}
 		</button>
 	</div>

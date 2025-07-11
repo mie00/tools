@@ -14,29 +14,29 @@
 	import type { PortfolioStock } from './stock-tracker/PortfolioManager';
 
 	// Component state
-	let view: 'portfolio' | 'search' | 'stock' = 'portfolio';
-	let selectedStock: PortfolioStock | null = null;
-	let stockChart: ChartPoint[] = [];
-	let chartLoading: boolean = false;
-	let chartError: string = '';
-	let selectedTimeWindow: string = '1m';
+	let view: 'portfolio' | 'search' | 'stock' = $state('portfolio');
+	let selectedStock: PortfolioStock | null = $state(null);
+	let stockChart: ChartPoint[] = $state([]);
+	let chartLoading: boolean = $state(false);
+	let chartError: string = $state('');
+	let selectedTimeWindow: string = $state('1m');
 
 	// Search state
-	let searchQuery: string = '';
-	let searchResults: StockSearchResult[] = [];
-	let isSearching: boolean = false;
-	let searchError: string = '';
+	let searchQuery: string = $state('');
+	let searchResults: StockSearchResult[] = $state([]);
+	let isSearching: boolean = $state(false);
+	let searchError: string = $state('');
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	// Portfolio state
-	let portfolio: PortfolioStock[] = [];
-	let isRefreshing: boolean = false;
+	let portfolio: PortfolioStock[] = $state([]);
+	let isRefreshing: boolean = $state(false);
 
 	// API Key state
-	let showApiKeyPrompt: boolean = false;
-	let apiKeyInput: string = '';
-	let apiKeyError: string = '';
-	let isValidatingApiKey: boolean = false;
+	let showApiKeyPrompt: boolean = $state(false);
+	let apiKeyInput: string = $state('');
+	let apiKeyError: string = $state('');
+	let isValidatingApiKey: boolean = $state(false);
 
 	// Manager instances
 	const apiManager = StockApiManager.getInstance();
@@ -121,10 +121,6 @@
 		apiKeyInput = '';
 		apiKeyError =
 			'API key is required to use the Stock Tracker. Click "Setup API Key" to try again.';
-	}
-
-	function handleApiKeyClose() {
-		showApiKeyPrompt = false;
 	}
 
 	function showApiKeySetup() {
@@ -288,9 +284,11 @@
 	}
 
 	// Reactive updates
-	$: if (typeof window !== 'undefined' && selectedStock) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && selectedStock) {
+			updateUrl();
+		}
+	});
 </script>
 
 <div class="mx-auto max-w-6xl space-y-6 p-4">
@@ -300,9 +298,8 @@
 		bind:apiKeyInput
 		bind:apiKeyError
 		bind:isValidating={isValidatingApiKey}
-		on:submit={(e) => handleApiKeySubmit(e.detail)}
-		on:cancel={handleApiKeyCancel}
-		on:close={handleApiKeyClose}
+		onsubmit={handleApiKeySubmit}
+		oncancel={handleApiKeyCancel}
 	/>
 
 	<!-- API Status Indicator -->
@@ -321,7 +318,7 @@
 		<div class="text-xs text-blue-600">
 			Real-time stock data from Alpha Vantage
 			{#if !apiManager.hasApiKey()}
-				<button on:click={showApiKeySetup} class="ml-2 text-blue-600 underline hover:text-blue-800">
+				<button onclick={showApiKeySetup} class="ml-2 text-blue-600 underline hover:text-blue-800">
 					Setup API Key
 				</button>
 			{/if}
@@ -343,10 +340,7 @@
 					</svg>
 					<span class="text-red-800">{apiKeyError}</span>
 				</div>
-				<button
-					on:click={showApiKeySetup}
-					class="text-sm text-red-600 underline hover:text-red-800"
-				>
+				<button onclick={showApiKeySetup} class="text-sm text-red-600 underline hover:text-red-800">
 					Setup API Key
 				</button>
 			</div>
@@ -359,7 +353,7 @@
 		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold text-gray-800">Stock Search</h1>
 			<button
-				on:click={goToPortfolio}
+				onclick={goToPortfolio}
 				class="flex items-center space-x-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,15 +373,15 @@
 			bind:searchResults
 			bind:isSearching
 			bind:searchError
-			on:search={(e) => handleSearch(e.detail)}
-			on:select={(e) => handleStockSelect(e.detail)}
-			on:clear={handleSearchClear}
+			onsearch={handleSearch}
+			onselect={handleStockSelect}
+			onclear={handleSearchClear}
 		/>
 	{:else if view === 'stock' && selectedStock}
 		<!-- Stock Detail View -->
 		<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 			<button
-				on:click={goBackToPortfolio}
+				onclick={goBackToPortfolio}
 				class="flex items-center space-x-2 self-start rounded border border-gray-200 px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 sm:self-auto"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,21 +432,21 @@
 
 		<!-- Stock Chart -->
 		<StockChart
-			chartData={stockChart}
+			data={stockChart}
 			timeWindows={apiManager.getTimeWindows()}
 			bind:selectedTimeWindow
 			bind:loading={chartLoading}
 			bind:error={chartError}
 			symbol={selectedStock.symbol}
-			on:timeWindowChanged={(e) => handleTimeWindowChanged(e.detail)}
-			on:refresh={handleChartRefresh}
+			ontimeWindowChanged={handleTimeWindowChanged}
+			onrefresh={handleChartRefresh}
 		/>
 	{:else}
 		<!-- Portfolio View -->
 		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold text-gray-800">Stock Tracker</h1>
 			<button
-				on:click={goToSearch}
+				onclick={goToSearch}
 				class="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -470,10 +464,10 @@
 		<PortfolioList
 			bind:portfolio
 			bind:isRefreshing
-			on:selectStock={(e) => handleSelectStock(e.detail)}
-			on:removeStock={(e) => handleRemoveStock(e.detail)}
-			on:refreshPortfolio={refreshPortfolio}
-			on:refreshStock={(e) => refreshSingleStock(e.detail)}
+			onselectStock={handleSelectStock}
+			onremoveStock={handleRemoveStock}
+			onrefreshPortfolio={refreshPortfolio}
+			onrefreshStock={refreshSingleStock}
 		/>
 	{/if}
 </div>

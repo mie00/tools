@@ -5,16 +5,16 @@
 
 	import { onMount } from 'svelte';
 
-	let inputText = '';
-	let translatedText = '';
-	let detectedLanguage = '';
-	let sourceLanguage = 'auto';
-	let targetLanguage = 'en';
-	let isLoading = false;
-	let error = '';
-	let downloadProgress = 0;
-	let isDownloading = false;
-	let autoTranslateFromUrl = false;
+	let inputText = $state('');
+	let translatedText = $state('');
+	let detectedLanguage = $state('');
+	let sourceLanguage = $state('auto');
+	let targetLanguage = $state('en');
+	let isLoading = $state(false);
+	let error = $state('');
+	let downloadProgress = $state(0);
+	let isDownloading = $state(false);
+	let autoTranslateFromUrl = $state(false);
 
 	// Persistent settings
 	const STORAGE_KEY = 'translator-settings';
@@ -85,13 +85,13 @@
 	}
 
 	// API availability states
-	let detectorAvailable = false;
-	let translatorAvailable = false;
-	let speechSynthesisAvailable = false;
+	let detectorAvailable = $state(false);
+	let translatorAvailable = $state(false);
+	let speechSynthesisAvailable = $state(false);
 
 	// Speech synthesis state
-	let isSpeakingInput = false;
-	let isSpeakingOutput = false;
+	let isSpeakingInput = $state(false);
+	let isSpeakingOutput = $state(false);
 	let voices: SpeechSynthesisVoice[] = [];
 	let synth: SpeechSynthesis | null = null;
 
@@ -340,9 +340,11 @@
 	}
 
 	// Save settings when they change
-	$: if (typeof window !== 'undefined' && sourceLanguage && targetLanguage) {
-		saveSettings();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && sourceLanguage && targetLanguage) {
+			saveSettings();
+		}
+	});
 
 	function debouncedTranslate() {
 		clearTimeout(translationTimeout);
@@ -557,7 +559,7 @@
 							<select
 								id="source-language"
 								bind:value={sourceLanguage}
-								on:change={handleLanguageChange}
+								onchange={handleLanguageChange}
 								disabled={isLoading}
 								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
 							>
@@ -574,7 +576,7 @@
 							<textarea
 								id="input-text"
 								bind:value={inputText}
-								on:input={debouncedTranslate}
+								oninput={debouncedTranslate}
 								placeholder="Type or paste text here..."
 								rows="8"
 								disabled={isLoading}
@@ -589,7 +591,7 @@
 							{/if}
 							{#if speechSynthesisAvailable && inputText.trim()}
 								<button
-									on:click={isSpeakingInput ? stopSpeaking : handleSpeakInput}
+									onclick={isSpeakingInput ? stopSpeaking : handleSpeakInput}
 									disabled={isLoading}
 									class="absolute top-8 right-2 rounded bg-blue-500 p-1 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
 									title={isSpeakingInput ? 'Stop speaking' : 'Speak text'}
@@ -624,7 +626,7 @@
 						class="flex items-center justify-center lg:absolute lg:top-1/2 lg:left-1/2 lg:z-10 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:transform"
 					>
 						<button
-							on:click={flipLanguages}
+							onclick={flipLanguages}
 							disabled={sourceLanguage === 'auto' || isLoading}
 							class="transform rounded-full border-2 border-blue-500 bg-white p-2 text-blue-600 shadow-md transition-all duration-200 hover:scale-105 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
 							title="Flip languages and text"
@@ -650,7 +652,7 @@
 							<select
 								id="target-language"
 								bind:value={targetLanguage}
-								on:change={handleLanguageChange}
+								onchange={handleLanguageChange}
 								disabled={isLoading}
 								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
 							>
@@ -674,7 +676,7 @@
 							></textarea>
 							{#if speechSynthesisAvailable && translatedText.trim()}
 								<button
-									on:click={isSpeakingOutput ? stopSpeaking : handleSpeakOutput}
+									onclick={isSpeakingOutput ? stopSpeaking : handleSpeakOutput}
 									disabled={isLoading}
 									class="absolute top-8 right-2 rounded bg-green-500 p-1 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
 									title={isSpeakingOutput ? 'Stop speaking' : 'Speak translation'}

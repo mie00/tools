@@ -1,15 +1,20 @@
 <script lang="ts">
 	import MarkdownRenderer from '../MarkdownRenderer.svelte';
 
-	export let code: string;
-	export let answer: string | null;
+	let {
+		code,
+		answer
+	}: {
+		code: string;
+		answer: string | null;
+	} = $props();
 
-	let collapsed = true;
+	let collapsed = $state(true);
 </script>
 
 <div class="my-2">
 	<button
-		on:click={() => (collapsed = !collapsed)}
+		onclick={() => (collapsed = !collapsed)}
 		class="flex w-full items-center text-left text-sm text-gray-500 hover:text-gray-700"
 	>
 		{#if collapsed}

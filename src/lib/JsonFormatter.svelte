@@ -3,14 +3,14 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 
-	let inputJson = '';
-	let outputJson = '';
-	let errorMessage = '';
-	let isValid = false;
-	let mode: 'format' | 'minify' | 'validate' = 'format';
-	let indentSize = 2;
-	let errorPosition: number | null = null;
-	let highlightedErrorJson = '';
+	let inputJson = $state('');
+	let outputJson = $state('');
+	let errorMessage = $state('');
+	let isValid = $state(false);
+	let mode: 'format' | 'minify' | 'validate' = $state('format');
+	let indentSize = $state(2);
+	let errorPosition: number | null = $state(null);
+	let highlightedErrorJson = $state('');
 
 	interface JsonStats {
 		keys: number;
@@ -25,7 +25,7 @@
 		size: string;
 	}
 
-	let stats: JsonStats = {
+	let stats: JsonStats = $state({
 		keys: 0,
 		values: 0,
 		arrays: 0,
@@ -36,7 +36,7 @@
 		nulls: 0,
 		maxDepth: 0,
 		size: '0 B'
-	};
+	});
 
 	// URL parameter sync
 	function updateUrl() {
@@ -293,9 +293,11 @@
 	}
 
 	// Auto-process when input changes
-	$: if (inputJson !== undefined) {
-		processJson();
-	}
+	$effect(() => {
+		if (inputJson !== undefined) {
+			processJson();
+		}
+	});
 </script>
 
 <div class="space-y-6">
@@ -308,7 +310,7 @@
 	<div class="flex justify-center">
 		<div class="flex rounded-lg bg-gray-100 p-1">
 			<button
-				on:click={() => {
+				onclick={() => {
 					mode = 'format';
 					processJson();
 				}}
@@ -319,7 +321,7 @@
 				Format
 			</button>
 			<button
-				on:click={() => {
+				onclick={() => {
 					mode = 'minify';
 					processJson();
 				}}
@@ -330,7 +332,7 @@
 				Minify
 			</button>
 			<button
-				on:click={() => {
+				onclick={() => {
 					mode = 'validate';
 					processJson();
 				}}
@@ -351,7 +353,7 @@
 				<select
 					id="indent-size"
 					bind:value={indentSize}
-					on:change={processJson}
+					onchange={processJson}
 					class="rounded border border-gray-300 px-3 py-1"
 				>
 					<option value={2}>2 spaces</option>
@@ -366,7 +368,7 @@
 	<div class="space-y-4">
 		<div class="flex items-center justify-between">
 			<label for="json-input" class="block text-sm font-medium text-gray-700"> JSON Input </label>
-			<button on:click={loadSample} class="text-sm text-blue-600 underline hover:text-blue-800">
+			<button onclick={loadSample} class="text-sm text-blue-600 underline hover:text-blue-800">
 				Load Sample
 			</button>
 		</div>
@@ -394,21 +396,21 @@
 		<!-- Action Buttons -->
 		<div class="flex flex-wrap gap-2">
 			<button
-				on:click={copyToClipboard}
+				onclick={copyToClipboard}
 				disabled={!outputJson || !isValid}
 				class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				📋 Copy Result
 			</button>
 			<button
-				on:click={extractKeys}
+				onclick={extractKeys}
 				disabled={!isValid}
 				class="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				🔑 Extract Keys
 			</button>
 			<button
-				on:click={clearAll}
+				onclick={clearAll}
 				class="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 			>
 				🗑️ Clear All
@@ -469,8 +471,8 @@
 				<div
 					class="h-40 w-full resize-none overflow-auto rounded-lg border border-red-300 bg-red-50 px-3 py-2 font-mono text-sm"
 				>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<!-- Safe: highlightedErrorJson is escaped using escapeHtml() function -->
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<pre class="whitespace-pre-wrap">{@html highlightedErrorJson}</pre>
 				</div>
 			{:else}

@@ -15,21 +15,21 @@
 		offset: string;
 	}
 
-	let currentTime: Date = new Date();
+	let currentTime: Date = $state(new Date());
 	let timeInterval: ReturnType<typeof setInterval> | undefined;
-	let epochInput: string = '';
-	let humanInput: string = '';
-	let epochResult: string = '';
-	let humanResult: string = '';
-	let errorMessage: string = '';
+	let epochInput: string = $state('');
+	let humanInput: string = $state('');
+	let epochResult: string = $state('');
+	let humanResult: string = $state('');
+	let errorMessage: string = $state('');
 
 	// Custom time input variables
-	let customTimeInput: string = '';
-	let customTimezone: string = 'Local';
-	let useCustomTime: boolean = false;
+	let customTimeInput: string = $state('');
+	let customTimezone: string = $state('Local');
+	let useCustomTime: boolean = $state(false);
 
 	// Selected cities for display - with persistence
-	let selectedCities: string[] = [];
+	let selectedCities: string[] = $state([]);
 	let availableCities: AvailableCity[] = [
 		// User's preferred cities at the top
 		{ name: 'Cairo', timezone: 'Africa/Cairo' },
@@ -465,11 +465,13 @@
 
 	// Get timezone info
 	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	$: timezoneOffset = currentTime.getTimezoneOffset();
-	$: offsetHours = Math.abs(Math.floor(timezoneOffset / 60));
-	$: offsetMinutes = Math.abs(timezoneOffset % 60);
-	$: offsetSign = timezoneOffset <= 0 ? '+' : '-';
-	$: offsetString = `UTC${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
+	const timezoneOffset = $derived(currentTime.getTimezoneOffset());
+	const offsetHours = $derived(Math.abs(Math.floor(timezoneOffset / 60)));
+	const offsetMinutes = $derived(Math.abs(timezoneOffset % 60));
+	const offsetSign = $derived(timezoneOffset <= 0 ? '+' : '-');
+	const offsetString = $derived(
+		`UTC${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`
+	);
 </script>
 
 <div class="mx-auto max-w-6xl space-y-8">
@@ -482,20 +484,20 @@
 		<!-- Custom Time Input Toggle -->
 		<div class="mb-6 flex flex-wrap gap-2">
 			<button
-				on:click={toggleCustomTime}
+				onclick={toggleCustomTime}
 				class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 			>
 				{useCustomTime ? 'Show Current Time' : 'Convert Custom Time'}
 			</button>
 			{#if useCustomTime}
 				<button
-					on:click={setCurrentTime}
+					onclick={setCurrentTime}
 					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 				>
 					Use Current Time
 				</button>
 				<button
-					on:click={clearCustomTime}
+					onclick={clearCustomTime}
 					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 				>
 					Clear
@@ -513,7 +515,7 @@
 						type="time"
 						bind:value={customTimeInput}
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
-						on:input={updateUrl}
+						oninput={updateUrl}
 					/>
 				</div>
 				<div>
@@ -524,7 +526,7 @@
 						id="custom-timezone-select"
 						bind:value={customTimezone}
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
-						on:change={updateUrl}
+						onchange={updateUrl}
 					>
 						<option value="Local">Local</option>
 						<option value="UTC">UTC</option>
@@ -591,7 +593,7 @@
 				<label class="block">
 					<span class="text-sm font-medium text-gray-700">Add City</span>
 					<select
-						on:change={addCity}
+						onchange={addCity}
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
 					>
 						<option value="">Select a city to add...</option>
@@ -608,7 +610,7 @@
 					{@const timeInfo = getCustomTimeInTimezone(timezone, currentTime)}
 					<div class="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
 						<button
-							on:click={() => removeCity(timezone)}
+							onclick={() => removeCity(timezone)}
 							aria-label="Remove {timezone}"
 							class="absolute top-2 right-2 text-gray-400 transition-colors hover:text-red-500"
 							title="Remove city"
@@ -660,20 +662,20 @@
 								bind:value={epochInput}
 								placeholder="1640995200 or 1640995200000"
 								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								on:input={convertFromEpoch}
+								oninput={convertFromEpoch}
 							/>
 							<span class="text-xs text-gray-500">Enter seconds or milliseconds</span>
 						</label>
 
 						<div class="flex gap-2">
 							<button
-								on:click={getCurrentEpoch}
+								onclick={getCurrentEpoch}
 								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 							>
 								Use Current Time
 							</button>
 							<button
-								on:click={() => {
+								onclick={() => {
 									epochInput = '';
 									humanResult = '';
 								}}
@@ -703,7 +705,7 @@
 								type="datetime-local"
 								bind:value={humanInput}
 								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								on:input={convertToEpoch}
+								oninput={convertToEpoch}
 							/>
 							<span class="text-xs text-gray-500">Or enter any valid date string</span>
 						</label>
@@ -713,18 +715,18 @@
 							bind:value={humanInput}
 							placeholder="2024-01-01 12:00:00 or Dec 25, 2024"
 							class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-							on:input={convertToEpoch}
+							oninput={convertToEpoch}
 						/>
 
 						<div class="flex gap-2">
 							<button
-								on:click={getCurrentDateTime}
+								onclick={getCurrentDateTime}
 								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 							>
 								Use Current Time
 							</button>
 							<button
-								on:click={() => {
+								onclick={() => {
 									humanInput = '';
 									epochResult = '';
 								}}
@@ -765,7 +767,7 @@
 			<!-- Clear All Button -->
 			<div class="mt-6 text-center">
 				<button
-					on:click={clearResults}
+					onclick={clearResults}
 					class="rounded-md bg-gray-500 px-6 py-2 text-white transition-colors hover:bg-gray-600"
 				>
 					Clear All

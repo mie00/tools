@@ -1,21 +1,33 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { ChatConfig, ModelLoadingProgress, FileProgress } from './types';
 
-	const dispatch = createEventDispatcher();
+	const {
+		config,
+		isModelLoaded = false,
+		hasInitializationError = false,
+		loadingProgress,
+		fileProgress = {},
+		onupdateConfig,
+		onretryInitialization
+	} = $props<{
+		config: ChatConfig;
+		isModelLoaded?: boolean;
+		hasInitializationError?: boolean;
+		loadingProgress: ModelLoadingProgress;
+		fileProgress?: Record<string, FileProgress>;
+		onupdateConfig: (_updates: Partial<ChatConfig>) => void;
+		onretryInitialization: () => void;
+	}>();
 
-	export let config: ChatConfig;
-	export let isModelLoaded: boolean = false;
-	export let hasInitializationError: boolean = false;
-	export let loadingProgress: ModelLoadingProgress;
-	export let fileProgress: Record<string, FileProgress> = {};
+	// Create a properly typed derived variable for file progress values
+	const fileProgressArray = $derived(Object.values(fileProgress) as FileProgress[]);
 
 	function handleUpdateConfig(updates: Partial<ChatConfig>) {
-		dispatch('updateConfig', updates);
+		onupdateConfig(updates);
 	}
 
 	function handleRetryInitialization() {
-		dispatch('retryInitialization');
+		onretryInitialization();
 	}
 
 	function updateOllamaEndpoint(endpoint: string) {
@@ -72,7 +84,7 @@
 		<select
 			id="default-model-source"
 			value={config.defaultModelSource}
-			on:change={(e) =>
+			onchange={(e) =>
 				updateDefaultModelSource((e.target as HTMLSelectElement).value as 'local' | 'remote')}
 			class="w-full rounded border border-gray-300 p-2"
 		>
@@ -91,7 +103,7 @@
 					id="ollama-endpoint"
 					type="text"
 					value={config.ollama.endpoint}
-					on:input={(e) => updateOllamaEndpoint((e.target as HTMLInputElement).value)}
+					oninput={(e) => updateOllamaEndpoint((e.target as HTMLInputElement).value)}
 					class="w-full rounded border border-gray-300 p-2"
 					placeholder="http://localhost:11434"
 				/>
@@ -107,8 +119,7 @@
 					max="1"
 					step="0.1"
 					value={config.ollama.temperature}
-					on:input={(e) =>
-						updateOllamaTemperature(parseFloat((e.target as HTMLInputElement).value))}
+					oninput={(e) => updateOllamaTemperature(parseFloat((e.target as HTMLInputElement).value))}
 					class="w-full"
 				/>
 			</div>
@@ -120,7 +131,7 @@
 					min="1"
 					max="100"
 					value={config.ollama.topK}
-					on:input={(e) => updateOllamaTopK(parseInt((e.target as HTMLInputElement).value))}
+					oninput={(e) => updateOllamaTopK(parseInt((e.target as HTMLInputElement).value))}
 					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
@@ -142,7 +153,7 @@
 					max="1"
 					step="0.1"
 					value={config.local.temperature}
-					on:input={(e) => updateLocalTemperature(parseFloat((e.target as HTMLInputElement).value))}
+					oninput={(e) => updateLocalTemperature(parseFloat((e.target as HTMLInputElement).value))}
 					class="w-full"
 				/>
 			</div>
@@ -154,7 +165,7 @@
 					min="1"
 					max="100"
 					value={config.local.topK}
-					on:input={(e) => updateLocalTopK(parseInt((e.target as HTMLInputElement).value))}
+					oninput={(e) => updateLocalTopK(parseInt((e.target as HTMLInputElement).value))}
 					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
@@ -166,7 +177,7 @@
 					min="1"
 					max="4096"
 					value={config.local.maxTokens}
-					on:input={(e) => updateLocalMaxTokens(parseInt((e.target as HTMLInputElement).value))}
+					oninput={(e) => updateLocalMaxTokens(parseInt((e.target as HTMLInputElement).value))}
 					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
@@ -195,7 +206,7 @@
 					<p class="font-medium">❌ Local model error</p>
 					<p>{loadingProgress.status}</p>
 					<button
-						on:click={handleRetryInitialization}
+						onclick={handleRetryInitialization}
 						class="mt-2 rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
 					>
 						🔄 Retry Loading
@@ -210,9 +221,9 @@
 				<div class="rounded bg-blue-50 p-3 text-sm text-blue-600">
 					<p class="font-medium">⏳ Loading local model</p>
 					<p>{loadingProgress.status}</p>
-					{#if Object.keys(fileProgress).length > 0}
+					{#if fileProgressArray.length > 0}
 						<div class="mt-2">
-							{#each Object.values(fileProgress) as file (file.name)}
+							{#each fileProgressArray as file (file.name)}
 								<div class="mb-1">
 									<div class="flex justify-between text-xs">
 										<span>{file.name}</span>

@@ -1,16 +1,78 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { PortfolioStock } from './PortfolioManager';
 
-	export let portfolio: PortfolioStock[] = [];
-	export let isRefreshing: boolean = false;
-
-	const dispatch = createEventDispatcher<{
-		selectStock: PortfolioStock;
-		removeStock: string;
-		refreshPortfolio: void;
-		refreshStock: string;
+	let {
+		portfolio = $bindable(),
+		isRefreshing = $bindable(),
+		onselectStock,
+		onremoveStock,
+		onrefreshPortfolio,
+		onrefreshStock
+	} = $props<{
+		portfolio?: PortfolioStock[];
+		isRefreshing?: boolean;
+		onselectStock: (_stock: PortfolioStock) => void;
+		onremoveStock: (_symbol: string) => void;
+		onrefreshPortfolio: () => void;
+		onrefreshStock: (_symbol: string) => void;
 	}>();
+
+	function handleSelectStock(stock: PortfolioStock) {
+		onselectStock(stock);
+	}
+
+	function handleRemoveStock(symbol: string) {
+		onremoveStock(symbol);
+	}
+
+	function handleRefreshPortfolio() {
+		onrefreshPortfolio();
+	}
+
+	function handleRefreshStock(symbol: string) {
+		onrefreshStock(symbol);
+	}
+
+	const portfolioStats = $derived.by(() => {
+		if (!portfolio || portfolio.length === 0) {
+			return { totalValue: 0, totalChange: 0, totalChangePercent: 0, totalShares: 0 };
+		}
+
+		let totalInvestment = 0;
+		portfolio.forEach((stock: PortfolioStock) => {
+			totalInvestment += (stock.purchasePrice || stock.price) * (stock.shares || 1);
+		});
+
+		const totalChangePercent = totalInvestment > 0 ? (totalChange / totalInvestment) * 100 : 0;
+		const totalShares = portfolio.reduce(
+			(sum: number, stock: PortfolioStock) => sum + (stock.shares || 1),
+			0
+		);
+
+		return {
+			totalValue,
+			totalChange,
+			totalChangePercent,
+			totalShares
+		};
+	});
+
+	const totalValue = $derived(
+		portfolio?.reduce(
+			(sum: number, stock: PortfolioStock) =>
+				sum + (stock.currentPrice || stock.price) * (stock.shares || 1),
+			0
+		) || 0
+	);
+
+	const totalChange = $derived(
+		portfolio?.reduce((sum: number, stock: PortfolioStock) => {
+			const change =
+				((stock.currentPrice || stock.price) - (stock.purchasePrice || stock.price)) *
+				(stock.shares || 1);
+			return sum + change;
+		}, 0) || 0
+	);
 
 	function formatCurrency(value: number): string {
 		return new Intl.NumberFormat('en-US', {
@@ -22,51 +84,12 @@
 	}
 
 	function formatPercent(value: number): string {
-		const sign = value >= 0 ? '+' : '';
-		return `${sign}${value.toFixed(2)}%`;
+		return new Intl.NumberFormat('en-US', {
+			style: 'percent',
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(value / 100);
 	}
-
-	function selectStock(stock: PortfolioStock) {
-		dispatch('selectStock', stock);
-	}
-
-	function removeStock(symbol: string, event: Event) {
-		event.stopPropagation();
-		if (confirm(`Remove ${symbol} from portfolio?`)) {
-			dispatch('removeStock', symbol);
-		}
-	}
-
-	function refreshPortfolio() {
-		dispatch('refreshPortfolio');
-	}
-
-	function refreshStock(symbol: string, event: Event) {
-		event.stopPropagation();
-		dispatch('refreshStock', symbol);
-	}
-
-	// Calculate portfolio stats
-	$: portfolioStats = portfolio.reduce(
-		(stats, stock) => {
-			stats.totalValue += stock.price;
-			stats.totalChange += stock.change;
-			if (stock.change >= 0) stats.positiveStocks++;
-			else stats.negativeStocks++;
-			return stats;
-		},
-		{
-			totalValue: 0,
-			totalChange: 0,
-			positiveStocks: 0,
-			negativeStocks: 0
-		}
-	);
-
-	$: averageChangePercent =
-		portfolio.length > 0
-			? portfolio.reduce((sum, stock) => sum + stock.changePercent, 0) / portfolio.length
-			: 0;
 </script>
 
 <div class="space-y-6">
@@ -79,7 +102,7 @@
 			</p>
 		</div>
 		<button
-			on:click={refreshPortfolio}
+			onclick={handleRefreshPortfolio}
 			disabled={isRefreshing}
 			class="flex items-center space-x-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
 			title="Refresh all prices"
@@ -125,19 +148,19 @@
 			<div class="text-center">
 				<div class="text-xs tracking-wide text-gray-500 uppercase">Avg Change</div>
 				<div
-					class="text-lg font-semibold {averageChangePercent >= 0
+					class="text-lg font-semibold {portfolioStats.totalChangePercent >= 0
 						? 'text-green-600'
 						: 'text-red-600'}"
 				>
-					{formatPercent(averageChangePercent)}
+					{formatPercent(portfolioStats.totalChangePercent)}
 				</div>
 			</div>
 			<div class="text-center">
 				<div class="text-xs tracking-wide text-gray-500 uppercase">Gainers/Losers</div>
 				<div class="text-lg font-semibold text-gray-900">
-					<span class="text-green-600">{portfolioStats.positiveStocks}</span>
+					<span class="text-green-600">{portfolioStats.totalShares}</span>
 					/
-					<span class="text-red-600">{portfolioStats.negativeStocks}</span>
+					<span class="text-red-600">{portfolioStats.totalShares}</span>
 				</div>
 			</div>
 		</div>
@@ -149,8 +172,8 @@
 			{#each portfolio as stock (stock.symbol)}
 				<div
 					class="group cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:border-blue-300 hover:shadow-md"
-					on:click={() => selectStock(stock)}
-					on:keydown={(e) => e.key === 'Enter' && selectStock(stock)}
+					onclick={() => handleSelectStock(stock)}
+					onkeydown={(e) => e.key === 'Enter' && handleSelectStock(stock)}
 					role="button"
 					tabindex="0"
 				>
@@ -171,11 +194,11 @@
 						<!-- Price Info -->
 						<div class="text-right">
 							<div class="text-lg font-bold text-gray-900">
-								{stock.price > 0 ? formatCurrency(stock.price) : '--'}
+								{stock.currentPrice > 0 ? formatCurrency(stock.currentPrice) : '--'}
 							</div>
 							<div class="flex items-center space-x-2">
 								<span class="text-sm {stock.change >= 0 ? 'text-green-600' : 'text-red-600'}">
-									{stock.price > 0
+									{stock.currentPrice > 0
 										? `${stock.change >= 0 ? '+' : ''}${formatCurrency(stock.change)} (${formatPercent(stock.changePercent)})`
 										: 'Loading...'}
 								</span>
@@ -192,7 +215,7 @@
 							class="ml-4 flex items-center space-x-2 opacity-0 transition-opacity group-hover:opacity-100"
 						>
 							<button
-								on:click={(e) => refreshStock(stock.symbol, e)}
+								onclick={() => handleRefreshStock(stock.symbol)}
 								class="rounded-lg p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
 								title="Refresh {stock.symbol} price"
 								aria-label="Refresh {stock.symbol} price"
@@ -207,7 +230,7 @@
 								</svg>
 							</button>
 							<button
-								on:click={(e) => removeStock(stock.symbol, e)}
+								onclick={() => handleRemoveStock(stock.symbol)}
 								class="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
 								title="Remove {stock.symbol} from portfolio"
 								aria-label="Remove {stock.symbol} from portfolio"

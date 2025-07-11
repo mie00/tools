@@ -20,15 +20,15 @@
 	const rateCache = new Map<string, CacheEntry>();
 	const CACHE_DURATION_MS = 60 * 60 * 1000; // Cache rates for 1 hour
 
-	let fromCurrency: string = 'USD';
-	let toCurrency: string = 'EUR';
-	let amount: string = '1';
-	let result: string = '';
-	let loading: boolean = false;
-	let error: string = '';
-	let exchangeRate: number | null = null;
-	let lastUpdated: string = '';
-	let recentConversions: string[] = [];
+	let fromCurrency: string = $state('USD');
+	let toCurrency: string = $state('EUR');
+	let amount: string = $state('1');
+	let result: string = $state('');
+	let loading: boolean = $state(false);
+	let error: string = $state('');
+	let exchangeRate: number | null = $state(null);
+	let lastUpdated: string = $state('');
+	let recentConversions: string[] = $state([]);
 
 	// Popular currencies list
 	const popularCurrencies: CurrencyInfo[] = [
@@ -243,7 +243,7 @@
 			<div class="flex flex-wrap gap-2">
 				{#each recentConversions as conversion (conversion)}
 					<button
-						on:click={() => useRecentConversion(conversion)}
+						onclick={() => useRecentConversion(conversion)}
 						class="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm transition-colors hover:bg-gray-100"
 					>
 						{conversion.replace('-', ' → ')}
@@ -263,7 +263,7 @@
 				<select
 					id="from-currency"
 					bind:value={fromCurrency}
-					on:change={handleInput}
+					onchange={handleInput}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}
@@ -275,7 +275,7 @@
 			<!-- Swap Button -->
 			<div class="flex justify-center md:justify-center">
 				<button
-					on:click={swapCurrencies}
+					onclick={swapCurrencies}
 					aria-label="Swap currencies"
 					class="rounded-lg bg-gray-100 p-3 transition-colors hover:bg-gray-200"
 					title="Swap currencies"
@@ -297,7 +297,7 @@
 				<select
 					id="to-currency"
 					bind:value={toCurrency}
-					on:change={handleInput}
+					onchange={handleInput}
 					class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 				>
 					{#each popularCurrencies as currency (currency.code)}
@@ -314,7 +314,7 @@
 				id="amount-input"
 				type="number"
 				bind:value={amount}
-				on:input={handleInput}
+				oninput={handleInput}
 				min="0"
 				step="0.01"
 				class="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"

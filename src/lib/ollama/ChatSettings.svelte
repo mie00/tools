@@ -1,22 +1,25 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { ChatTopic } from './types';
 
-	const dispatch = createEventDispatcher();
-
-	export let activeTopic: ChatTopic | undefined;
-	export let availableModels: string[];
+	const { activeTopic, availableModels, onupdateSystemPrompt, onupdateModel, onupdateModelSource } =
+		$props<{
+			activeTopic: ChatTopic | undefined;
+			availableModels: string[];
+			onupdateSystemPrompt: (_prompt: string) => void;
+			onupdateModel: (_model: string) => void;
+			onupdateModelSource: (_source: 'local' | 'remote') => void;
+		}>();
 
 	function handleUpdateSystemPrompt(prompt: string) {
-		dispatch('updateSystemPrompt', prompt);
+		onupdateSystemPrompt(prompt);
 	}
 
 	function handleUpdateModel(model: string) {
-		dispatch('updateModel', model);
+		onupdateModel(model);
 	}
 
 	function handleUpdateModelSource(source: 'local' | 'remote') {
-		dispatch('updateModelSource', source);
+		onupdateModelSource(source);
 	}
 </script>
 
@@ -34,7 +37,7 @@
 							type="radio"
 							value="local"
 							checked={activeTopic.modelSource === 'local'}
-							on:change={() => handleUpdateModelSource('local')}
+							onchange={() => handleUpdateModelSource('local')}
 							class="mr-2"
 						/>
 						<span>Local Model</span>
@@ -44,7 +47,7 @@
 							type="radio"
 							value="remote"
 							checked={activeTopic.modelSource === 'remote'}
-							on:change={() => handleUpdateModelSource('remote')}
+							onchange={() => handleUpdateModelSource('remote')}
 							class="mr-2"
 						/>
 						<span>Remote Model (Ollama)</span>
@@ -71,7 +74,7 @@
 				<select
 					id="model"
 					value={activeTopic.model}
-					on:change={(e) => handleUpdateModel((e.target as HTMLSelectElement).value)}
+					onchange={(e) => handleUpdateModel((e.target as HTMLSelectElement).value)}
 					class="w-full rounded border border-gray-300 p-2"
 				>
 					{#each availableModels as model (model)}
@@ -96,7 +99,7 @@
 			<textarea
 				id="system-prompt"
 				value={activeTopic.systemPrompt}
-				on:input={(e) => handleUpdateSystemPrompt((e.target as HTMLTextAreaElement).value)}
+				oninput={(e) => handleUpdateSystemPrompt((e.target as HTMLTextAreaElement).value)}
 				rows="4"
 				class="w-full rounded border border-gray-300 p-2"
 				placeholder="Enter instructions for how the AI should behave in this chat..."

@@ -3,6 +3,9 @@ import type { StockQuote, StockSearchResult } from './StockApiManager';
 export interface PortfolioStock extends StockQuote {
 	addedDate: string;
 	notes?: string;
+	purchasePrice?: number;
+	shares?: number;
+	currentPrice?: number;
 }
 
 export class PortfolioManager {

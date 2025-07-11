@@ -4,17 +4,17 @@
 	import CodeExecutor from './CodeExecutor.svelte';
 	import CodeBlock from './CodeBlock.svelte';
 
-	export let content: string;
-	export let proseClass: string = '';
+	const { content, proseClass = '' } = $props<{
+		content: string;
+		proseClass?: string;
+	}>();
 
 	let mainEl: HTMLElement;
 	let activeExecutors: Record<string, { code: string; type: 'js' | 'html'; wrapper: HTMLElement }> =
-		{};
+		$state({});
 
-	let parts: { type: 'markdown' | 'code'; content: string; lang?: string }[] = [];
-
-	$: {
-		parts = [];
+	const parts = $derived.by(() => {
+		const newParts: { type: 'markdown' | 'code'; content: string; lang?: string }[] = [];
 		const regex = /(```(\w*)\n([\s\S]*?)\n```)/g;
 		let lastIndex = 0;
 		let match;
@@ -22,13 +22,13 @@
 		while ((match = regex.exec(content)) !== null) {
 			// Add the markdown part before the code block
 			if (match.index > lastIndex) {
-				parts.push({
+				newParts.push({
 					type: 'markdown',
 					content: content.substring(lastIndex, match.index)
 				});
 			}
 			// Add the code block
-			parts.push({
+			newParts.push({
 				type: 'code',
 				content: match[3],
 				lang: match[2] || 'plaintext'
@@ -38,9 +38,11 @@
 
 		// Add any remaining markdown part
 		if (lastIndex < content.length) {
-			parts.push({ type: 'markdown', content: content.substring(lastIndex) });
+			newParts.push({ type: 'markdown', content: content.substring(lastIndex) });
 		}
-	}
+
+		return newParts;
+	});
 
 	const renderer = new marked.Renderer();
 	renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
@@ -97,7 +99,7 @@
 		}
 	}
 
-	function handleClose(id: string) {
+	function _handleClose(id: string) {
 		const { [id]: _, ...rest } = activeExecutors;
 		activeExecutors = rest;
 	}
@@ -108,14 +110,13 @@
 	bind:this={mainEl}
 	role="button"
 	tabindex="0"
-	on:click={handleClick}
-	on:keydown={handleKeyDown}
+	onclick={handleClick}
+	onkeydown={handleKeyDown}
 >
 	{#each parts as part, index (index)}
 		{#if part.type === 'markdown'}
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			<!-- Safe: marked library sanitizes markdown content -->
-			{@html marked(part.content)}
+			{@html marked(part.content)}<!-- eslint-disable-line svelte/no-at-html-tags -->
 		{:else if part.type === 'code'}
 			<CodeBlock code={part.content} lang={part.lang || ''} />
 		{/if}
@@ -130,7 +131,7 @@
 		style:left="{wrapper.offsetLeft}px"
 		style:width="{wrapper.offsetWidth}px"
 	>
-		<CodeExecutor {code} {type} on:close={() => handleClose(id)} />
+		<CodeExecutor {code} {type} />
 	</div>
 {/each}
 

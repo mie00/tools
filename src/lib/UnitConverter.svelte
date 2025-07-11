@@ -24,13 +24,13 @@
 		timestamp: string;
 	}
 
-	let inputValue: string = '1';
-	let fromUnit: string = 'meter';
-	let toUnit: string = 'kilometer';
-	let selectedCategory: string = 'length';
-	let result: string = '';
-	let history: HistoryItem[] = [];
-	let isLoaded: boolean = false;
+	let inputValue: string = $state('1');
+	let fromUnit: string = $state('meter');
+	let toUnit: string = $state('kilometer');
+	let selectedCategory: string = $state('length');
+	let result: string = $state('');
+	let history: HistoryItem[] = $state([]);
+	let isLoaded: boolean = $state(false);
 
 	// URL parameter sync
 	function updateUrl() {
@@ -301,16 +301,20 @@
 	}
 
 	// Auto-convert when input or units change
-	$: if (inputValue && fromUnit && toUnit && selectedCategory) {
-		convert();
-	} else {
-		result = '';
-	}
+	$effect(() => {
+		if (inputValue && fromUnit && toUnit && selectedCategory) {
+			convert();
+		} else {
+			result = '';
+		}
+	});
 
 	// Save history to localStorage whenever it changes (but only after initial load)
-	$: if (isLoaded && history) {
-		saveHistoryToStorage();
-	}
+	$effect(() => {
+		if (isLoaded && history) {
+			saveHistoryToStorage();
+		}
+	});
 
 	// Load history on component mount
 	onMount(() => {
@@ -320,13 +324,15 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (
-		typeof window !== 'undefined' &&
-		isLoaded &&
-		(inputValue || fromUnit || toUnit || selectedCategory)
-	) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (
+			typeof window !== 'undefined' &&
+			isLoaded &&
+			(inputValue || fromUnit || toUnit || selectedCategory)
+		) {
+			updateUrl();
+		}
+	});
 </script>
 
 <div class="mx-auto max-w-4xl">
@@ -337,7 +343,7 @@
 		<div class="mb-6 flex flex-wrap gap-2">
 			{#each Object.entries(categories) as [key, category] (key)}
 				<button
-					on:click={() => selectCategory(key)}
+					onclick={() => selectCategory(key)}
 					class="flex items-center gap-2 rounded-lg px-4 py-2 transition-all duration-200 {selectedCategory ===
 					key
 						? 'bg-blue-500 text-white shadow-md'
@@ -378,7 +384,7 @@
 					<!-- Swap Button -->
 					<div class="flex items-center justify-center md:flex-col">
 						<button
-							on:click={swapUnits}
+							onclick={swapUnits}
 							aria-label="Swap units"
 							class="p-3 text-gray-500 transition-colors duration-200 hover:text-blue-500"
 							title="Swap units"
@@ -443,7 +449,7 @@
 			<div class="mb-4 flex items-center justify-between">
 				<h3 class="font-semibold text-gray-800">History</h3>
 				{#if history.length > 0}
-					<button on:click={clearHistory} class="text-sm text-red-500 hover:text-red-700">
+					<button onclick={clearHistory} class="text-sm text-red-500 hover:text-red-700">
 						Clear
 					</button>
 				{/if}

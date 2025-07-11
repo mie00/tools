@@ -9,13 +9,13 @@
 		result: number;
 	}
 
-	let expression: string = '';
-	let result: string = '';
-	let history: HistoryItem[] = [];
-	let inputElement: HTMLInputElement;
-	let isError: boolean = false;
-	let isMobile: boolean = false;
-	let historyLoaded: boolean = false;
+	let expression: string = $state('');
+	let result: string = $state('');
+	let history: HistoryItem[] = $state([]);
+	let inputElement: HTMLInputElement | undefined = $state();
+	let isError: boolean = $state(false);
+	let isMobile: boolean = $state(false);
+	let historyLoaded: boolean = $state(false);
 
 	// Detect mobile device
 	onMount(() => {
@@ -77,14 +77,18 @@
 	}
 
 	// Watch for history changes and save to localStorage
-	$: if (typeof window !== 'undefined' && history && historyLoaded) {
-		saveHistoryToStorage();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && history && historyLoaded) {
+			saveHistoryToStorage();
+		}
+	});
 
 	// Watch for expression changes and update URL
-	$: if (typeof window !== 'undefined' && expression !== undefined) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && expression !== undefined) {
+			updateUrl();
+		}
+	});
 
 	// Evaluate mathematical expressions with proper operator precedence
 	function evaluateExpression() {
@@ -233,8 +237,8 @@
 			<input
 				bind:this={inputElement}
 				bind:value={expression}
-				on:input={handleInput}
-				on:keydown={handleKeydown}
+				oninput={handleInput}
+				onkeydown={handleKeydown}
 				placeholder="Enter expression like: 1 + 2 * 5 - 2"
 				class="expression-input"
 				type="text"
@@ -244,7 +248,7 @@
 			/>
 			<button
 				class="clear-button"
-				on:click={clearAll}
+				onclick={clearAll}
 				title="Clear (Esc)"
 				aria-label="Clear expression"
 			>
@@ -272,28 +276,28 @@
 	<!-- Desktop: Quick Action Buttons Only -->
 	{#if !isMobile}
 		<div class="actions">
-			<button class="action-btn" on:click={() => insertText('+')} title="Add">
+			<button class="action-btn" onclick={() => insertText('+')} title="Add">
 				<span>+</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('-')} title="Subtract">
+			<button class="action-btn" onclick={() => insertText('-')} title="Subtract">
 				<span>−</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('*')} title="Multiply">
+			<button class="action-btn" onclick={() => insertText('*')} title="Multiply">
 				<span>×</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('/')} title="Divide">
+			<button class="action-btn" onclick={() => insertText('/')} title="Divide">
 				<span>÷</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('(')} title="Open parenthesis">
+			<button class="action-btn" onclick={() => insertText('(')} title="Open parenthesis">
 				<span>(</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText(')')} title="Close parenthesis">
+			<button class="action-btn" onclick={() => insertText(')')} title="Close parenthesis">
 				<span>)</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('**')} title="Power">
+			<button class="action-btn" onclick={() => insertText('**')} title="Power">
 				<span>^</span>
 			</button>
-			<button class="action-btn" on:click={() => insertText('.')} title="Decimal">
+			<button class="action-btn" onclick={() => insertText('.')} title="Decimal">
 				<span>.</span>
 			</button>
 		</div>
@@ -303,44 +307,44 @@
 	{#if isMobile}
 		<div class="number-pad">
 			<div class="number-row">
-				<button class="number-btn" on:click={() => insertNumber('7')}>7</button>
-				<button class="number-btn" on:click={() => insertNumber('8')}>8</button>
-				<button class="number-btn" on:click={() => insertNumber('9')}>9</button>
-				<button class="number-btn operator" on:click={() => insertText('/')}>÷</button>
+				<button class="number-btn" onclick={() => insertNumber('7')}>7</button>
+				<button class="number-btn" onclick={() => insertNumber('8')}>8</button>
+				<button class="number-btn" onclick={() => insertNumber('9')}>9</button>
+				<button class="number-btn operator" onclick={() => insertText('/')}>÷</button>
 			</div>
 			<div class="number-row">
-				<button class="number-btn" on:click={() => insertNumber('4')}>4</button>
-				<button class="number-btn" on:click={() => insertNumber('5')}>5</button>
-				<button class="number-btn" on:click={() => insertNumber('6')}>6</button>
-				<button class="number-btn operator" on:click={() => insertText('*')}>×</button>
+				<button class="number-btn" onclick={() => insertNumber('4')}>4</button>
+				<button class="number-btn" onclick={() => insertNumber('5')}>5</button>
+				<button class="number-btn" onclick={() => insertNumber('6')}>6</button>
+				<button class="number-btn operator" onclick={() => insertText('*')}>×</button>
 			</div>
 			<div class="number-row">
-				<button class="number-btn" on:click={() => insertNumber('1')}>1</button>
-				<button class="number-btn" on:click={() => insertNumber('2')}>2</button>
-				<button class="number-btn" on:click={() => insertNumber('3')}>3</button>
-				<button class="number-btn operator" on:click={() => insertText('-')}>−</button>
+				<button class="number-btn" onclick={() => insertNumber('1')}>1</button>
+				<button class="number-btn" onclick={() => insertNumber('2')}>2</button>
+				<button class="number-btn" onclick={() => insertNumber('3')}>3</button>
+				<button class="number-btn operator" onclick={() => insertText('-')}>−</button>
 			</div>
 			<div class="number-row">
-				<button class="number-btn wide" on:click={() => insertNumber('0')}>0</button>
-				<button class="number-btn" on:click={() => insertText('.')}>.</button>
-				<button class="number-btn operator" on:click={() => insertText('+')}>+</button>
+				<button class="number-btn wide" onclick={() => insertNumber('0')}>0</button>
+				<button class="number-btn" onclick={() => insertText('.')}>.</button>
+				<button class="number-btn operator" onclick={() => insertText('+')}>+</button>
 			</div>
 			<div class="number-row">
 				<button
 					class="number-btn function"
-					on:click={() => insertText('(')}
+					onclick={() => insertText('(')}
 					title="Open parenthesis"
 				>
 					<span>(</span>
 				</button>
 				<button
 					class="number-btn function"
-					on:click={() => insertText(')')}
+					onclick={() => insertText(')')}
 					title="Close parenthesis"
 				>
 					<span>)</span>
 				</button>
-				<button class="number-btn function" on:click={backspace} aria-label="Backspace">
+				<button class="number-btn function" onclick={backspace} aria-label="Backspace">
 					<svg
 						width="20"
 						height="20"
@@ -352,7 +356,7 @@
 						<path d="M9 9l6 6m0-6l-6 6M21 12H3" />
 					</svg>
 				</button>
-				<button class="number-btn function" on:click={() => insertText('**')} title="Power">
+				<button class="number-btn function" onclick={() => insertText('**')} title="Power">
 					<span>^</span>
 				</button>
 			</div>
@@ -366,7 +370,7 @@
 				<h3>Recent Calculations</h3>
 				<button
 					class="clear-history-btn"
-					on:click={clearAllHistory}
+					onclick={clearAllHistory}
 					title="Clear all history"
 					aria-label="Clear all history"
 				>
@@ -387,13 +391,13 @@
 			<div class="history-items">
 				{#each history.slice(-5).reverse() as item, index (`${item.expression}-${item.result}`)}
 					<div class="history-item">
-						<button class="history-content" on:click={() => useHistoryItem(item)}>
+						<button class="history-content" onclick={() => useHistoryItem(item)}>
 							<span class="history-expression">{item.expression}</span>
 							<span class="history-result">= {formatResult(item.result)}</span>
 						</button>
 						<button
 							class="delete-history-btn"
-							on:click={() => deleteHistoryItem(history.length - 1 - index)}
+							onclick={() => deleteHistoryItem(history.length - 1 - index)}
 							title="Delete this calculation"
 							aria-label="Delete this calculation"
 						>

@@ -3,7 +3,11 @@
 	import type { Profile } from './types';
 	import { calculationMethods } from './constants';
 
-	export let profile: Profile;
+	let {
+		profile
+	}: {
+		profile: Profile;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		save: Profile;
@@ -25,7 +29,12 @@
 <div class="rounded-xl bg-white p-8 shadow-lg">
 	<h3 class="mb-6 text-2xl font-bold text-gray-800">Edit Profile: {profile.name}</h3>
 
-	<form on:submit|preventDefault={handleSave}>
+	<form
+		onsubmit={(e) => {
+			e.preventDefault();
+			handleSave();
+		}}
+	>
 		<div class="space-y-4">
 			<div>
 				<label for="edit-profile-name" class="mb-2 block text-sm font-medium text-gray-700"
@@ -151,13 +160,13 @@
 
 		<div class="mt-6 flex justify-end space-x-3">
 			<button
-				on:click={handleSave}
+				onclick={handleSave}
 				class="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
 			>
 				Save Changes
 			</button>
 			<button
-				on:click={handleCancel}
+				onclick={handleCancel}
 				class="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
 			>
 				Cancel

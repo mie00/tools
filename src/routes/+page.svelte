@@ -3,16 +3,16 @@
 	// Components are loaded dynamically through routing, not imported directly
 	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 
-	let _selectedTool: string | null = null;
-	let draggedIndex: number | null = null;
-	let draggedOverIndex: number | null = null;
-	let draggedElement: HTMLElement | null = null;
-	let dragPreview: HTMLElement | null = null;
-	let mouseX = 0;
-	let mouseY = 0;
+	let _selectedTool: string | null = $state(null);
+	let draggedIndex: number | null = $state(null);
+	let draggedOverIndex: number | null = $state(null);
+	let draggedElement: HTMLElement | null = $state(null);
+	let dragPreview: HTMLElement | null = $state(null);
+	let mouseX = $state(0);
+	let mouseY = $state(0);
 
 	// Make tools reactive so we can reorder them
-	let tools = [
+	let tools = $state([
 		{
 			id: 'calculator',
 			name: 'Calculator',
@@ -117,7 +117,7 @@
 			icon: '📈',
 			description: 'Draw mathematical functions using Python expressions with numpy'
 		}
-	];
+	]);
 
 	// selectTool and goHome functions removed as they're not used (navigation is handled by routing)
 
@@ -288,11 +288,11 @@
 				<div
 					role="listitem"
 					draggable="true"
-					on:dragstart={(e) => handleDragStart(e, index)}
-					on:dragover={(e) => handleDragOver(e, index)}
-					on:dragleave={handleDragLeave}
-					on:drop={(e) => handleDrop(e, index)}
-					on:dragend={handleDragEnd}
+					ondragstart={(e) => handleDragStart(e, index)}
+					ondragover={(e) => handleDragOver(e, index)}
+					ondragleave={handleDragLeave}
+					ondrop={(e) => handleDrop(e, index)}
+					ondragend={handleDragEnd}
 					class="group relative block transform cursor-move rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl
 						{draggedIndex === index ? 'scale-95 opacity-50 shadow-2xl' : ''}
 						{draggedOverIndex === index && draggedIndex !== index
@@ -338,7 +338,7 @@
 						href="/{tool.id}"
 						aria-label={tool.name}
 						class="absolute inset-0 z-10"
-						on:click={(e) => {
+						onclick={(e) => {
 							// Prevent navigation if we're dragging
 							if (draggedIndex !== null) {
 								e.preventDefault();

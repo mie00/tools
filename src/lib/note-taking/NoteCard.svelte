@@ -3,12 +3,21 @@
 	import type { Note } from './NoteOperations';
 	import type { MediaData } from './MediaHandler';
 
-	export let note: Note;
-	export let topics: string[] = ['Main'];
-	export let isEditing: boolean = false;
-	export let isFocused: boolean = false;
-	export let formatFileSize: (_size: number) => string;
-	export let downloadFile: (_media: MediaData) => void;
+	let {
+		note,
+		topics = ['Main'],
+		isEditing = false,
+		isFocused = false,
+		formatFileSize,
+		downloadFile
+	}: {
+		note: Note;
+		topics: string[];
+		isEditing: boolean;
+		isFocused: boolean;
+		formatFileSize: (_size: number) => string;
+		downloadFile: (_media: MediaData) => void;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		edit: Note;
@@ -22,13 +31,15 @@
 		moveTo: { noteId: number; newTopic: string };
 	}>();
 
-	let editingText = '';
-	let editingTopic = '';
+	let editingText = $state('');
+	let editingTopic = $state('');
 
-	$: if (isEditing && note) {
-		editingText = note.text;
-		editingTopic = note.topic;
-	}
+	$effect(() => {
+		if (isEditing && note) {
+			editingText = note.text;
+			editingTopic = note.topic;
+		}
+	});
 
 	function startEdit() {
 		dispatch('edit', note);
@@ -101,11 +112,11 @@
 	draggable="true"
 	role="button"
 	tabindex="0"
-	on:dragstart={handleDragStart}
-	on:dragover={handleDragOver}
-	on:drop={handleDrop}
-	on:click={handleFocus}
-	on:keydown={handleKeydown}
+	ondragstart={handleDragStart}
+	ondragover={handleDragOver}
+	ondrop={handleDrop}
+	onclick={handleFocus}
+	onkeydown={handleKeydown}
 	aria-label="Note from {formatTimestamp(note.timestamp)}"
 >
 	<!-- Always visible: Date and content -->
@@ -120,7 +131,7 @@
 		>
 			{#if !isEditing}
 				<button
-					on:click={(e) => {
+					onclick={(e) => {
 						e.stopPropagation();
 						startEdit();
 					}}
@@ -140,7 +151,7 @@
 			{/if}
 
 			<button
-				on:click={(e) => {
+				onclick={(e) => {
 					e.stopPropagation();
 					deleteNote();
 				}}
@@ -183,13 +194,13 @@
 
 			<div class="flex justify-end space-x-2">
 				<button
-					on:click={cancelEdit}
+					onclick={cancelEdit}
 					class="rounded-md bg-gray-500 px-3 py-1 text-sm text-white hover:bg-gray-600"
 				>
 					Cancel
 				</button>
 				<button
-					on:click={saveEdit}
+					onclick={saveEdit}
 					class="rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
 				>
 					Save
@@ -216,7 +227,7 @@
 						<div class="max-w-md">
 							<button
 								class="block cursor-pointer rounded-lg transition-shadow hover:shadow-md"
-								on:click={() => note.media && openImageInNewWindow(note.media)}
+								onclick={() => note.media && openImageInNewWindow(note.media)}
 								aria-label="Open image {note.media?.name || 'image'} in new window"
 							>
 								<img
@@ -308,7 +319,7 @@
 									</div>
 								</div>
 								<button
-									on:click={() => note.media && downloadFile(note.media)}
+									onclick={() => note.media && downloadFile(note.media)}
 									class="text-blue-600 hover:text-blue-800"
 									title="Download file"
 									aria-label="Download file {note.media?.name || 'file'}"
@@ -335,7 +346,7 @@
 					<div class="flex flex-wrap gap-1">
 						{#each topics.filter((t) => t !== note.topic) as topic (topic)}
 							<button
-								on:click={(e) => {
+								onclick={(e) => {
 									e.stopPropagation();
 									moveToTopic(topic);
 								}}

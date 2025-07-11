@@ -9,21 +9,21 @@
 	import EditProfileForm from './EditProfileForm.svelte';
 	import PrayerTimesDisplay from './PrayerTimesDisplay.svelte';
 
-	let profiles: Profile[] = [];
-	let showCreateForm = false;
-	let editingProfile: Profile | null = null;
-	let cities: City[] = [];
-	let loadingCities = true;
-	let profilePrayerTimes = new Map<string, PrayerTimes>();
-	let sharedConfig: Profile | null = null;
-	let showSaveButton = false;
-	let suggestedName = '';
-	let sharingInProgress = false;
-	let duplicateFoundMessage = '';
-	let showDuplicateMessage = false;
+	let profiles: Profile[] = $state([]);
+	let showCreateForm = $state(false);
+	let editingProfile: Profile | null = $state(null);
+	let cities: City[] = $state([]);
+	let loadingCities = $state(true);
+	let profilePrayerTimes = $state(new Map<string, PrayerTimes>());
+	let sharedConfig: Profile | null = $state(null);
+	let showSaveButton = $state(false);
+	let suggestedName = $state('');
+	let sharingInProgress = $state(false);
+	let duplicateFoundMessage = $state('');
+	let showDuplicateMessage = $state(false);
 
-	$: activeProfile = profiles.find((p) => p.isActive) || null;
-	$: activePrayerTimes = activeProfile ? profilePrayerTimes.get(activeProfile.id) : null;
+	let activeProfile = $derived(profiles.find((p) => p.isActive) || null);
+	let activePrayerTimes = $derived(activeProfile ? profilePrayerTimes.get(activeProfile.id) : null);
 
 	// URL parameter sync functions
 	function _updateUrl() {
@@ -588,8 +588,8 @@
 		editingProfile = null;
 	}
 
-	$: hasProfiles = profiles.length > 0;
-	$: shouldShowMainView = hasProfiles && !showCreateForm && !editingProfile;
+	let hasProfiles = $derived(profiles.length > 0);
+	let shouldShowMainView = $derived(hasProfiles && !showCreateForm && !editingProfile);
 </script>
 
 <div class="space-y-6">
@@ -602,7 +602,7 @@
 					<p class="font-medium text-green-800">{duplicateFoundMessage}</p>
 				</div>
 				<button
-					on:click={() => (showDuplicateMessage = false)}
+					onclick={() => (showDuplicateMessage = false)}
 					class="text-green-400 hover:text-green-600"
 					title="Dismiss"
 				>
@@ -631,7 +631,7 @@
 					</div>
 				</div>
 				<button
-					on:click={dismissSharedConfig}
+					onclick={dismissSharedConfig}
 					class="ml-4 text-blue-400 hover:text-blue-600"
 					title="Dismiss"
 				>
@@ -646,7 +646,7 @@
 					class="flex-1 rounded-md border border-blue-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
 				/>
 				<button
-					on:click={saveSharedConfig}
+					onclick={saveSharedConfig}
 					class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				>
 					Save as Profile

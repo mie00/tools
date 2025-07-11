@@ -3,9 +3,9 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 
-	let inputText = '';
-	let outputText = '';
-	let activeOperation = 'uppercase';
+	let inputText = $state('');
+	let outputText = $state('');
+	let activeOperation = $state('uppercase');
 
 	const operations = [
 		{ id: 'uppercase', name: 'UPPERCASE', description: 'Convert to uppercase' },
@@ -58,9 +58,11 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && (activeOperation || inputText)) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && (activeOperation || inputText)) {
+			updateUrl();
+		}
+	});
 
 	function transformText(operation: string, text: string): string {
 		switch (operation) {
@@ -107,7 +109,7 @@
 		return { words, characters, charactersNoSpaces, lines, paragraphs };
 	}
 
-	$: {
+	$effect(() => {
 		if (activeOperation === 'wordCount') {
 			const stats = getStats(inputText);
 			outputText = `Words: ${stats.words}
@@ -118,7 +120,7 @@ Paragraphs: ${stats.paragraphs}`;
 		} else {
 			outputText = transformText(activeOperation, inputText);
 		}
-	}
+	});
 
 	function copyToClipboard() {
 		navigator.clipboard.writeText(outputText);
@@ -140,7 +142,7 @@ Paragraphs: ${stats.paragraphs}`;
 	<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
 		{#each operations as operation (operation.id)}
 			<button
-				on:click={() => (activeOperation = operation.id)}
+				onclick={() => (activeOperation = operation.id)}
 				class="rounded-lg border p-3 text-sm transition-all duration-200 {activeOperation ===
 				operation.id
 					? 'border-blue-500 bg-blue-500 text-white shadow-lg'
@@ -169,14 +171,14 @@ Paragraphs: ${stats.paragraphs}`;
 		<!-- Action Buttons -->
 		<div class="flex gap-2">
 			<button
-				on:click={copyToClipboard}
+				onclick={copyToClipboard}
 				disabled={!outputText}
 				class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				Copy Result
 			</button>
 			<button
-				on:click={clearText}
+				onclick={clearText}
 				class="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 			>
 				Clear

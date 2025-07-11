@@ -1,36 +1,38 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { StockSearchResult } from './StockApiManager';
 
-	export let searchQuery: string = '';
-	export let searchResults: StockSearchResult[] = [];
-	export let isSearching: boolean = false;
-	export let searchError: string = '';
-
-	const dispatch = createEventDispatcher<{
-		search: string;
-		select: StockSearchResult;
-		clear: void;
+	let {
+		searchQuery = $bindable(),
+		searchResults = $bindable(),
+		isSearching = $bindable(),
+		searchError = $bindable(),
+		onsearch,
+		onselect,
+		onclear
+	} = $props<{
+		searchQuery?: string;
+		searchResults?: StockSearchResult[];
+		isSearching?: boolean;
+		searchError?: string;
+		onsearch: (_query: string) => void;
+		onselect: (_stock: StockSearchResult) => void;
+		onclear: () => void;
 	}>();
 
 	let searchInput: HTMLInputElement;
 
 	function handleSearch() {
-		if (searchQuery.trim()) {
-			dispatch('search', searchQuery.trim());
+		if (searchQuery) {
+			onsearch(searchQuery);
 		}
 	}
 
-	function selectStock(stock: StockSearchResult) {
-		dispatch('select', stock);
-		searchQuery = '';
-		searchResults = [];
+	function handleSelect(stock: StockSearchResult) {
+		onselect(stock);
 	}
 
-	function clearSearch() {
-		searchQuery = '';
-		searchResults = [];
-		dispatch('clear');
+	function handleClear() {
+		onclear();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -39,7 +41,7 @@
 			handleSearch();
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
-			clearSearch();
+			handleClear();
 		}
 	}
 
@@ -51,13 +53,15 @@
 	}
 
 	// Reactive search - trigger search after debounce
-	$: if (searchQuery.trim().length >= 2) {
-		// Dispatch will be handled by parent with debouncing
-		dispatch('search', searchQuery.trim());
-	} else if (!searchQuery.trim()) {
-		searchResults = [];
-		dispatch('clear');
-	}
+	$effect(() => {
+		if (searchQuery.trim().length >= 2) {
+			// Dispatch will be handled by parent with debouncing
+			onsearch(searchQuery.trim());
+		} else if (!searchQuery.trim()) {
+			searchResults = [];
+			onclear();
+		}
+	});
 </script>
 
 <div class="space-y-4">
@@ -73,7 +77,7 @@
 			<input
 				bind:this={searchInput}
 				bind:value={searchQuery}
-				on:keydown={handleKeydown}
+				onkeydown={handleKeydown}
 				type="text"
 				placeholder="Search stocks (e.g., AAPL, Tesla, Microsoft)..."
 				class="w-full rounded-lg border border-gray-300 py-3 pr-10 pl-10 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -97,7 +101,7 @@
 			<!-- Clear Button -->
 			{#if searchQuery}
 				<button
-					on:click={clearSearch}
+					onclick={handleClear}
 					class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
 					title="Clear search"
 					aria-label="Clear search"
@@ -164,7 +168,7 @@
 			<div class="max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white">
 				{#each searchResults as stock (stock.symbol)}
 					<button
-						on:click={() => selectStock(stock)}
+						onclick={() => handleSelect(stock)}
 						class="w-full border-b border-gray-100 p-4 text-left transition-colors last:border-b-0 hover:bg-blue-50"
 					>
 						<div class="flex items-center justify-between">
@@ -244,4 +248,4 @@
 </div>
 
 <!-- Auto-focus on mount -->
-<svelte:window on:load={focusSearch} />
+<svelte:window onload={focusSearch} />

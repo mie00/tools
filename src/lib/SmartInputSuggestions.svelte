@@ -12,12 +12,12 @@
 	} from './smart-input/shortcuts';
 	import type { AppSuggestion } from './smart-input/analysis';
 
-	let inputText = '';
-	let suggestions: AppSuggestion[] = [];
-	let showSuggestions = false;
-	let inputElement: HTMLTextAreaElement;
-	let selectedSuggestionIndex = -1;
-	let shortcutsActive = false;
+	let inputText = $state('');
+	let suggestions: AppSuggestion[] = $state([]);
+	let showSuggestions = $state(false);
+	let inputElement: HTMLTextAreaElement | undefined = $state();
+	let selectedSuggestionIndex = $state(-1);
+	let shortcutsActive = $state(false);
 
 	// Load initial value from URL params on mount
 	onMount(() => {
@@ -142,7 +142,7 @@
 	}
 
 	// React to input changes
-	$: {
+	$effect(() => {
 		if (inputText.trim()) {
 			suggestions = analyzeInput(inputText);
 			showSuggestions = suggestions.length > 0;
@@ -161,7 +161,7 @@
 				updateUrlParams(inputText);
 			}, 300);
 		}
-	}
+	});
 </script>
 
 <div class="space-y-4">
@@ -177,7 +177,7 @@
 		<textarea
 			bind:this={inputElement}
 			bind:value={inputText}
-			on:keydown={handleKeydown}
+			onkeydown={handleKeydown}
 			placeholder="Try: 2+3*4, 10 meters to feet, 5 kg in pounds, 100°F to celsius, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL... (Press Ctrl+Enter when ready to select)"
 			class="focus:ring-opacity-50 w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 {shortcutsActive
 				? 'border-blue-300 bg-blue-50'
@@ -195,7 +195,7 @@
 					</div>
 				{/if}
 				<button
-					on:click={() => {
+					onclick={() => {
 						inputText = '';
 					}}
 					class="text-gray-400 hover:text-gray-600"
@@ -237,8 +237,8 @@
 							? 'border-blue-500 bg-blue-50'
 							: ''}"
 						data-sveltekit-preload-data={suggestion.id === 'googlesearch' ? 'false' : 'hover'}
-						on:mouseenter={() => shortcutsActive && (selectedSuggestionIndex = index)}
-						on:mouseleave={() => shortcutsActive && (selectedSuggestionIndex = -1)}
+						onmouseenter={() => shortcutsActive && (selectedSuggestionIndex = index)}
+						onmouseleave={() => shortcutsActive && (selectedSuggestionIndex = -1)}
 					>
 						<div class="flex items-center space-x-3">
 							<div class="text-2xl">{suggestion.icon}</div>

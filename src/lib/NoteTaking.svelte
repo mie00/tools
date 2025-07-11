@@ -15,31 +15,31 @@
 	import { NoteOperations, type Note } from './note-taking/NoteOperations';
 
 	// Component state
-	let notes: Note[] = [];
-	let topics: string[] = ['Main'];
-	let selectedTopic: string = 'Main';
-	let newNoteText: string = '';
-	let showNewTopicInput: boolean = false;
-	let editingNote: Note | null = null;
-	let focusedNote: number | null = null;
-	let draggedNote: Note | null = null;
+	let notes: Note[] = $state([]);
+	let topics: string[] = $state(['Main']);
+	let selectedTopic: string = $state('Main');
+	let newNoteText: string = $state('');
+	let showNewTopicInput: boolean = $state(false);
+	let editingNote: Note | null = $state(null);
+	let focusedNote: number | null = $state(null);
+	let draggedNote: Note | null = $state(null);
 
 	// Storage state
-	let storageInfo: StorageInfoType = { used: 0, quota: 0, available: 0 };
-	let showStorageWarning: boolean = false;
+	let storageInfo: StorageInfoType = $state({ used: 0, quota: 0, available: 0 });
+	let showStorageWarning: boolean = $state(false);
 
 	// Media state
-	let isRecording: boolean = false;
-	let recordingType: 'audio' | 'video' | null = null;
-	let showMediaControls: boolean = false;
-	let videoPreview: HTMLVideoElement | null = null;
+	let isRecording: boolean = $state(false);
+	let recordingType: 'audio' | 'video' | null = $state(null);
+	let showMediaControls: boolean = $state(false);
+	let videoPreview: HTMLVideoElement | null = $state(null);
 
 	// Manager instances
 	const storageManager = StorageManager.getInstance();
 	const mediaHandler = new MediaHandler();
 
 	// Reactive filtered notes
-	$: filteredNotes = NoteOperations.filterNotesByTopic(notes, selectedTopic);
+	let filteredNotes = $derived(NoteOperations.filterNotesByTopic(notes, selectedTopic));
 
 	onMount(async () => {
 		if (browser) {
@@ -283,7 +283,7 @@
 			<div class="space-y-3">
 				<textarea
 					bind:value={newNoteText}
-					on:keydown={handleKeydown}
+					onkeydown={handleKeydown}
 					placeholder="What's on your mind? (Ctrl+Enter to save)"
 					class="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 					rows="3"
@@ -293,7 +293,7 @@
 					<div class="flex items-center space-x-3">
 						<!-- Add Note Button -->
 						<button
-							on:click={() => addNote()}
+							onclick={() => addNote()}
 							disabled={!newNoteText.trim()}
 							class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 							title="Add note (Ctrl+Enter)"

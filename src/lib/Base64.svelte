@@ -3,11 +3,11 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 
-	let inputText = '';
-	let outputText = '';
-	let mode: 'encode' | 'decode' = 'encode';
-	let errorMessage = '';
-	let fileInput: HTMLInputElement;
+	let inputText = $state('');
+	let outputText = $state('');
+	let mode: 'encode' | 'decode' = $state('encode');
+	let errorMessage = $state('');
+	let fileInput: HTMLInputElement | undefined = $state();
 
 	// URL parameter sync
 	function updateUrl() {
@@ -136,9 +136,11 @@
 	}
 
 	// Auto-process when input changes
-	$: if (inputText !== undefined) {
-		processText();
-	}
+	$effect(() => {
+		if (inputText !== undefined) {
+			processText();
+		}
+	});
 
 	// Sample texts for demonstration
 	const sampleTexts = {
@@ -162,7 +164,7 @@
 	<div class="flex justify-center">
 		<div class="rounded-lg bg-gray-100 p-1">
 			<button
-				on:click={() => {
+				onclick={() => {
 					mode = 'encode';
 					processText();
 				}}
@@ -173,7 +175,7 @@
 				Encode
 			</button>
 			<button
-				on:click={() => {
+				onclick={() => {
 					mode = 'decode';
 					processText();
 				}}
@@ -190,9 +192,9 @@
 	<div
 		class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-gray-400"
 	>
-		<input type="file" bind:this={fileInput} on:change={handleFileUpload} class="hidden" />
+		<input type="file" bind:this={fileInput} onchange={handleFileUpload} class="hidden" />
 		<button
-			on:click={() => fileInput.click()}
+			onclick={() => fileInput?.click()}
 			class="inline-flex items-center rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 		>
 			<svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,7 +218,7 @@
 			<label for="input-text" class="block text-sm font-medium text-gray-700">
 				{mode === 'encode' ? 'Text to Encode' : 'Base64 to Decode'}
 			</label>
-			<button on:click={loadSample} class="text-sm text-blue-600 underline hover:text-blue-800">
+			<button onclick={loadSample} class="text-sm text-blue-600 underline hover:text-blue-800">
 				Load Sample
 			</button>
 		</div>
@@ -233,20 +235,20 @@
 		<!-- Action Buttons -->
 		<div class="flex flex-wrap gap-2">
 			<button
-				on:click={switchMode}
+				onclick={switchMode}
 				class="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600"
 			>
 				↕️ Switch & Process
 			</button>
 			<button
-				on:click={copyToClipboard}
+				onclick={copyToClipboard}
 				disabled={!outputText}
 				class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
 			>
 				📋 Copy Result
 			</button>
 			<button
-				on:click={clearAll}
+				onclick={clearAll}
 				class="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 			>
 				🗑️ Clear All

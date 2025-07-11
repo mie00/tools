@@ -4,21 +4,21 @@
 	import { goto } from '$app/navigation';
 
 	// Combined state
-	let inputText = '';
-	let urlComponents: any = {};
+	let inputText = $state('');
+	let urlComponents: any = $state({});
 	let searchParams: Array<{
 		key: string;
 		value: string;
 		keyDecoded: string;
 		valueDecoded: string;
-	}> = [];
-	let parsedCurl: any = null;
-	let error = '';
-	let copiedItem = '';
+	}> = $state([]);
+	let parsedCurl: any = $state(null);
+	let error = $state('');
+	let copiedItem = $state('');
 
 	// Editing state
-	let editingKey: string | null = null;
-	let editingValue = '';
+	let editingKey: string | null = $state(null);
+	let editingValue = $state('');
 
 	// URL parameter sync
 	function updateUrl() {
@@ -48,11 +48,13 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && inputText !== undefined) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && inputText !== undefined) {
+			updateUrl();
+		}
+	});
 
-	$: {
+	$effect(() => {
 		// Reset states for each new input
 		urlComponents = {};
 		searchParams = [];
@@ -80,7 +82,7 @@
 				parseUrl(trimmedInput);
 			}
 		}
-	}
+	});
 
 	function parseUrl(url: string) {
 		error = '';
@@ -403,7 +405,7 @@
 					rows="4"
 				></textarea>
 				<button
-					on:click={clearInput}
+					onclick={clearInput}
 					class="self-end rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 				>
 					Clear
@@ -428,7 +430,7 @@
 						<span class="text-sm font-medium text-gray-700">Method</span>
 						<div class="flex items-center gap-2">
 							<button
-								on:click={() => copyToClipboard(parsedCurl.method, 'curl-method')}
+								onclick={() => copyToClipboard(parsedCurl.method, 'curl-method')}
 								class="rounded px-2 py-1 text-xs {copiedItem === 'curl-method'
 									? 'bg-green-500'
 									: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -438,7 +440,7 @@
 							</button>
 							{#if editingKey !== 'curl-method'}
 								<button
-									on:click={() => startEditing('curl-method', parsedCurl.method)}
+									onclick={() => startEditing('curl-method', parsedCurl.method)}
 									class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
 									>Edit</button
 								>
@@ -452,11 +454,11 @@
 								bind:value={editingValue}
 							/>
 							<button
-								on:click={saveCurlMethodChange}
+								onclick={saveCurlMethodChange}
 								class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 							>
 							<button
-								on:click={cancelEditing}
+								onclick={cancelEditing}
 								class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 							>
 						</div>
@@ -478,7 +480,7 @@
 												<span class="text-sm font-medium text-gray-700">Header Key</span>
 												<div class="flex items-center gap-2">
 													<button
-														on:click={() => copyToClipboard(key, `curl-header-key-${key}`)}
+														onclick={() => copyToClipboard(key, `curl-header-key-${key}`)}
 														class="rounded px-2 py-1 text-xs {copiedItem ===
 														`curl-header-key-${key}`
 															? 'bg-green-500'
@@ -488,7 +490,7 @@
 													</button>
 													{#if editingKey !== `curl-header-key-${key}`}
 														<button
-															on:click={() => startEditing(`curl-header-key-${key}`, key)}
+															onclick={() => startEditing(`curl-header-key-${key}`, key)}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
 															>Edit</button
 														>
@@ -502,11 +504,11 @@
 														bind:value={editingValue}
 													/>
 													<button
-														on:click={() => saveCurlHeaderKeyChange(key)}
+														onclick={() => saveCurlHeaderKeyChange(key)}
 														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 													>
 													<button
-														on:click={cancelEditing}
+														onclick={cancelEditing}
 														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 													>
 												</div>
@@ -521,7 +523,7 @@
 												<span class="text-sm font-medium text-gray-700">Header Value</span>
 												<div class="flex items-center gap-2">
 													<button
-														on:click={() =>
+														onclick={() =>
 															copyToClipboard(String(value), `curl-header-value-${key}`)}
 														class="rounded px-2 py-1 text-xs {copiedItem ===
 														`curl-header-value-${key}`
@@ -532,7 +534,7 @@
 													</button>
 													{#if editingKey !== `curl-header-value-${key}`}
 														<button
-															on:click={() =>
+															onclick={() =>
 																startEditing(`curl-header-value-${key}`, String(value))}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
 															>Edit</button
@@ -547,11 +549,11 @@
 														bind:value={editingValue}
 													/>
 													<button
-														on:click={() => saveCurlHeaderValueChange(key)}
+														onclick={() => saveCurlHeaderValueChange(key)}
 														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 													>
 													<button
-														on:click={cancelEditing}
+														onclick={cancelEditing}
 														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 													>
 												</div>
@@ -577,7 +579,7 @@
 								<span class="text-sm font-medium text-gray-700">Request Body</span>
 								<div class="flex items-center gap-2">
 									<button
-										on:click={() => copyToClipboard(parsedCurl.body, 'curl-body')}
+										onclick={() => copyToClipboard(parsedCurl.body, 'curl-body')}
 										class="rounded px-2 py-1 text-xs {copiedItem === 'curl-body'
 											? 'bg-green-500'
 											: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -587,7 +589,7 @@
 									</button>
 									{#if editingKey !== 'curl-body'}
 										<button
-											on:click={() => startEditing('curl-body', parsedCurl.body || '')}
+											onclick={() => startEditing('curl-body', parsedCurl.body || '')}
 											class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
 											>Edit</button
 										>
@@ -603,11 +605,11 @@
 									></textarea>
 									<div>
 										<button
-											on:click={saveCurlBodyChange}
+											onclick={saveCurlBodyChange}
 											class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 										>
 										<button
-											on:click={cancelEditing}
+											onclick={cancelEditing}
 											class="ml-2 rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 										>
 									</div>
@@ -647,7 +649,7 @@
 									>
 									<div class="flex items-center gap-2">
 										<button
-											on:click={() => copyToClipboard(String(value), `component-${key}`)}
+											onclick={() => copyToClipboard(String(value), `component-${key}`)}
 											class="rounded px-2 py-1 text-xs {copiedItem === `component-${key}`
 												? 'bg-green-500'
 												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -657,7 +659,7 @@
 										</button>
 										{#if editableUrlComponents.includes(key) && editingKey !== `component-${key}`}
 											<button
-												on:click={() => startEditing(`component-${key}`, String(value))}
+												onclick={() => startEditing(`component-${key}`, String(value))}
 												class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
 												>Edit</button
 											>
@@ -671,11 +673,11 @@
 											bind:value={editingValue}
 										/>
 										<button
-											on:click={() => saveUrlComponentChange(key)}
+											onclick={() => saveUrlComponentChange(key)}
 											class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 										>
 										<button
-											on:click={cancelEditing}
+											onclick={cancelEditing}
 											class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 										>
 									</div>
@@ -702,7 +704,7 @@
 									<div class="mb-2 flex items-center justify-between">
 										<span class="text-sm font-medium text-gray-700">Key</span>
 										<button
-											on:click={() => copyToClipboard(param.key, `key-${param.key}`)}
+											onclick={() => copyToClipboard(param.key, `key-${param.key}`)}
 											class="rounded px-2 py-1 text-xs {copiedItem === `key-${param.key}`
 												? 'bg-green-500'
 												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -715,7 +717,7 @@
 											Raw:
 											{#if editingKey !== `param-key-${i}`}
 												<button
-													on:click={() => startEditing(`param-key-${i}`, param.key)}
+													onclick={() => startEditing(`param-key-${i}`, param.key)}
 													class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
 												>
 											{/if}
@@ -727,11 +729,11 @@
 													bind:value={editingValue}
 												/>
 												<button
-													on:click={() => saveSearchParamChange(i, 'key', false)}
+													onclick={() => saveSearchParamChange(i, 'key', false)}
 													class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 												>
 												<button
-													on:click={cancelEditing}
+													onclick={cancelEditing}
 													class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 												>
 											</div>
@@ -746,8 +748,7 @@
 												Decoded:
 												{#if editingKey !== `param-key-decoded-${i}`}
 													<button
-														on:click={() =>
-															startEditing(`param-key-decoded-${i}`, param.keyDecoded)}
+														onclick={() => startEditing(`param-key-decoded-${i}`, param.keyDecoded)}
 														class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
 													>
 												{/if}
@@ -759,11 +760,11 @@
 														bind:value={editingValue}
 													/>
 													<button
-														on:click={() => saveSearchParamChange(i, 'key', true)}
+														onclick={() => saveSearchParamChange(i, 'key', true)}
 														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 													>
 													<button
-														on:click={cancelEditing}
+														onclick={cancelEditing}
 														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 													>
 												</div>
@@ -781,7 +782,7 @@
 									<div class="mb-2 flex items-center justify-between">
 										<span class="text-sm font-medium text-gray-700">Value</span>
 										<button
-											on:click={() => copyToClipboard(param.value, `value-${param.key}`)}
+											onclick={() => copyToClipboard(param.value, `value-${param.key}`)}
 											class="rounded px-2 py-1 text-xs {copiedItem === `value-${param.key}`
 												? 'bg-green-500'
 												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -794,7 +795,7 @@
 											Raw:
 											{#if editingKey !== `param-value-${i}`}
 												<button
-													on:click={() => startEditing(`param-value-${i}`, param.value)}
+													onclick={() => startEditing(`param-value-${i}`, param.value)}
 													class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
 												>
 											{/if}
@@ -806,11 +807,11 @@
 													bind:value={editingValue}
 												/>
 												<button
-													on:click={() => saveSearchParamChange(i, 'value', false)}
+													onclick={() => saveSearchParamChange(i, 'value', false)}
 													class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 												>
 												<button
-													on:click={cancelEditing}
+													onclick={cancelEditing}
 													class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 												>
 											</div>
@@ -825,7 +826,7 @@
 												Decoded:
 												{#if editingKey !== `param-value-decoded-${i}`}
 													<button
-														on:click={() =>
+														onclick={() =>
 															startEditing(`param-value-decoded-${i}`, param.valueDecoded)}
 														class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
 													>
@@ -838,11 +839,11 @@
 														bind:value={editingValue}
 													/>
 													<button
-														on:click={() => saveSearchParamChange(i, 'value', true)}
+														onclick={() => saveSearchParamChange(i, 'value', true)}
 														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
 													>
 													<button
-														on:click={cancelEditing}
+														onclick={cancelEditing}
 														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
 													>
 												</div>

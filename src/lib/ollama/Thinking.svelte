@@ -1,12 +1,18 @@
 <script lang="ts">
 	import MarkdownRenderer from '../MarkdownRenderer.svelte';
-	export let content: string;
-	let collapsed = true;
+
+	let {
+		content
+	}: {
+		content: string;
+	} = $props();
+
+	let collapsed = $state(true);
 </script>
 
 <div class="my-2">
 	<button
-		on:click={() => (collapsed = !collapsed)}
+		onclick={() => (collapsed = !collapsed)}
 		class="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
 	>
 		<span class="text-gray-400">{collapsed ? '▶' : '▼'}</span>

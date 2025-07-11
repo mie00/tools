@@ -49,15 +49,15 @@
 		.map(([category]) => category);
 
 	// State for showing categories
-	let showAllCategories = false;
-	$: displayedCategories = showAllCategories
-		? availableCategories
-		: availableCategories.slice(0, 7);
+	let showAllCategories = $state(false);
+	const displayedCategories = $derived(
+		showAllCategories ? availableCategories : availableCategories.slice(0, 7)
+	);
 
-	let activeCategory: string = availableCategories[0] || 'أذكار الصباح';
-	let progress: Record<number, number> = {};
-	let focusedAzkarId: number | null = null;
-	let azkarContainer: HTMLElement;
+	let activeCategory: string = $state(availableCategories[0] || 'أذكار الصباح');
+	let progress: Record<number, number> = $state({});
+	let focusedAzkarId: number | null = $state(null);
+	let azkarContainer: HTMLElement | undefined = $state();
 
 	// URL parameter sync
 	function updateUrl() {
@@ -216,9 +216,11 @@
 	});
 
 	// Watch for state changes and update URL
-	$: if (typeof window !== 'undefined' && activeCategory) {
-		updateUrl();
-	}
+	$effect(() => {
+		if (typeof window !== 'undefined' && activeCategory) {
+			updateUrl();
+		}
+	});
 </script>
 
 <div class="azkar-container" bind:this={azkarContainer}>
@@ -230,7 +232,7 @@
 
 	<!-- Reset All Button -->
 	<div class="reset-all-container">
-		<button on:click={resetAll} class="reset-all-btn"> إعادة تعيين جميع العدادات </button>
+		<button onclick={resetAll} class="reset-all-btn"> إعادة تعيين جميع العدادات </button>
 	</div>
 
 	<!-- Category Tabs -->
@@ -238,7 +240,7 @@
 		<div class="tabs-wrapper">
 			{#each displayedCategories as category (category)}
 				<button
-					on:click={() => switchCategory(category)}
+					onclick={() => switchCategory(category)}
 					class="category-tab {activeCategory === category ? 'active' : ''}"
 				>
 					{category}
@@ -253,7 +255,7 @@
 		<!-- Show More/Less Button -->
 		{#if availableCategories.length > 6}
 			<div class="show-more-container">
-				<button on:click={toggleShowAllCategories} class="show-more-btn">
+				<button onclick={toggleShowAllCategories} class="show-more-btn">
 					{showAllCategories
 						? 'إخفاء الفئات الإضافية'
 						: `عرض ${availableCategories.length - 6} فئات أخرى`}
@@ -265,7 +267,7 @@
 
 	<!-- Category Reset Button -->
 	<div class="category-reset-container">
-		<button on:click={() => resetCategory(activeCategory)} class="category-reset-btn">
+		<button onclick={() => resetCategory(activeCategory)} class="category-reset-btn">
 			إعادة تعيين {activeCategory}
 		</button>
 	</div>
@@ -276,10 +278,10 @@
 			<div class="progress-fill" style="width: {getCategoryProgress(activeCategory)}%"></div>
 		</div>
 		<div class="progress-actions">
-			<button class="reset-btn category-reset" on:click={() => resetCategory(activeCategory)}>
+			<button class="reset-btn category-reset" onclick={() => resetCategory(activeCategory)}>
 				إعادة تعيين الفئة
 			</button>
-			<button class="reset-btn global-reset" on:click={resetAll}> إعادة تعيين الكل </button>
+			<button class="reset-btn global-reset" onclick={resetAll}> إعادة تعيين الكل </button>
 		</div>
 	</div>
 
@@ -290,10 +292,10 @@
 				class="azkar-card"
 				class:completed={isCompleted(azkar)}
 				class:focused={focusedAzkarId === azkar.id}
-				on:click={() => focusAzkar(azkar.id)}
+				onclick={() => focusAzkar(azkar.id)}
 				role="button"
 				tabindex="0"
-				on:keydown={(e) => e.key === 'Enter' && focusAzkar(azkar.id)}
+				onkeydown={(e) => e.key === 'Enter' && focusAzkar(azkar.id)}
 			>
 				<div class="azkar-header">
 					<span class="azkar-id">#{azkar.id}</span>
@@ -319,15 +321,22 @@
 
 						<div class="counter-controls">
 							<button
+								type="button"
 								class="counter-btn increment"
-								on:click|stopPropagation={() => handleIncrementClick(azkar)}
+								onclick={(e) => {
+									e.stopPropagation();
+									handleIncrementClick(azkar);
+								}}
 								disabled={false}
 							>
 								{isCompleted(azkar) ? '✓' : '+'}
 							</button>
 							<button
 								class="counter-btn reset"
-								on:click|stopPropagation={() => resetCounter(azkar.id)}
+								onclick={(e) => {
+									e.stopPropagation();
+									resetCounter(azkar.id);
+								}}
 							>
 								↺
 							</button>

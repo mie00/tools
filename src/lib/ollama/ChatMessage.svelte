@@ -1,28 +1,44 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { Message } from './types';
 	import MarkdownRenderer from '../MarkdownRenderer.svelte';
 	import Thinking from './Thinking.svelte';
 	import Execute from './Execute.svelte';
 
-	export let message: Message & { grouped?: Message[] };
-	export let idx: number;
-	export let isLoading: boolean;
-	export let canRegenerate: boolean;
+	const {
+		message,
+		idx,
+		isLoading,
+		canRegenerate,
+		onstartEdit,
+		oncancelEdit,
+		onsaveEdit,
+		ondeleteMessage,
+		onretryLastMessage,
+		onregenerateFromUser
+	}: {
+		message: Message & { grouped?: Message[] };
+		idx: number;
+		isLoading: boolean;
+		canRegenerate: boolean;
+		onstartEdit?: (_detail: { idx: number; content: string }) => void;
+		oncancelEdit?: () => void;
+		onsaveEdit?: (_detail: { idx: number; content: string }) => void;
+		ondeleteMessage?: (_detail: { idx: number }) => void;
+		onretryLastMessage?: () => void;
+		onregenerateFromUser?: (_detail: { idx: number }) => void;
+	} = $props();
 
-	let editingContent = '';
-	let editingIndex: number | null = null;
-
-	const dispatch = createEventDispatcher();
+	let editingContent = $state('');
+	let editingIndex: number | null = $state(null);
 
 	type Part =
 		| { type: 'text'; content: string }
 		| { type: 'think'; content: string }
 		| { type: 'execute'; code: string; answer: string | null };
 
-	let parts: Part[] = [];
+	let parts: Part[] = $state([]);
 
-	$: {
+	$effect(() => {
 		const newParts: Part[] = [];
 		let contentToRender = '';
 		let answerForExecute: string | null = null;
@@ -60,34 +76,34 @@
 			}
 		}
 		parts = newParts;
-	}
+	});
 
 	function startEdit() {
 		editingIndex = idx;
 		editingContent = message.content;
-		dispatch('startEdit', { idx, content: message.content });
+		onstartEdit?.({ idx, content: message.content });
 	}
 
 	function cancelEdit() {
 		editingIndex = null;
-		dispatch('cancelEdit');
+		oncancelEdit?.();
 	}
 
 	function saveEdit() {
-		dispatch('saveEdit', { idx, content: editingContent });
+		onsaveEdit?.({ idx, content: editingContent });
 		editingIndex = null;
 	}
 
 	function deleteMessage() {
-		dispatch('deleteMessage', { idx });
+		ondeleteMessage?.({ idx });
 	}
 
 	function retryLastMessage() {
-		dispatch('retryLastMessage');
+		onretryLastMessage?.();
 	}
 
 	function regenerateFromUser() {
-		dispatch('regenerateFromUser', { idx });
+		onregenerateFromUser?.({ idx });
 	}
 </script>
 
@@ -139,7 +155,7 @@
 
 				{#if message.error}
 					<button
-						on:click={retryLastMessage}
+						onclick={retryLastMessage}
 						class="mt-2 text-sm font-semibold text-red-700 hover:underline"
 					>
 						Try again
@@ -156,21 +172,20 @@
 					></textarea>
 					<div class="mt-2 flex gap-2">
 						<button
-							on:click={saveEdit}
+							onclick={saveEdit}
 							class="rounded bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600"
 							>💾</button
 						>
 						<button
-							on:click={cancelEdit}
+							onclick={cancelEdit}
 							class="rounded bg-gray-300 px-2 py-1 text-xs text-gray-800 hover:bg-gray-400"
 							>❌</button
 						>
 					</div>
 				{:else}
 					<div class="mt-2 flex justify-end gap-2">
-						<button on:click={startEdit} class="text-xs text-yellow-700 hover:underline">✏️</button>
-						<button on:click={deleteMessage} class="text-xs text-red-700 hover:underline">🗑️</button
-						>
+						<button onclick={startEdit} class="text-xs text-yellow-700 hover:underline">✏️</button>
+						<button onclick={deleteMessage} class="text-xs text-red-700 hover:underline">🗑️</button>
 					</div>
 				{/if}
 			{/if}
@@ -184,11 +199,11 @@
 				></textarea>
 				<div class="mt-2 flex gap-2">
 					<button
-						on:click={saveEdit}
+						onclick={saveEdit}
 						class="rounded bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600">💾</button
 					>
 					<button
-						on:click={cancelEdit}
+						onclick={cancelEdit}
 						class="rounded bg-gray-300 px-2 py-1 text-xs text-gray-800 hover:bg-gray-400">❌</button
 					>
 				</div>
@@ -196,16 +211,16 @@
 				<MarkdownRenderer content={message.content} proseClass="prose-invert" />
 				<div class="mt-2 flex items-center justify-end gap-2">
 					<button
-						on:click={startEdit}
+						onclick={startEdit}
 						class="text-xs text-white opacity-70 hover:underline hover:opacity-100">✏️</button
 					>
 					<button
-						on:click={deleteMessage}
+						onclick={deleteMessage}
 						class="text-xs text-white opacity-70 hover:underline hover:opacity-100">🗑️</button
 					>
 					{#if canRegenerate}
 						<button
-							on:click={regenerateFromUser}
+							onclick={regenerateFromUser}
 							class="text-xs text-white opacity-70 hover:underline hover:opacity-100"
 							disabled={isLoading}
 						>

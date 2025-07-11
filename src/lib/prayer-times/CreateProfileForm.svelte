@@ -2,28 +2,35 @@
 	import { createEventDispatcher } from 'svelte';
 	import { calculationMethods } from './constants';
 	import { enrichLocationData, getSuggestedCalculationMethod, parseMawaqitConfig } from './utils';
-	import type { City, SearchResult } from './types';
+	import type { City } from './types';
 	import CitySearch from './CitySearch.svelte';
 
-	export let cities: City[] = [];
-	export let loadingCities: boolean = false;
-	export let hasExistingProfiles: boolean = false;
-	export let hasSharedConfig: boolean = false;
+	let {
+		cities = [],
+		loadingCities = false,
+		hasExistingProfiles = false,
+		hasSharedConfig = false
+	}: {
+		cities: City[];
+		loadingCities: boolean;
+		hasExistingProfiles: boolean;
+		hasSharedConfig: boolean;
+	} = $props();
 
 	const dispatch = createEventDispatcher<{
 		create: any;
 		cancel: void;
 	}>();
 
-	let showLocationPermission = false;
-	let locationError = '';
-	let citySearchQuery = '';
-	let createMode: 'manual' | 'mawaqit' = 'manual';
-	let mawaqitJson = '';
-	let mawaqitError = '';
+	let showLocationPermission = $state(false);
+	let locationError = $state('');
+	let citySearchQuery = $state('');
+	let createMode: 'manual' | 'mawaqit' = $state('manual');
+	let mawaqitJson = $state('');
+	let mawaqitError = $state('');
 	let autoLocationAttempted = false;
 
-	let newProfile = {
+	let newProfile = $state({
 		name: '',
 		latitude: null as number | null,
 		longitude: null as number | null,
@@ -39,7 +46,7 @@
 			maghrib: 0,
 			isha: 0
 		}
-	};
+	});
 
 	function resetForm() {
 		newProfile = {
@@ -75,7 +82,6 @@
 					showLocationPermission = false;
 
 					// Get timezone and location details
-					// eslint-disable-next-line svelte/infinite-reactive-loop
 					await enrichCurrentLocation();
 				},
 				(error) => {
@@ -104,46 +110,35 @@
 						name =
 							locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
 					}
-					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.name = `${name}, ${locationData.closestCity.country}`;
 				}
 
 				// Suggest calculation method based on country
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.closestCity.country);
-				// eslint-disable-next-line svelte/infinite-reactive-loop
 				newProfile.calculationMethod = suggestedMethod;
 
 				if (locationData.closestCity.timezone) {
-					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.timezone = locationData.closestCity.timezone;
 				}
 			} else if (locationData.country) {
 				// Fallback if no city found but country available
 				if (!newProfile.name) {
-					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.name = locationData.country;
 				}
 
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.country);
-				// eslint-disable-next-line svelte/infinite-reactive-loop
 				newProfile.calculationMethod = suggestedMethod;
 			}
 		} catch (error) {
 			console.error('Error enriching location data:', error);
-			// eslint-disable-next-line svelte/infinite-reactive-loop
 			newProfile.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		}
 	}
 
-	function handleCitySelect(event: CustomEvent<SearchResult>) {
-		const result = event.detail;
-		const city = result.city;
-
+	function handleCitySelect(city: City) {
 		newProfile.latitude = city.lat;
 		newProfile.longitude = city.lng;
-		newProfile.name = result.matchedName
-			? `${result.matchedName}, ${city.country}`
-			: `${city.name}, ${city.country}`;
+		newProfile.name = `${city.name}, ${city.country}`;
 
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
@@ -231,17 +226,18 @@
 	}
 
 	// Auto-get location for new users (only if no existing profiles and no shared config)
-	$: if (
-		createMode === 'manual' &&
-		!hasExistingProfiles &&
-		!hasSharedConfig &&
-		!autoLocationAttempted &&
-		!newProfile.latitude &&
-		!newProfile.longitude
-	) {
-		// eslint-disable-next-line svelte/infinite-reactive-loop
-		tryGetCurrentLocation();
-	}
+	$effect(() => {
+		if (
+			createMode === 'manual' &&
+			!hasExistingProfiles &&
+			!hasSharedConfig &&
+			!autoLocationAttempted &&
+			!newProfile.latitude &&
+			!newProfile.longitude
+		) {
+			tryGetCurrentLocation();
+		}
+	});
 </script>
 
 <div class="rounded-xl bg-white p-8 shadow-lg">
@@ -259,7 +255,7 @@
 				class:text-gray-500={createMode !== 'manual'}
 				class:hover:border-gray-300={createMode !== 'manual'}
 				class:hover:text-gray-700={createMode !== 'manual'}
-				on:click={() => (createMode = 'manual')}
+				onclick={() => (createMode = 'manual')}
 			>
 				Create Manually
 			</button>
@@ -271,7 +267,7 @@
 				class:text-gray-500={createMode !== 'mawaqit'}
 				class:hover:border-gray-300={createMode !== 'mawaqit'}
 				class:hover:text-gray-700={createMode !== 'mawaqit'}
-				on:click={() => (createMode = 'mawaqit')}
+				onclick={() => (createMode = 'mawaqit')}
 			>
 				Import from Mawaqit
 			</button>
@@ -336,7 +332,7 @@
 					loading={loadingCities}
 					bind:searchQuery={citySearchQuery}
 					placeholder="Search for a city or manually enter coordinates below..."
-					on:select={handleCitySelect}
+					onselect={handleCitySelect}
 				/>
 			</div>
 
@@ -395,7 +391,7 @@
 
 		<div class="mt-6 flex space-x-4">
 			<button
-				on:click={handleCreate}
+				onclick={handleCreate}
 				disabled={!newProfile.name || !newProfile.latitude || !newProfile.longitude}
 				class="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:bg-gray-400"
 			>
@@ -404,7 +400,7 @@
 
 			{#if !showLocationPermission}
 				<button
-					on:click={tryGetCurrentLocation}
+					onclick={tryGetCurrentLocation}
 					class="rounded-lg border border-blue-600 px-6 py-2 text-blue-600 hover:bg-blue-50"
 				>
 					📍 Use Current Location
@@ -413,7 +409,7 @@
 
 			{#if hasExistingProfiles}
 				<button
-					on:click={handleCancel}
+					onclick={handleCancel}
 					class="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
 				>
 					Cancel
@@ -448,14 +444,14 @@
 
 			<div class="flex space-x-4">
 				<button
-					on:click={handleMawaqitImport}
+					onclick={handleMawaqitImport}
 					class="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
 				>
 					Import Profile
 				</button>
 				{#if hasExistingProfiles}
 					<button
-						on:click={handleCancel}
+						onclick={handleCancel}
 						class="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
 					>
 						Cancel
