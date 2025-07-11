@@ -22,15 +22,16 @@
 		loadFromUrl();
 		loadHistoryFromStorage();
 		// Simple mobile detection
-		isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-		           window.innerWidth <= 768;
+		isMobile =
+			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+			window.innerWidth <= 768;
 	});
 
 	// URL parameter sync
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
-			
+
 			if (expression.trim()) {
 				params.set('expression', expression);
 			} else {
@@ -108,7 +109,7 @@
 
 			// Evaluate the expression safely
 			const evaluated = Function(`"use strict"; return (${cleanExpression})`)();
-			
+
 			if (isNaN(evaluated) || !isFinite(evaluated)) {
 				throw new Error('Invalid calculation');
 			}
@@ -122,7 +123,7 @@
 					expression: expression.trim(),
 					result: evaluated
 				};
-				
+
 				// Avoid duplicates
 				if (history.length === 0 || history[history.length - 1].expression !== expression.trim()) {
 					history = [...history, historyItem];
@@ -132,7 +133,6 @@
 					}
 				}
 			}
-
 		} catch (error) {
 			result = 'Error';
 			isError = true;
@@ -239,16 +239,28 @@
 				class="expression-input"
 				type="text"
 				autocomplete="off"
-				inputmode={isMobile ? "none" : "text"}
+				inputmode={isMobile ? 'none' : 'text'}
 				readonly={isMobile}
 			/>
-			<button class="clear-button" on:click={clearAll} title="Clear (Esc)" aria-label="Clear expression">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M18 6L6 18M6 6l12 12"/>
+			<button
+				class="clear-button"
+				on:click={clearAll}
+				title="Clear (Esc)"
+				aria-label="Clear expression"
+			>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M18 6L6 18M6 6l12 12" />
 				</svg>
 			</button>
 		</div>
-		
+
 		{#if result}
 			<div class="result-container" class:error={isError}>
 				<span class="equals">=</span>
@@ -314,15 +326,30 @@
 				<button class="number-btn operator" on:click={() => insertText('+')}>+</button>
 			</div>
 			<div class="number-row">
-				<button class="number-btn function" on:click={() => insertText('(')} title="Open parenthesis">
+				<button
+					class="number-btn function"
+					on:click={() => insertText('(')}
+					title="Open parenthesis"
+				>
 					<span>(</span>
 				</button>
-				<button class="number-btn function" on:click={() => insertText(')')} title="Close parenthesis">
+				<button
+					class="number-btn function"
+					on:click={() => insertText(')')}
+					title="Close parenthesis"
+				>
 					<span>)</span>
 				</button>
 				<button class="number-btn function" on:click={backspace} aria-label="Backspace">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 9l6 6m0-6l-6 6M21 12H3"/>
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path d="M9 9l6 6m0-6l-6 6M21 12H3" />
 					</svg>
 				</button>
 				<button class="number-btn function" on:click={() => insertText('**')} title="Power">
@@ -337,9 +364,23 @@
 		<div class="history-section">
 			<div class="history-header">
 				<h3>Recent Calculations</h3>
-				<button class="clear-history-btn" on:click={clearAllHistory} title="Clear all history" aria-label="Clear all history">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+				<button
+					class="clear-history-btn"
+					on:click={clearAllHistory}
+					title="Clear all history"
+					aria-label="Clear all history"
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -350,14 +391,21 @@
 							<span class="history-expression">{item.expression}</span>
 							<span class="history-result">= {formatResult(item.result)}</span>
 						</button>
-						<button 
-							class="delete-history-btn" 
+						<button
+							class="delete-history-btn"
 							on:click={() => deleteHistoryItem(history.length - 1 - index)}
 							title="Delete this calculation"
 							aria-label="Delete this calculation"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M18 6L6 18M6 6l12 12"/>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path d="M18 6L6 18M6 6l12 12" />
 							</svg>
 						</button>
 					</div>
@@ -376,7 +424,13 @@
 		padding: 20px;
 		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 		color: white;
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			sans-serif;
 	}
 
 	.input-section {

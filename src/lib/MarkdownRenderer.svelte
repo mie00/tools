@@ -10,10 +10,8 @@
 	export let proseClass: string = '';
 
 	let mainEl: HTMLElement;
-	let activeExecutors: Record<
-		string,
-		{ code: string; type: 'js' | 'html'; wrapper: HTMLElement }
-	> = {};
+	let activeExecutors: Record<string, { code: string; type: 'js' | 'html'; wrapper: HTMLElement }> =
+		{};
 
 	let parts: { type: 'markdown' | 'code'; content: string; lang?: string }[] = [];
 
@@ -112,10 +110,10 @@
 	}
 </script>
 
-<div 
-	class="prose {proseClass}" 
-	bind:this={mainEl} 
-	role="button" 
+<div
+	class="prose {proseClass}"
+	bind:this={mainEl}
+	role="button"
 	tabindex="0"
 	on:click={handleClick}
 	on:keydown={handleKeyDown}
@@ -164,4 +162,4 @@
 	.executor-portal {
 		z-index: 10;
 	}
-</style> 
+</style>

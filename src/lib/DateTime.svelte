@@ -211,18 +211,18 @@
 
 			// Create a date string that represents the input time in the source timezone
 			const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${hours}:${minutes}:00`;
-			
+
 			// Create a date assuming it's in the source timezone
 			// We'll use a trick: create the date as if it were UTC, then adjust for source timezone
 			const baseDate = new Date(dateString);
-			
+
 			// Get the timezone offset difference between source and target
 			const sourceOffset = getTimezoneOffsetMinutes(sourceTimezoneName, baseDate);
 			const targetOffset = getTimezoneOffsetMinutes(timezone, baseDate);
-			
+
 			// Calculate the time difference in minutes
 			const offsetDiff = targetOffset - sourceOffset;
-			
+
 			// Apply the offset to get the correct time in target timezone
 			const resultDate = new Date(baseDate.getTime() + offsetDiff * 60000);
 
@@ -249,7 +249,8 @@
 				timeZoneName: 'shortOffset'
 			});
 			const offset =
-				offsetFormatter.formatToParts(resultDate).find((part) => part.type === 'timeZoneName')?.value || '';
+				offsetFormatter.formatToParts(resultDate).find((part) => part.type === 'timeZoneName')
+					?.value || '';
 
 			return {
 				time: timeFormatter.format(resultDate),
@@ -265,7 +266,7 @@
 	function getTimezoneOffsetMinutes(timezone: string, date: Date): number {
 		// Get the timezone offset in minutes for a given timezone and date
 		const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-		
+
 		// Create a date formatter for the target timezone
 		const formatter = new Intl.DateTimeFormat('sv-SE', {
 			timeZone: timezone,
@@ -276,11 +277,11 @@
 			minute: '2-digit',
 			second: '2-digit'
 		});
-		
+
 		// Get the local time in the target timezone
 		const localTimeString = formatter.format(utcDate);
 		const localTime = new Date(localTimeString);
-		
+
 		// Calculate the offset
 		return (localTime.getTime() - utcDate.getTime()) / 60000;
 	}
@@ -308,7 +309,8 @@
 			timeZoneName: 'shortOffset'
 		});
 		const offset =
-			offsetFormatter.formatToParts(referenceTime).find((part) => part.type === 'timeZoneName')?.value || '';
+			offsetFormatter.formatToParts(referenceTime).find((part) => part.type === 'timeZoneName')
+				?.value || '';
 
 		return {
 			time: timeFormatter.format(referenceTime),
@@ -478,20 +480,20 @@
 		<div class="mb-6 flex flex-wrap gap-2">
 			<button
 				on:click={toggleCustomTime}
-				class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+				class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 			>
 				{useCustomTime ? 'Show Current Time' : 'Convert Custom Time'}
 			</button>
 			{#if useCustomTime}
 				<button
 					on:click={setCurrentTime}
-					class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 				>
 					Use Current Time
 				</button>
 				<button
 					on:click={clearCustomTime}
-					class="rounded-md bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30 backdrop-blur"
+					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 				>
 					Clear
 				</button>
@@ -502,7 +504,7 @@
 			<!-- Custom Time Input -->
 			<div class="mb-6 grid gap-4 md:grid-cols-2">
 				<div>
-					<label for="custom-time-input" class="block text-sm font-medium mb-2">Time</label>
+					<label for="custom-time-input" class="mb-2 block text-sm font-medium">Time</label>
 					<input
 						id="custom-time-input"
 						type="time"
@@ -512,7 +514,9 @@
 					/>
 				</div>
 				<div>
-					<label for="custom-timezone-select" class="block text-sm font-medium mb-2">Source Timezone</label>
+					<label for="custom-timezone-select" class="mb-2 block text-sm font-medium"
+						>Source Timezone</label
+					>
 					<select
 						id="custom-timezone-select"
 						bind:value={customTimezone}
@@ -572,7 +576,7 @@
 				{useCustomTime && customTimeInput ? 'Time Conversion Results' : 'World Clock'}
 			</h2>
 			<p class="mt-2 text-gray-600">
-				{useCustomTime && customTimeInput 
+				{useCustomTime && customTimeInput
 					? `Showing ${customTimeInput} from ${getCityName(customTimezone)} converted to different cities`
 					: 'View current time in different cities around the world'}
 			</p>

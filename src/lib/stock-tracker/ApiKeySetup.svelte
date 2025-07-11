@@ -37,8 +37,8 @@
 
 {#if showModal}
 	<!-- Modal Backdrop -->
-	<div 
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+	<div
+		class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
 		on:click={handleClose}
 		on:keydown={handleKeydown}
 		role="dialog"
@@ -46,7 +46,7 @@
 		aria-labelledby="api-key-title"
 	>
 		<!-- Modal Content -->
-		<div 
+		<div
 			class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
 			on:click|stopPropagation
 			role="document"
@@ -54,7 +54,7 @@
 			<h3 id="api-key-title" class="mb-4 text-xl font-bold text-gray-800">
 				Setup Alpha Vantage API Key
 			</h3>
-			
+
 			<p class="mb-4 text-gray-600">
 				To use the Stock Tracker, you need a free API key from Alpha Vantage.
 			</p>
@@ -91,7 +91,7 @@
 						bind:value={apiKeyInput}
 						on:keydown={handleKeydown}
 						placeholder="Your Alpha Vantage API key"
-						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
 						disabled={isValidating}
 						autofocus
 					/>
@@ -101,8 +101,18 @@
 				{#if apiKeyError}
 					<div class="rounded-md border border-red-200 bg-red-50 p-3">
 						<div class="flex items-center space-x-2">
-							<svg class="h-5 w-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							<svg
+								class="h-5 w-5 flex-shrink-0 text-red-500"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+								></path>
 							</svg>
 							<span class="text-sm text-red-700">{apiKeyError}</span>
 						</div>
@@ -114,12 +124,23 @@
 					<button
 						on:click={handleSubmit}
 						disabled={!apiKeyInput.trim() || isValidating}
-						class="flex-1 flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+						class="flex flex-1 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 					>
 						{#if isValidating}
 							<svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
 							</svg>
 							Validating...
 						{:else}
@@ -138,8 +159,8 @@
 				<!-- Instructions -->
 				<div class="rounded-md bg-blue-50 p-3">
 					<div class="text-sm text-blue-800">
-						<p class="font-medium mb-1">Instructions:</p>
-						<ol class="list-decimal list-inside space-y-1 text-xs">
+						<p class="mb-1 font-medium">Instructions:</p>
+						<ol class="list-inside list-decimal space-y-1 text-xs">
 							<li>Click the link above to get your free API key</li>
 							<li>Sign up or log in to Alpha Vantage</li>
 							<li>Copy your API key and paste it above</li>
@@ -150,4 +171,4 @@
 			</div>
 		</div>
 	</div>
-{/if} 
+{/if}

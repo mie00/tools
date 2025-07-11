@@ -20,16 +20,14 @@
 	}
 </script>
 
-<div class="p-4 bg-gray-50 border-b border-gray-200">
-	<h3 class="font-semibold mb-4 text-gray-800 flex items-center gap-2">
-		🔧 Chat Settings
-	</h3>
-	
+<div class="border-b border-gray-200 bg-gray-50 p-4">
+	<h3 class="mb-4 flex items-center gap-2 font-semibold text-gray-800">🔧 Chat Settings</h3>
+
 	{#if activeTopic}
 		<!-- Model Source Selection -->
 		<div class="mb-4">
 			<fieldset>
-				<legend class="block text-sm font-medium text-gray-700 mb-2">Model Source</legend>
+				<legend class="mb-2 block text-sm font-medium text-gray-700">Model Source</legend>
 				<div class="flex space-x-4">
 					<label class="flex items-center">
 						<input
@@ -57,16 +55,16 @@
 
 		<!-- Model Selection -->
 		<div class="mb-4">
-			<label for="model" class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+			<label for="model" class="mb-2 block text-sm font-medium text-gray-700">Model</label>
 			{#if activeTopic.modelSource === 'local'}
 				<input
 					id="model"
 					type="text"
 					value="Qwen3-0.6B-ONNX (Local)"
 					readonly
-					class="w-full p-2 border rounded border-gray-300 bg-gray-100"
+					class="w-full rounded border border-gray-300 bg-gray-100 p-2"
 				/>
-				<p class="text-xs text-gray-500 mt-1">
+				<p class="mt-1 text-xs text-gray-500">
 					ℹ️ Check Global Settings for WebGPU status and model loading
 				</p>
 			{:else}
@@ -74,7 +72,7 @@
 					id="model"
 					value={activeTopic.model}
 					on:change={(e) => handleUpdateModel((e.target as HTMLSelectElement).value)}
-					class="w-full p-2 border rounded border-gray-300"
+					class="w-full rounded border border-gray-300 p-2"
 				>
 					{#each availableModels as model}
 						<option value={model}>{model}</option>
@@ -83,7 +81,7 @@
 					{/each}
 				</select>
 				{#if availableModels.length === 0}
-					<p class="text-xs text-gray-500 mt-1">
+					<p class="mt-1 text-xs text-gray-500">
 						ℹ️ Check Global Settings to configure Ollama endpoint
 					</p>
 				{/if}
@@ -92,22 +90,24 @@
 
 		<!-- System Prompt -->
 		<div class="mb-4">
-			<label for="system-prompt" class="block text-sm font-medium text-gray-700 mb-2">System Prompt</label>
+			<label for="system-prompt" class="mb-2 block text-sm font-medium text-gray-700"
+				>System Prompt</label
+			>
 			<textarea
 				id="system-prompt"
 				value={activeTopic.systemPrompt}
 				on:input={(e) => handleUpdateSystemPrompt((e.target as HTMLTextAreaElement).value)}
 				rows="4"
-				class="w-full p-2 border rounded border-gray-300"
+				class="w-full rounded border border-gray-300 p-2"
 				placeholder="Enter instructions for how the AI should behave in this chat..."
 			></textarea>
-			<p class="text-xs text-gray-500 mt-1">
+			<p class="mt-1 text-xs text-gray-500">
 				💡 This affects only this chat. Set defaults in Global Settings.
 			</p>
 		</div>
 	{:else}
-		<p class="text-gray-600 text-center py-8">
+		<p class="py-8 text-center text-gray-600">
 			📝 Select a chat to configure its specific settings
 		</p>
 	{/if}
-</div> 
+</div>

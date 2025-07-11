@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	
+
 	// Import our new components and utilities
 	import ApiKeySetup from './stock-tracker/ApiKeySetup.svelte';
 	import StockSearch from './stock-tracker/StockSearch.svelte';
@@ -10,11 +10,11 @@
 	import StockChart from './stock-tracker/StockChart.svelte';
 	import { StockApiManager } from './stock-tracker/StockApiManager';
 	import { PortfolioManager } from './stock-tracker/PortfolioManager';
-	import type { 
-		StockSearchResult, 
-		StockQuote, 
-		ChartPoint, 
-		TimeWindow 
+	import type {
+		StockSearchResult,
+		StockQuote,
+		ChartPoint,
+		TimeWindow
 	} from './stock-tracker/StockApiManager';
 	import type { PortfolioStock } from './stock-tracker/PortfolioManager';
 
@@ -25,24 +25,24 @@
 	let chartLoading: boolean = false;
 	let chartError: string = '';
 	let selectedTimeWindow: string = '1m';
-	
+
 	// Search state
 	let searchQuery: string = '';
 	let searchResults: StockSearchResult[] = [];
 	let isSearching: boolean = false;
 	let searchError: string = '';
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
-	
+
 	// Portfolio state
 	let portfolio: PortfolioStock[] = [];
 	let isRefreshing: boolean = false;
-	
+
 	// API Key state
 	let showApiKeyPrompt: boolean = false;
 	let apiKeyInput: string = '';
 	let apiKeyError: string = '';
 	let isValidatingApiKey: boolean = false;
-	
+
 	// Manager instances
 	const apiManager = StockApiManager.getInstance();
 	const portfolioManager = PortfolioManager.getInstance();
@@ -51,7 +51,7 @@
 	onMount(async () => {
 		// Load initial data
 		portfolio = portfolioManager.getPortfolio();
-		
+
 		// Check if API key is available
 		if (!apiManager.hasApiKey()) {
 			showApiKeyPrompt = true;
@@ -59,7 +59,7 @@
 			await refreshPortfolio();
 			startPriceRefresh();
 		}
-		
+
 		// Load from URL params
 		loadFromUrl();
 	});
@@ -76,15 +76,15 @@
 	// URL management
 	function updateUrl() {
 		if (typeof window === 'undefined') return;
-		
+
 		const params = new URLSearchParams($page.url.searchParams);
-		
+
 		if (selectedStock) {
 			params.set('stock', selectedStock.symbol);
 		} else {
 			params.delete('stock');
 		}
-		
+
 		goto(`?${params.toString()}`, { replaceState: true, noScroll: true });
 	}
 
@@ -102,7 +102,7 @@
 	async function handleApiKeySubmit(key: string) {
 		isValidatingApiKey = true;
 		apiKeyError = '';
-		
+
 		try {
 			const isValid = await apiManager.validateApiKey(key);
 			if (isValid) {
@@ -124,7 +124,8 @@
 	function handleApiKeyCancel() {
 		showApiKeyPrompt = false;
 		apiKeyInput = '';
-		apiKeyError = 'API key is required to use the Stock Tracker. Click "Setup API Key" to try again.';
+		apiKeyError =
+			'API key is required to use the Stock Tracker. Click "Setup API Key" to try again.';
 	}
 
 	function handleApiKeyClose() {
@@ -142,11 +143,11 @@
 		if (searchTimeout) {
 			clearTimeout(searchTimeout);
 		}
-		
+
 		searchTimeout = setTimeout(async () => {
 			isSearching = true;
 			searchError = '';
-			
+
 			try {
 				searchResults = await apiManager.searchStocks(query);
 			} catch (error) {
@@ -168,15 +169,15 @@
 			// Add to portfolio
 			const portfolioStock = portfolioManager.addStock(searchResult);
 			portfolio = portfolioManager.getPortfolio();
-			
+
 			// Get current quote
 			const quote = await apiManager.getStockQuote(searchResult.symbol);
 			portfolioManager.updateStock(quote);
 			portfolio = portfolioManager.getPortfolio();
-			
+
 			// Switch to portfolio view
 			view = 'portfolio';
-			
+
 			// Clear search
 			searchQuery = '';
 			searchResults = [];
@@ -188,10 +189,10 @@
 	// Portfolio management
 	async function refreshPortfolio() {
 		if (!apiManager.hasApiKey()) return;
-		
+
 		isRefreshing = true;
 		const currentPortfolio = portfolioManager.getPortfolio();
-		
+
 		for (const stock of currentPortfolio) {
 			try {
 				const quote = await apiManager.getStockQuote(stock.symbol);
@@ -200,7 +201,7 @@
 				console.warn(`Failed to refresh ${stock.symbol}:`, error);
 			}
 		}
-		
+
 		portfolio = portfolioManager.getPortfolio();
 		isRefreshing = false;
 	}
@@ -210,7 +211,7 @@
 			const quote = await apiManager.getStockQuote(symbol);
 			portfolioManager.updateStock(quote);
 			portfolio = portfolioManager.getPortfolio();
-			
+
 			// Update selected stock if it's the same
 			if (selectedStock && selectedStock.symbol === symbol) {
 				selectedStock = portfolioManager.getStock(symbol) || selectedStock;
@@ -223,7 +224,7 @@
 	function handleRemoveStock(symbol: string) {
 		portfolioManager.removeStock(symbol);
 		portfolio = portfolioManager.getPortfolio();
-		
+
 		// If we're viewing the removed stock, go back to portfolio
 		if (selectedStock && selectedStock.symbol === symbol) {
 			selectedStock = null;
@@ -250,14 +251,14 @@
 	// Chart management
 	async function loadChartData() {
 		if (!selectedStock || !apiManager.hasApiKey()) return;
-		
+
 		chartLoading = true;
 		chartError = '';
-		
+
 		try {
-			const timeWindow = apiManager.getTimeWindows().find(tw => tw.id === selectedTimeWindow);
+			const timeWindow = apiManager.getTimeWindows().find((tw) => tw.id === selectedTimeWindow);
 			if (!timeWindow) return;
-			
+
 			stockChart = await apiManager.getChartData(selectedStock.symbol, timeWindow);
 		} catch (error) {
 			chartError = (error as Error).message;
@@ -301,8 +302,8 @@
 	<!-- API Key Setup Modal -->
 	<ApiKeySetup
 		bind:showModal={showApiKeyPrompt}
-		bind:apiKeyInput={apiKeyInput}
-		bind:apiKeyError={apiKeyError}
+		bind:apiKeyInput
+		bind:apiKeyError
 		bind:isValidating={isValidatingApiKey}
 		on:submit={(e) => handleApiKeySubmit(e.detail)}
 		on:cancel={handleApiKeyCancel}
@@ -360,45 +361,54 @@
 	<!-- Main Content -->
 	{#if view === 'search'}
 		<!-- Stock Search View -->
-		<div class="flex items-center justify-between mb-6">
+		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold text-gray-800">Stock Search</h1>
 			<button
 				on:click={goToPortfolio}
 				class="flex items-center space-x-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M10 19l-7-7m0 0l7-7m-7 7h18"
+					></path>
 				</svg>
 				<span>Back to Portfolio</span>
 			</button>
 		</div>
 
 		<StockSearch
-			bind:searchQuery={searchQuery}
-			bind:searchResults={searchResults}
-			bind:isSearching={isSearching}
-			bind:searchError={searchError}
+			bind:searchQuery
+			bind:searchResults
+			bind:isSearching
+			bind:searchError
 			on:search={(e) => handleSearch(e.detail)}
 			on:select={(e) => handleStockSelect(e.detail)}
 			on:clear={handleSearchClear}
 		/>
-
 	{:else if view === 'stock' && selectedStock}
 		<!-- Stock Detail View -->
-		<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+		<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 			<button
 				on:click={goBackToPortfolio}
-				class="self-start flex items-center space-x-2 rounded border border-gray-200 px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 sm:self-auto"
+				class="flex items-center space-x-2 self-start rounded border border-gray-200 px-3 py-1 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 sm:self-auto"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M10 19l-7-7m0 0l7-7m-7 7h18"
+					></path>
 				</svg>
 				<span>Back to Portfolio</span>
 			</button>
 		</div>
 
 		<!-- Stock Info -->
-		<div class="rounded-xl border border-gray-200 bg-white p-6 mb-6">
+		<div class="mb-6 rounded-xl border border-gray-200 bg-white p-6">
 			<div class="mb-4 flex items-start justify-between">
 				<div>
 					<h3 class="text-2xl font-bold text-gray-800">{selectedStock.symbol}</h3>
@@ -417,7 +427,9 @@
 								style: 'currency',
 								currency: 'USD'
 							}).format(selectedStock.change)}
-							({selectedStock.changePercent >= 0 ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%)
+							({selectedStock.changePercent >= 0 ? '+' : ''}{selectedStock.changePercent.toFixed(
+								2
+							)}%)
 						</div>
 						<div class="mt-1 text-sm text-gray-500">
 							Last updated: {selectedStock.lastUpdate}
@@ -433,32 +445,36 @@
 		<StockChart
 			chartData={stockChart}
 			timeWindows={apiManager.getTimeWindows()}
-			bind:selectedTimeWindow={selectedTimeWindow}
+			bind:selectedTimeWindow
 			bind:loading={chartLoading}
 			bind:error={chartError}
 			symbol={selectedStock.symbol}
 			on:timeWindowChanged={(e) => handleTimeWindowChanged(e.detail)}
 			on:refresh={handleChartRefresh}
 		/>
-
 	{:else}
 		<!-- Portfolio View -->
-		<div class="flex items-center justify-between mb-6">
+		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold text-gray-800">Stock Tracker</h1>
 			<button
 				on:click={goToSearch}
 				class="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+					></path>
 				</svg>
 				<span>Search Stocks</span>
 			</button>
 		</div>
 
 		<PortfolioList
-			bind:portfolio={portfolio}
-			bind:isRefreshing={isRefreshing}
+			bind:portfolio
+			bind:isRefreshing
 			on:selectStock={(e) => handleSelectStock(e.detail)}
 			on:removeStock={(e) => handleRemoveStock(e.detail)}
 			on:refreshPortfolio={refreshPortfolio}

@@ -144,7 +144,8 @@
 
 		try {
 			const now = Date.now();
-			const cacheKey = typeof fromCurrency === 'string' ? fromCurrency : JSON.stringify(fromCurrency);
+			const cacheKey =
+				typeof fromCurrency === 'string' ? fromCurrency : JSON.stringify(fromCurrency);
 			const cachedEntry = rateCache.get(cacheKey);
 			let ratesData: Record<string, number>;
 

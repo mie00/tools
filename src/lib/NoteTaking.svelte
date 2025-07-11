@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { browser } from '$app/environment';
-	
+
 	// Import our new components and utilities
 	import TopicManager from './note-taking/TopicManager.svelte';
 	import NoteCard from './note-taking/NoteCard.svelte';
 	import MediaRecorder from './note-taking/MediaRecorder.svelte';
 	import StorageInfo from './note-taking/StorageInfo.svelte';
-	import { StorageManager, type StorageInfo as StorageInfoType } from './note-taking/StorageManager';
+	import {
+		StorageManager,
+		type StorageInfo as StorageInfoType
+	} from './note-taking/StorageManager';
 	import { MediaHandler, type MediaData } from './note-taking/MediaHandler';
 	import { NoteOperations, type Note } from './note-taking/NoteOperations';
 
@@ -21,11 +24,11 @@
 	let editingNote: Note | null = null;
 	let focusedNote: number | null = null;
 	let draggedNote: Note | null = null;
-	
+
 	// Storage state
 	let storageInfo: StorageInfoType = { used: 0, quota: 0, available: 0 };
 	let showStorageWarning: boolean = false;
-	
+
 	// Media state
 	let isRecording: boolean = false;
 	let recordingType: 'audio' | 'video' | null = null;
@@ -129,10 +132,10 @@
 
 	async function handleTopicDeleted(topicToDelete: string) {
 		if (topicToDelete === 'Main') return;
-		
+
 		notes = NoteOperations.deleteNotesInTopic(notes, topicToDelete);
-		topics = topics.filter(t => t !== topicToDelete);
-		
+		topics = topics.filter((t) => t !== topicToDelete);
+
 		if (selectedTopic === topicToDelete) {
 			selectedTopic = 'Main';
 		}
@@ -145,9 +148,8 @@
 		if (!target?.files?.[0]) return;
 
 		try {
-			const mediaData = await mediaHandler.handleFileUpload(
-				target.files[0], 
-				(size) => storageManager.checkStorageQuota(size)
+			const mediaData = await mediaHandler.handleFileUpload(target.files[0], (size) =>
+				storageManager.checkStorageQuota(size)
 			);
 			await addNote(mediaData);
 		} catch (error) {
@@ -161,7 +163,7 @@
 			const stream = await mediaHandler.startRecording(type);
 			isRecording = true;
 			recordingType = type;
-			
+
 			if (type === 'video') {
 				await tick();
 				if (videoPreview) {
@@ -176,11 +178,10 @@
 
 	async function handleStopRecording() {
 		if (!recordingType) return;
-		
+
 		try {
-			const mediaData = await mediaHandler.stopRecording(
-				recordingType,
-				(size) => storageManager.checkStorageQuota(size)
+			const mediaData = await mediaHandler.stopRecording(recordingType, (size) =>
+				storageManager.checkStorageQuota(size)
 			);
 			await addNote(mediaData);
 		} catch (error) {
@@ -236,7 +237,11 @@
 	}
 
 	async function clearMediaNotes() {
-		if (confirm('Are you sure you want to delete all notes with media attachments? This will free up storage space but cannot be undone.')) {
+		if (
+			confirm(
+				'Are you sure you want to delete all notes with media attachments? This will free up storage space but cannot be undone.'
+			)
+		) {
 			notes = NoteOperations.deleteNotesWithMedia(notes);
 			await saveNotes();
 		}
@@ -281,7 +286,7 @@
 					bind:value={newNoteText}
 					on:keydown={handleKeydown}
 					placeholder="What's on your mind? (Ctrl+Enter to save)"
-					class="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 					rows="3"
 				></textarea>
 
@@ -400,4 +405,3 @@
 		}
 	}
 </style>
-

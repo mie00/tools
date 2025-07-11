@@ -201,7 +201,7 @@ export function parseCsv(csvText: string): City[] {
 	for (let i = 1; i < lines.length; i++) {
 		if (!lines[i]) continue;
 		const fields = parseCsvLine(lines[i]);
-		const [country, name, altnames, lat, lng, timezone, altitude,languages] = fields;
+		const [country, name, altnames, lat, lng, timezone, altitude, languages] = fields;
 
 		if (country && name && lat && lng) {
 			const city: City = {
@@ -225,9 +225,14 @@ export function parseCsv(csvText: string): City[] {
 						let fixedAltnames = altnames;
 						if (altnames.startsWith("{'")) {
 							// Replace outer single quotes with double quotes, but preserve inner single quotes
-							fixedAltnames = altnames.replace(/([\{\[,]\s*)'/g, '$1"').replace(/'(\s*[\}\],:])/g, '"$1');
+							fixedAltnames = altnames
+								.replace(/([\{\[,]\s*)'/g, '$1"')
+								.replace(/'(\s*[\}\],:])/g, '"$1');
 							// Replace all occurrences of \x followed by two hex digits with a JSON-compatible unicode escape
-							fixedAltnames = fixedAltnames.replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => '\\u00' + hex.toLowerCase());
+							fixedAltnames = fixedAltnames.replace(
+								/\\x([0-9a-fA-F]{2})/g,
+								(_, hex) => '\\u00' + hex.toLowerCase()
+							);
 						}
 						const parsedAltnames = JSON.parse(fixedAltnames);
 						city.altnames = parsedAltnames;
@@ -250,7 +255,11 @@ export function calculateTimesFromMawaqitConfig(
 	adjustments: Profile['adjustments']
 ): PrayerTimes {
 	const now = new Date();
-	const today = now.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }); // YYYY-MM-DD
+	const today = now.toLocaleDateString('en-CA', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit'
+	}); // YYYY-MM-DD
 	const dayOfMonth = String(now.getDate());
 
 	// Find today's prayer times from the calendar
@@ -377,12 +386,30 @@ export function calculateTimesForProfile(profile: Profile): PrayerTimes {
 	const prayerTimes = new AdhanPrayerTimes(coordinates, now, params);
 
 	const formattedTimes = {
-		fajr: formatTimeForDisplay(addMinutes(prayerTimes.fajr, profile.adjustments.fajr), profile.timezone),
-		sunrise: formatTimeForDisplay(addMinutes(prayerTimes.sunrise, profile.adjustments.sunrise), profile.timezone),
-		dhuhr: formatTimeForDisplay(addMinutes(prayerTimes.dhuhr, profile.adjustments.dhuhr), profile.timezone),
-		asr: formatTimeForDisplay(addMinutes(prayerTimes.asr, profile.adjustments.asr), profile.timezone),
-		maghrib: formatTimeForDisplay(addMinutes(prayerTimes.maghrib, profile.adjustments.maghrib), profile.timezone),
-		isha: formatTimeForDisplay(addMinutes(prayerTimes.isha, profile.adjustments.isha), profile.timezone),
+		fajr: formatTimeForDisplay(
+			addMinutes(prayerTimes.fajr, profile.adjustments.fajr),
+			profile.timezone
+		),
+		sunrise: formatTimeForDisplay(
+			addMinutes(prayerTimes.sunrise, profile.adjustments.sunrise),
+			profile.timezone
+		),
+		dhuhr: formatTimeForDisplay(
+			addMinutes(prayerTimes.dhuhr, profile.adjustments.dhuhr),
+			profile.timezone
+		),
+		asr: formatTimeForDisplay(
+			addMinutes(prayerTimes.asr, profile.adjustments.asr),
+			profile.timezone
+		),
+		maghrib: formatTimeForDisplay(
+			addMinutes(prayerTimes.maghrib, profile.adjustments.maghrib),
+			profile.timezone
+		),
+		isha: formatTimeForDisplay(
+			addMinutes(prayerTimes.isha, profile.adjustments.isha),
+			profile.timezone
+		),
 		date: now.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }),
 		time: formatTimeForDisplay(now, profile.timezone)
 	};

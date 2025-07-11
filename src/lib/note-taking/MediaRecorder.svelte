@@ -69,19 +69,13 @@
 		<!-- Voice recording -->
 		<button
 			on:click={() =>
-				isRecording && recordingType === 'audio'
-					? stopRecording()
-					: startRecording('audio')}
+				isRecording && recordingType === 'audio' ? stopRecording() : startRecording('audio')}
 			class="text-gray-500 transition-colors hover:text-blue-600 {isRecording &&
 			recordingType === 'audio'
 				? 'text-red-500'
 				: ''}"
-			title={isRecording && recordingType === 'audio'
-				? 'Stop recording'
-				: 'Record audio'}
-			aria-label={isRecording && recordingType === 'audio'
-				? 'Stop recording'
-				: 'Record audio'}
+			title={isRecording && recordingType === 'audio' ? 'Stop recording' : 'Record audio'}
+			aria-label={isRecording && recordingType === 'audio' ? 'Stop recording' : 'Record audio'}
 			disabled={isRecording && recordingType !== 'audio'}
 		>
 			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,19 +91,13 @@
 		<!-- Video recording -->
 		<button
 			on:click={() =>
-				isRecording && recordingType === 'video'
-					? stopRecording()
-					: startRecording('video')}
+				isRecording && recordingType === 'video' ? stopRecording() : startRecording('video')}
 			class="text-gray-500 transition-colors hover:text-blue-600 {isRecording &&
 			recordingType === 'video'
 				? 'text-red-500'
 				: ''}"
-			title={isRecording && recordingType === 'video'
-				? 'Stop recording'
-				: 'Record video'}
-			aria-label={isRecording && recordingType === 'video'
-				? 'Stop recording'
-				: 'Record video'}
+			title={isRecording && recordingType === 'video' ? 'Stop recording' : 'Record video'}
+			aria-label={isRecording && recordingType === 'video' ? 'Stop recording' : 'Record video'}
 			disabled={isRecording && recordingType !== 'video'}
 		>
 			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,4 +210,4 @@
 			opacity: calc(0.4 + var(--audio-level) / 100 * 0.6);
 		}
 	}
-</style> 
+</style>

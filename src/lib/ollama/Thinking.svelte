@@ -7,7 +7,7 @@
 <div class="my-2">
 	<button
 		on:click={() => (collapsed = !collapsed)}
-		class="text-sm text-gray-500 hover:text-gray-700 w-full text-left flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 transition-colors"
+		class="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
 	>
 		<span class="text-gray-400">{collapsed ? '▶' : '▼'}</span>
 		{#if collapsed}
@@ -17,13 +17,15 @@
 		{/if}
 	</button>
 	{#if !collapsed}
-		<div class="mt-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-300 rounded-r text-sm text-gray-700">
-			<div class="mb-2 text-xs uppercase tracking-wide text-blue-600 font-semibold">
+		<div
+			class="mt-2 rounded-r border-l-4 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 text-sm text-gray-700"
+		>
+			<div class="mb-2 text-xs font-semibold tracking-wide text-blue-600 uppercase">
 				🧠 Model's Reasoning
 			</div>
 			<div class="prose prose-sm max-w-none">
-				<MarkdownRenderer content={content} />
+				<MarkdownRenderer {content} />
 			</div>
 		</div>
 	{/if}
-</div> 
+</div>

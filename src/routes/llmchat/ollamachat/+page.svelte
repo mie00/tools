@@ -23,4 +23,4 @@
 			<OllamaChat />
 		</div>
 	</div>
-</div> 
+</div>

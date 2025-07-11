@@ -58,4 +58,4 @@ export interface ChatConfig {
 	shaderF16Supported: boolean;
 	// Default model source
 	defaultModelSource: 'local' | 'remote';
-} 
+}

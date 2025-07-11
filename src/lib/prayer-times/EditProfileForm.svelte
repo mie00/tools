@@ -28,7 +28,9 @@
 	<form on:submit|preventDefault={handleSave}>
 		<div class="space-y-4">
 			<div>
-				<label for="edit-profile-name" class="mb-2 block text-sm font-medium text-gray-700">Profile Name</label>
+				<label for="edit-profile-name" class="mb-2 block text-sm font-medium text-gray-700"
+					>Profile Name</label
+				>
 				<input
 					id="edit-profile-name"
 					type="text"
@@ -39,7 +41,9 @@
 			</div>
 
 			<div>
-				<label for="edit-calculation-method" class="mb-2 block text-sm font-medium text-gray-700">Calculation Method</label>
+				<label for="edit-calculation-method" class="mb-2 block text-sm font-medium text-gray-700"
+					>Calculation Method</label
+				>
 				<select
 					id="edit-calculation-method"
 					bind:value={editingProfile.calculationMethod}
@@ -64,7 +68,9 @@
 			</div>
 
 			<div>
-				<label for="edit-high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700">High Latitude Rule</label>
+				<label for="edit-high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700"
+					>High Latitude Rule</label
+				>
 				<select
 					id="edit-high-latitude-rule"
 					bind:value={editingProfile.highLatitudeRule}
@@ -82,27 +88,62 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label for="adj-fajr" class="mb-1 block text-sm font-medium text-gray-700">Fajr</label>
-						<input id="adj-fajr" type="number" bind:value={editingProfile.adjustments.fajr} class="w-full rounded-md border px-2 py-1" />
+						<input
+							id="adj-fajr"
+							type="number"
+							bind:value={editingProfile.adjustments.fajr}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 					<div>
-						<label for="adj-sunrise" class="mb-1 block text-sm font-medium text-gray-700">Sunrise</label>
-						<input id="adj-sunrise" type="number" bind:value={editingProfile.adjustments.sunrise} class="w-full rounded-md border px-2 py-1" />
+						<label for="adj-sunrise" class="mb-1 block text-sm font-medium text-gray-700"
+							>Sunrise</label
+						>
+						<input
+							id="adj-sunrise"
+							type="number"
+							bind:value={editingProfile.adjustments.sunrise}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 					<div>
-						<label for="adj-dhuhr" class="mb-1 block text-sm font-medium text-gray-700">Dhuhr</label>
-						<input id="adj-dhuhr" type="number" bind:value={editingProfile.adjustments.dhuhr} class="w-full rounded-md border px-2 py-1" />
+						<label for="adj-dhuhr" class="mb-1 block text-sm font-medium text-gray-700">Dhuhr</label
+						>
+						<input
+							id="adj-dhuhr"
+							type="number"
+							bind:value={editingProfile.adjustments.dhuhr}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 					<div>
 						<label for="adj-asr" class="mb-1 block text-sm font-medium text-gray-700">Asr</label>
-						<input id="adj-asr" type="number" bind:value={editingProfile.adjustments.asr} class="w-full rounded-md border px-2 py-1" />
+						<input
+							id="adj-asr"
+							type="number"
+							bind:value={editingProfile.adjustments.asr}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 					<div>
-						<label for="adj-maghrib" class="mb-1 block text-sm font-medium text-gray-700">Maghrib</label>
-						<input id="adj-maghrib" type="number" bind:value={editingProfile.adjustments.maghrib} class="w-full rounded-md border px-2 py-1" />
+						<label for="adj-maghrib" class="mb-1 block text-sm font-medium text-gray-700"
+							>Maghrib</label
+						>
+						<input
+							id="adj-maghrib"
+							type="number"
+							bind:value={editingProfile.adjustments.maghrib}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 					<div>
 						<label for="adj-isha" class="mb-1 block text-sm font-medium text-gray-700">Isha</label>
-						<input id="adj-isha" type="number" bind:value={editingProfile.adjustments.isha} class="w-full rounded-md border px-2 py-1" />
+						<input
+							id="adj-isha"
+							type="number"
+							bind:value={editingProfile.adjustments.isha}
+							class="w-full rounded-md border px-2 py-1"
+						/>
 					</div>
 				</div>
 			</div>

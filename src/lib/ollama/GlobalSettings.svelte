@@ -61,21 +61,20 @@
 	}
 </script>
 
-<div class="p-4 bg-gray-50 border-b border-gray-200 overflow-y-auto">
-	<h3 class="font-semibold mb-4 text-gray-800 flex items-center gap-2">
-		⚙️ Global Settings
-	</h3>
-	
+<div class="overflow-y-auto border-b border-gray-200 bg-gray-50 p-4">
+	<h3 class="mb-4 flex items-center gap-2 font-semibold text-gray-800">⚙️ Global Settings</h3>
+
 	<!-- Default Model Source -->
 	<div class="mb-4">
-		<label for="default-model-source" class="block text-sm font-medium text-gray-700 mb-2">
+		<label for="default-model-source" class="mb-2 block text-sm font-medium text-gray-700">
 			Default Model Source for New Chats
 		</label>
 		<select
 			id="default-model-source"
 			value={config.defaultModelSource}
-			on:change={(e) => updateDefaultModelSource((e.target as HTMLSelectElement).value as 'local' | 'remote')}
-			class="w-full p-2 border rounded border-gray-300"
+			on:change={(e) =>
+				updateDefaultModelSource((e.target as HTMLSelectElement).value as 'local' | 'remote')}
+			class="w-full rounded border border-gray-300 p-2"
 		>
 			<option value="local">Local Model</option>
 			<option value="remote">Remote Model (Ollama)</option>
@@ -84,7 +83,7 @@
 
 	<!-- Ollama Global Settings -->
 	<div class="mb-4">
-		<h4 class="font-medium text-gray-700 mb-2">🌐 Ollama Defaults</h4>
+		<h4 class="mb-2 font-medium text-gray-700">🌐 Ollama Defaults</h4>
 		<div class="grid grid-cols-1 gap-3">
 			<div>
 				<label for="ollama-endpoint" class="block text-sm text-gray-600">Endpoint</label>
@@ -93,7 +92,7 @@
 					type="text"
 					value={config.ollama.endpoint}
 					on:input={(e) => updateOllamaEndpoint((e.target as HTMLInputElement).value)}
-					class="w-full p-2 border rounded border-gray-300"
+					class="w-full rounded border border-gray-300 p-2"
 					placeholder="http://localhost:11434"
 				/>
 			</div>
@@ -108,7 +107,8 @@
 					max="1"
 					step="0.1"
 					value={config.ollama.temperature}
-					on:input={(e) => updateOllamaTemperature(parseFloat((e.target as HTMLInputElement).value))}
+					on:input={(e) =>
+						updateOllamaTemperature(parseFloat((e.target as HTMLInputElement).value))}
 					class="w-full"
 				/>
 			</div>
@@ -121,7 +121,7 @@
 					max="100"
 					value={config.ollama.topK}
 					on:input={(e) => updateOllamaTopK(parseInt((e.target as HTMLInputElement).value))}
-					class="w-full p-2 border rounded border-gray-300"
+					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
 		</div>
@@ -129,7 +129,7 @@
 
 	<!-- Local Model Global Settings -->
 	<div class="mb-4">
-		<h4 class="font-medium text-gray-700 mb-2">🏠 Local Model Defaults</h4>
+		<h4 class="mb-2 font-medium text-gray-700">🏠 Local Model Defaults</h4>
 		<div class="grid grid-cols-1 gap-3">
 			<div>
 				<label for="local-temperature" class="block text-sm text-gray-600">
@@ -155,7 +155,7 @@
 					max="100"
 					value={config.local.topK}
 					on:input={(e) => updateLocalTopK(parseInt((e.target as HTMLInputElement).value))}
-					class="w-full p-2 border rounded border-gray-300"
+					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
 			<div>
@@ -167,7 +167,7 @@
 					max="4096"
 					value={config.local.maxTokens}
 					on:input={(e) => updateLocalMaxTokens(parseInt((e.target as HTMLInputElement).value))}
-					class="w-full p-2 border rounded border-gray-300"
+					class="w-full rounded border border-gray-300 p-2"
 				/>
 			</div>
 		</div>
@@ -175,36 +175,39 @@
 
 	<!-- Local Model Status -->
 	<div class="mb-4">
-		<h4 class="font-medium text-gray-700 mb-2">💻 WebGPU & Local Model Status</h4>
+		<h4 class="mb-2 font-medium text-gray-700">💻 WebGPU & Local Model Status</h4>
 		{#if !config.webGpuSupported}
-			<div class="text-red-600 text-sm bg-red-50 p-3 rounded">
+			<div class="rounded bg-red-50 p-3 text-sm text-red-600">
 				<p class="font-medium">❌ WebGPU not supported</p>
-				<p class="mt-1">Local models cannot be used. Please use a WebGPU-compatible browser like Chrome 113+ or Edge 113+.</p>
+				<p class="mt-1">
+					Local models cannot be used. Please use a WebGPU-compatible browser like Chrome 113+ or
+					Edge 113+.
+				</p>
 			</div>
 		{:else}
-			<div class="text-green-600 text-sm bg-green-50 p-3 rounded mb-3">
+			<div class="mb-3 rounded bg-green-50 p-3 text-sm text-green-600">
 				<p class="font-medium">✅ WebGPU supported</p>
 				<p>F16 Shaders: {config.shaderF16Supported ? '✅ Supported' : '❌ Not supported'}</p>
 			</div>
-			
+
 			{#if hasInitializationError}
-				<div class="text-red-600 text-sm bg-red-50 p-3 rounded">
+				<div class="rounded bg-red-50 p-3 text-sm text-red-600">
 					<p class="font-medium">❌ Local model error</p>
 					<p>{loadingProgress.status}</p>
 					<button
 						on:click={handleRetryInitialization}
-						class="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+						class="mt-2 rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
 					>
 						🔄 Retry Loading
 					</button>
 				</div>
 			{:else if isModelLoaded}
-				<div class="text-green-600 text-sm bg-green-50 p-3 rounded">
+				<div class="rounded bg-green-50 p-3 text-sm text-green-600">
 					<p class="font-medium">✅ Local model loaded</p>
 					<p>Qwen3-0.6B-ONNX is ready for use</p>
 				</div>
 			{:else}
-				<div class="text-blue-600 text-sm bg-blue-50 p-3 rounded">
+				<div class="rounded bg-blue-50 p-3 text-sm text-blue-600">
 					<p class="font-medium">⏳ Loading local model</p>
 					<p>{loadingProgress.status}</p>
 					{#if Object.keys(fileProgress).length > 0}
@@ -215,9 +218,9 @@
 										<span>{file.name}</span>
 										<span>{Math.round(file.progress)}%</span>
 									</div>
-									<div class="w-full bg-gray-200 rounded-full h-2">
-										<div 
-											class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+									<div class="h-2 w-full rounded-full bg-gray-200">
+										<div
+											class="h-2 rounded-full bg-blue-600 transition-all duration-300"
 											style="width: {file.progress}%"
 										></div>
 									</div>
@@ -229,4 +232,4 @@
 			{/if}
 		{/if}
 	</div>
-</div> 
+</div>

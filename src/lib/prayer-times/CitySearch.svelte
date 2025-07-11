@@ -57,7 +57,9 @@
 <svelte:window on:click={handleClickOutside} />
 
 <div class="city-search-container relative">
-	<label for="city-search-input" class="mb-2 block text-sm font-medium text-gray-700">Search City</label>
+	<label for="city-search-input" class="mb-2 block text-sm font-medium text-gray-700"
+		>Search City</label
+	>
 	<input
 		id="city-search-input"
 		type="text"

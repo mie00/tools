@@ -22,21 +22,32 @@
 	}
 
 	$: usagePercentage = storageInfo.quota > 0 ? (storageInfo.used / storageInfo.quota) * 100 : 0;
-	$: mediaNotesCount = notes.filter(n => n.media).length;
+	$: mediaNotesCount = notes.filter((n) => n.media).length;
 </script>
 
 <!-- Storage Warning -->
 {#if showStorageWarning}
 	<div class="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-4">
 		<div class="flex items-start space-x-3">
-			<svg class="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+			<svg
+				class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 15.5c-.77.833.192 2.5 1.732 2.5z"
+				></path>
 			</svg>
 			<div class="flex-1">
 				<h3 class="text-sm font-medium text-orange-800">Storage Warning</h3>
 				<p class="mt-1 text-sm text-orange-700">
-					You're using {usagePercentage.toFixed(1)}% of your available storage 
-					({formatBytes(storageInfo.used)} / {formatBytes(storageInfo.quota)}).
+					You're using {usagePercentage.toFixed(1)}% of your available storage ({formatBytes(
+						storageInfo.used
+					)} / {formatBytes(storageInfo.quota)}).
 				</p>
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#if mediaNotesCount > 0}
@@ -71,13 +82,17 @@
 		{#if storageInfo.quota > 0}
 			<!-- Storage Progress Bar -->
 			<div class="mb-4">
-				<div class="flex justify-between text-sm text-gray-600 mb-1">
+				<div class="mb-1 flex justify-between text-sm text-gray-600">
 					<span>Used: {formatBytes(storageInfo.used)}</span>
 					<span>Available: {formatBytes(storageInfo.available)}</span>
 				</div>
-				<div class="w-full bg-gray-200 rounded-full h-2">
-					<div 
-						class="h-2 rounded-full transition-all duration-300 {usagePercentage > 80 ? 'bg-red-500' : usagePercentage > 60 ? 'bg-yellow-500' : 'bg-green-500'}"
+				<div class="h-2 w-full rounded-full bg-gray-200">
+					<div
+						class="h-2 rounded-full transition-all duration-300 {usagePercentage > 80
+							? 'bg-red-500'
+							: usagePercentage > 60
+								? 'bg-yellow-500'
+								: 'bg-green-500'}"
 						style="width: {Math.min(usagePercentage, 100)}%"
 					></div>
 				</div>
@@ -119,4 +134,4 @@
 			<p>Consider downloading important files before clearing data</p>
 		</div>
 	</div>
-</details> 
+</details>

@@ -96,7 +96,7 @@ export class StockApiManager {
 		}
 
 		const url = `${this.baseUrl}?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(query)}&apikey=${this.apiKey}`;
-		
+
 		const response = await fetch(url);
 		if (!response.ok) {
 			throw new Error(`API Error: ${response.status}`);
@@ -128,7 +128,7 @@ export class StockApiManager {
 		}
 
 		const url = `${this.baseUrl}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.apiKey}`;
-		
+
 		const response = await fetch(url);
 		if (!response.ok) {
 			throw new Error(`API Error: ${response.status}`);
@@ -169,7 +169,7 @@ export class StockApiManager {
 		}
 
 		let url = `${this.baseUrl}?function=${timeWindow.function}&symbol=${symbol}&apikey=${this.apiKey}`;
-		
+
 		if (timeWindow.interval) {
 			url += `&interval=${timeWindow.interval}`;
 		}
@@ -222,13 +222,13 @@ export class StockApiManager {
 		try {
 			const testUrl = `${this.baseUrl}?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${key}`;
 			const response = await fetch(testUrl);
-			
+
 			if (!response.ok) {
 				return false;
 			}
-			
+
 			const data = await response.json();
-			
+
 			// Check if the key is valid (no error message and has data)
 			return !data['Error Message'] && !data['Note'] && data['Global Quote'];
 		} catch (error) {
@@ -247,4 +247,4 @@ export class StockApiManager {
 			{ id: '1y', label: '1Y', function: 'TIME_SERIES_DAILY', days: 365 }
 		];
 	}
-} 
+}

@@ -173,17 +173,17 @@
 	// Handle increment button click with focus logic
 	function handleIncrementClick(azkar: any) {
 		const isCurrentlyCompleted = isCompleted(azkar);
-		
+
 		if (isCurrentlyCompleted) {
 			// If already 100% completed, defocus
 			focusedAzkarId = null;
 		} else {
 			// Increment first
 			incrementCounter(azkar.id);
-			
+
 			// Check if it's now completed after incrementing
 			const isNowCompleted = (progress[azkar.id] || 0) >= azkar.count;
-			
+
 			if (isNowCompleted) {
 				// If it just reached 100%, defocus
 				focusedAzkarId = null;
@@ -205,10 +205,10 @@
 	onMount(() => {
 		loadProgress();
 		loadFromUrl();
-		
+
 		// Add click outside listener
 		document.addEventListener('click', handleOutsideClick);
-		
+
 		// Cleanup function
 		return () => {
 			document.removeEventListener('click', handleOutsideClick);
@@ -334,10 +334,10 @@
 						</div>
 					</div>
 
-					<div class="progress-indicator" style="--progress: {Math.min(
-						((progress[azkar.id] || 0) / azkar.count) * 100,
-						100
-					)}">
+					<div
+						class="progress-indicator"
+						style="--progress: {Math.min(((progress[azkar.id] || 0) / azkar.count) * 100, 100)}"
+					>
 						<div class="progress-circle">
 							<span class="progress-text">
 								{Math.round(Math.min(((progress[azkar.id] || 0) / azkar.count) * 100, 100))}%

@@ -6,7 +6,7 @@ export interface StorageInfo {
 
 export class StorageManager {
 	private static instance: StorageManager;
-	
+
 	static getInstance(): StorageManager {
 		if (!StorageManager.instance) {
 			StorageManager.instance = new StorageManager();
@@ -39,7 +39,7 @@ export class StorageManager {
 		} catch (error) {
 			console.warn('Storage estimate API not supported:', error);
 		}
-		
+
 		return { used: 0, quota: 0, available: 0 };
 	}
 
@@ -112,4 +112,4 @@ export class StorageManager {
 
 		this.saveToLocalStorage(key, data);
 	}
-} 
+}

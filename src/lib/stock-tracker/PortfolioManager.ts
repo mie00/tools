@@ -47,7 +47,7 @@ export class PortfolioManager {
 
 	addStock(searchResult: StockSearchResult): PortfolioStock {
 		// Check if stock already exists
-		const existingIndex = this.portfolio.findIndex(stock => stock.symbol === searchResult.symbol);
+		const existingIndex = this.portfolio.findIndex((stock) => stock.symbol === searchResult.symbol);
 		if (existingIndex >= 0) {
 			return this.portfolio[existingIndex];
 		}
@@ -70,8 +70,8 @@ export class PortfolioManager {
 
 	removeStock(symbol: string): boolean {
 		const initialLength = this.portfolio.length;
-		this.portfolio = this.portfolio.filter(stock => stock.symbol !== symbol);
-		
+		this.portfolio = this.portfolio.filter((stock) => stock.symbol !== symbol);
+
 		if (this.portfolio.length !== initialLength) {
 			this.savePortfolio();
 			return true;
@@ -80,7 +80,7 @@ export class PortfolioManager {
 	}
 
 	updateStock(updatedStock: StockQuote): boolean {
-		const index = this.portfolio.findIndex(stock => stock.symbol === updatedStock.symbol);
+		const index = this.portfolio.findIndex((stock) => stock.symbol === updatedStock.symbol);
 		if (index >= 0) {
 			this.portfolio[index] = {
 				...this.portfolio[index],
@@ -93,7 +93,7 @@ export class PortfolioManager {
 	}
 
 	updateStockNotes(symbol: string, notes: string): boolean {
-		const index = this.portfolio.findIndex(stock => stock.symbol === symbol);
+		const index = this.portfolio.findIndex((stock) => stock.symbol === symbol);
 		if (index >= 0) {
 			this.portfolio[index].notes = notes;
 			this.savePortfolio();
@@ -103,11 +103,11 @@ export class PortfolioManager {
 	}
 
 	hasStock(symbol: string): boolean {
-		return this.portfolio.some(stock => stock.symbol === symbol);
+		return this.portfolio.some((stock) => stock.symbol === symbol);
 	}
 
 	getStock(symbol: string): PortfolioStock | undefined {
-		return this.portfolio.find(stock => stock.symbol === symbol);
+		return this.portfolio.find((stock) => stock.symbol === symbol);
 	}
 
 	getPortfolioStats(): {
@@ -119,15 +119,17 @@ export class PortfolioManager {
 		totalChangePercent: number;
 	} {
 		const totalStocks = this.portfolio.length;
-		const positiveStocks = this.portfolio.filter(stock => stock.change >= 0).length;
-		const negativeStocks = this.portfolio.filter(stock => stock.change < 0).length;
-		
+		const positiveStocks = this.portfolio.filter((stock) => stock.change >= 0).length;
+		const negativeStocks = this.portfolio.filter((stock) => stock.change < 0).length;
+
 		// Note: These calculations assume equal weight since we don't track shares
 		const totalValue = this.portfolio.reduce((sum, stock) => sum + stock.price, 0);
 		const totalChange = this.portfolio.reduce((sum, stock) => sum + stock.change, 0);
-		const totalChangePercent = this.portfolio.length > 0 
-			? this.portfolio.reduce((sum, stock) => sum + stock.changePercent, 0) / this.portfolio.length
-			: 0;
+		const totalChangePercent =
+			this.portfolio.length > 0
+				? this.portfolio.reduce((sum, stock) => sum + stock.changePercent, 0) /
+					this.portfolio.length
+				: 0;
 
 		return {
 			totalStocks,
@@ -139,7 +141,10 @@ export class PortfolioManager {
 		};
 	}
 
-	sortPortfolio(sortBy: 'symbol' | 'name' | 'price' | 'change' | 'changePercent' | 'addedDate', ascending: boolean = true): PortfolioStock[] {
+	sortPortfolio(
+		sortBy: 'symbol' | 'name' | 'price' | 'change' | 'changePercent' | 'addedDate',
+		ascending: boolean = true
+	): PortfolioStock[] {
 		const sorted = [...this.portfolio].sort((a, b) => {
 			let aValue: string | number;
 			let bValue: string | number;
@@ -190,10 +195,11 @@ export class PortfolioManager {
 		}
 
 		const lowercaseQuery = query.toLowerCase();
-		return this.portfolio.filter(stock => 
-			stock.symbol.toLowerCase().includes(lowercaseQuery) ||
-			stock.name.toLowerCase().includes(lowercaseQuery) ||
-			(stock.notes && stock.notes.toLowerCase().includes(lowercaseQuery))
+		return this.portfolio.filter(
+			(stock) =>
+				stock.symbol.toLowerCase().includes(lowercaseQuery) ||
+				stock.name.toLowerCase().includes(lowercaseQuery) ||
+				(stock.notes && stock.notes.toLowerCase().includes(lowercaseQuery))
 		);
 	}
 
@@ -220,4 +226,4 @@ export class PortfolioManager {
 			return false;
 		}
 	}
-} 
+}

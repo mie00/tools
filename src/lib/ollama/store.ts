@@ -19,4 +19,4 @@ export const persistentConfig = writable<ChatConfig>({
 	shaderF16Supported: false,
 	defaultModelSource: 'local' // Set local as default
 });
-export const activeTopicId = writable<string | null>(null); 
+export const activeTopicId = writable<string | null>(null);

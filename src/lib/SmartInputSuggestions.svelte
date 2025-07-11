@@ -4,7 +4,12 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { analyzeInput } from './smart-input/analysis';
-	import { appConfigs, getShortcutMapping, getConfidenceColor, getConfidenceLabel } from './smart-input/shortcuts';
+	import {
+		appConfigs,
+		getShortcutMapping,
+		getConfidenceColor,
+		getConfidenceLabel
+	} from './smart-input/shortcuts';
 	import type { AppSuggestion } from './smart-input/analysis';
 
 	let inputText = '';
@@ -41,18 +46,18 @@
 
 	// Debounced URL update
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
-	
+
 	// Update URL params when input changes
 	async function updateUrlParams(value: string) {
 		if (!browser) return;
-		
+
 		const url = new URL($page.url);
 		if (value.trim()) {
 			url.searchParams.set('q', value);
 		} else {
 			url.searchParams.delete('q');
 		}
-		
+
 		// Use replaceState to avoid adding to browser history
 		await goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
 	}
@@ -88,10 +93,10 @@
 		if (event.key.length === 1 && event.key >= 'a' && event.key <= 'z') {
 			const shortcutMapping = getShortcutMapping();
 			const suggestionId = shortcutMapping[event.key];
-			
+
 			if (suggestionId) {
 				// Find the suggestion with this ID
-				const suggestionIndex = suggestions.findIndex(s => s.id === suggestionId);
+				const suggestionIndex = suggestions.findIndex((s) => s.id === suggestionId);
 				if (suggestionIndex >= 0) {
 					event.preventDefault();
 					selectSuggestion(suggestionIndex);
@@ -148,7 +153,7 @@
 			selectedSuggestionIndex = -1;
 			shortcutsActive = false; // Reset shortcuts when input is empty
 		}
-		
+
 		// Debounce URL updates to avoid excessive navigation (only on client side)
 		if (browser) {
 			clearTimeout(urlUpdateTimeout);
@@ -174,25 +179,36 @@
 			bind:value={inputText}
 			on:keydown={handleKeydown}
 			placeholder="Try: 2+3*4, 10 meters to feet, 5 kg in pounds, 100°F to celsius, #FF5733, translate to Spanish, multi-line translate commands, 1234567890, https://example.com, JSON, $AAPL... (Press Ctrl+Enter when ready to select)"
-			class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 resize-none {shortcutsActive ? 'bg-blue-50 border-blue-300' : ''}"
+			class="focus:ring-opacity-50 w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 {shortcutsActive
+				? 'border-blue-300 bg-blue-50'
+				: ''}"
 			rows="3"
 		></textarea>
-		
+
 		{#if inputText.trim()}
 			<div class="absolute top-2 right-2 flex items-center space-x-2">
 				{#if shortcutsActive}
-					<div class="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs text-blue-700 font-medium">
+					<div
+						class="rounded border border-blue-300 bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
+					>
 						Shortcuts Active
 					</div>
 				{/if}
 				<button
-					on:click={() => { inputText = ''; }}
+					on:click={() => {
+						inputText = '';
+					}}
 					class="text-gray-400 hover:text-gray-600"
 					title="Clear input"
 					aria-label="Clear input"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						></path>
 					</svg>
 				</button>
 			</div>
@@ -204,7 +220,7 @@
 		<div class="space-y-2">
 			<h3 class="font-medium text-gray-700">
 				Suggested Tools:
-				<span class="text-xs text-gray-500 ml-2">
+				<span class="ml-2 text-xs text-gray-500">
 					{#if shortcutsActive}
 						Press letter shortcuts to select, ↑↓ to navigate, Enter to open, Esc to exit
 					{:else}
@@ -216,7 +232,10 @@
 				{#each suggestions as suggestion, index}
 					<a
 						href={suggestion.url}
-						class="flex items-center justify-between rounded-lg border border-gray-200 p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors {shortcutsActive && index === selectedSuggestionIndex ? 'border-blue-500 bg-blue-50' : ''}"
+						class="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 hover:bg-blue-50 {shortcutsActive &&
+						index === selectedSuggestionIndex
+							? 'border-blue-500 bg-blue-50'
+							: ''}"
 						data-sveltekit-preload-data={suggestion.id === 'googlesearch' ? 'false' : 'hover'}
 						on:mouseenter={() => shortcutsActive && (selectedSuggestionIndex = index)}
 						on:mouseleave={() => shortcutsActive && (selectedSuggestionIndex = -1)}
@@ -238,7 +257,12 @@
 								</div>
 							</div>
 							{#if shortcutsActive}
-								<div class="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-medium border {index === selectedSuggestionIndex ? 'bg-blue-100 border-blue-300 text-blue-600' : ''}">
+								<div
+									class="flex h-6 w-6 items-center justify-center rounded-full border bg-gray-100 text-xs font-medium text-gray-600 {index ===
+									selectedSuggestionIndex
+										? 'border-blue-300 bg-blue-100 text-blue-600'
+										: ''}"
+								>
 									{(appConfigs as any)[suggestion.id]?.shortcut || '?'}
 								</div>
 							{/if}
@@ -248,12 +272,20 @@
 			</div>
 		</div>
 	{:else if inputText.trim()}
-		<div class="text-center py-8 text-gray-500">
-			<svg class="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+		<div class="py-8 text-center text-gray-500">
+			<svg class="mx-auto mb-2 h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+				></path>
 			</svg>
 			<p>No specific tools detected for this input</p>
-			<p class="text-sm">Try math expressions, unit conversions, colors, translation commands (single or multi-line), URLs, JSON, or stock symbols</p>
+			<p class="text-sm">
+				Try math expressions, unit conversions, colors, translation commands (single or multi-line),
+				URLs, JSON, or stock symbols
+			</p>
 		</div>
 	{/if}
-</div> 
+</div>

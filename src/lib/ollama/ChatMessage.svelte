@@ -93,12 +93,10 @@
 
 <div class="flex items-start gap-3 {message.role === 'user' ? 'justify-end' : ''}">
 	{#if message.role === 'assistant'}
-		<div
-			class="w-8 h-8 rounded-md bg-green-500 flex items-center justify-center flex-shrink-0"
-		>
+		<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-green-500">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="w-6 h-6 text-white"
+				class="h-6 w-6 text-white"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -115,7 +113,7 @@
 		</div>
 	{/if}
 	<div
-		class="max-w-xl p-3 rounded-lg {message.role === 'user'
+		class="max-w-xl rounded-lg p-3 {message.role === 'user'
 			? 'bg-blue-500 text-white'
 			: message.error
 				? 'bg-red-100 text-red-800'
@@ -153,23 +151,26 @@
 				{#if editingIndex === idx}
 					<textarea
 						bind:value={editingContent}
-						class="w-full p-2 rounded border border-gray-300 text-gray-800 bg-white"
+						class="w-full rounded border border-gray-300 bg-white p-2 text-gray-800"
 						rows="2"
 					></textarea>
-					<div class="flex gap-2 mt-2">
+					<div class="mt-2 flex gap-2">
 						<button
 							on:click={saveEdit}
-							class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs">💾</button
+							class="rounded bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600"
+							>💾</button
 						>
 						<button
 							on:click={cancelEdit}
-							class="px-2 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-xs">❌</button
+							class="rounded bg-gray-300 px-2 py-1 text-xs text-gray-800 hover:bg-gray-400"
+							>❌</button
 						>
 					</div>
 				{:else}
-					<div class="flex gap-2 mt-2 justify-end">
+					<div class="mt-2 flex justify-end gap-2">
 						<button on:click={startEdit} class="text-xs text-yellow-700 hover:underline">✏️</button>
-						<button on:click={deleteMessage} class="text-xs text-red-700 hover:underline">🗑️</button>
+						<button on:click={deleteMessage} class="text-xs text-red-700 hover:underline">🗑️</button
+						>
 					</div>
 				{/if}
 			{/if}
@@ -178,36 +179,34 @@
 			{#if editingIndex === idx}
 				<textarea
 					bind:value={editingContent}
-					class="w-full p-2 rounded border-gray-300 bg-blue-400 text-white placeholder-gray-200"
+					class="w-full rounded border-gray-300 bg-blue-400 p-2 text-white placeholder-gray-200"
 					rows="2"
 				></textarea>
-				<div class="flex gap-2 mt-2">
+				<div class="mt-2 flex gap-2">
 					<button
 						on:click={saveEdit}
-						class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-						>💾</button
+						class="rounded bg-green-500 px-2 py-1 text-xs text-white hover:bg-green-600">💾</button
 					>
 					<button
 						on:click={cancelEdit}
-						class="px-2 py-1 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-xs"
-						>❌</button
+						class="rounded bg-gray-300 px-2 py-1 text-xs text-gray-800 hover:bg-gray-400">❌</button
 					>
 				</div>
 			{:else}
 				<MarkdownRenderer content={message.content} proseClass="prose-invert" />
-				<div class="flex gap-2 mt-2 justify-end items-center">
+				<div class="mt-2 flex items-center justify-end gap-2">
 					<button
 						on:click={startEdit}
-						class="text-xs text-white hover:underline opacity-70 hover:opacity-100">✏️</button
+						class="text-xs text-white opacity-70 hover:underline hover:opacity-100">✏️</button
 					>
 					<button
 						on:click={deleteMessage}
-						class="text-xs text-white hover:underline opacity-70 hover:opacity-100">🗑️</button
+						class="text-xs text-white opacity-70 hover:underline hover:opacity-100">🗑️</button
 					>
 					{#if canRegenerate}
 						<button
 							on:click={regenerateFromUser}
-							class="text-xs text-white hover:underline opacity-70 hover:opacity-100"
+							class="text-xs text-white opacity-70 hover:underline hover:opacity-100"
 							disabled={isLoading}
 						>
 							🔄
@@ -219,7 +218,7 @@
 	</div>
 	{#if message.role === 'user' && !message.content.startsWith('<answer>')}
 		<div
-			class="w-8 h-8 rounded-md bg-purple-500 flex items-center justify-center text-white flex-shrink-0 font-semibold"
+			class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-purple-500 font-semibold text-white"
 		>
 			U
 		</div>
@@ -261,4 +260,4 @@
 			transform: scale(1);
 		}
 	}
-</style> 
+</style>

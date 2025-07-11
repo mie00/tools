@@ -34,7 +34,7 @@
 
 	{#if showExecutor}
 		<div class="executor-container">
-			<CodeExecutor code={code} type={lang === 'html' ? 'html' : 'js'} />
+			<CodeExecutor {code} type={lang === 'html' ? 'html' : 'js'} />
 		</div>
 	{/if}
 </div>
@@ -68,4 +68,4 @@
 		border-top: 1px solid #e2e8f0;
 		padding-top: 1rem;
 	}
-</style> 
+</style>

@@ -10,7 +10,7 @@
 <div class="my-2">
 	<button
 		on:click={() => (collapsed = !collapsed)}
-		class="text-sm text-gray-500 hover:text-gray-700 w-full text-left flex items-center"
+		class="flex w-full items-center text-left text-sm text-gray-500 hover:text-gray-700"
 	>
 		{#if collapsed}
 			<span>[Show code]</span>
@@ -19,17 +19,16 @@
 		{/if}
 	</button>
 	{#if !collapsed}
-		<div class="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
+		<div class="mt-1 rounded border border-gray-200 bg-gray-50 p-2 text-sm text-gray-600">
 			<h4 class="font-semibold text-gray-700">Code to be executed:</h4>
 			<MarkdownRenderer content={code} />
-			<h4 class="font-semibold text-gray-700 mt-2">Answer:</h4>
+			<h4 class="mt-2 font-semibold text-gray-700">Answer:</h4>
 			{#if answer === null}
 				<p>Executing...</p>
 			{:else}
 				<pre
-					class="p-2 mt-2 text-sm bg-gray-100 border rounded max-h-64 overflow-auto whitespace-pre-wrap"
-				>{answer}</pre>
+					class="mt-2 max-h-64 overflow-auto rounded border bg-gray-100 p-2 text-sm whitespace-pre-wrap">{answer}</pre>
 			{/if}
 		</div>
 	{/if}
-</div> 
+</div>

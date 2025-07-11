@@ -15,7 +15,10 @@ export class MediaHandler {
 	private audioLevelArray: Uint8Array | null = null;
 	private animationFrame: number | null = null;
 
-	async handleFileUpload(file: File, checkQuota: (size: number) => Promise<boolean>): Promise<MediaData> {
+	async handleFileUpload(
+		file: File,
+		checkQuota: (size: number) => Promise<boolean>
+	): Promise<MediaData> {
 		// Check file size (limit to 5MB for localStorage)
 		if (file.size > 5 * 1024 * 1024) {
 			throw new Error('File size too large. Please select a file smaller than 5MB.');
@@ -47,7 +50,7 @@ export class MediaHandler {
 
 	async startRecording(type: 'audio' | 'video'): Promise<MediaStream> {
 		const constraints = type === 'video' ? { video: true, audio: true } : { audio: true };
-		
+
 		const stream = await navigator.mediaDevices.getUserMedia(constraints);
 		this.currentStream = stream;
 		this.recordedChunks = [];
@@ -70,7 +73,10 @@ export class MediaHandler {
 		return stream;
 	}
 
-	async stopRecording(type: 'audio' | 'video', checkQuota: (size: number) => Promise<boolean>): Promise<MediaData> {
+	async stopRecording(
+		type: 'audio' | 'video',
+		checkQuota: (size: number) => Promise<boolean>
+	): Promise<MediaData> {
 		return new Promise((resolve, reject) => {
 			if (!this.mediaRecorder) {
 				reject(new Error('No active recording'));
@@ -79,8 +85,8 @@ export class MediaHandler {
 
 			this.mediaRecorder.onstop = async () => {
 				try {
-					const blob = new Blob(this.recordedChunks, { 
-						type: type === 'video' ? 'video/webm' : 'audio/webm' 
+					const blob = new Blob(this.recordedChunks, {
+						type: type === 'video' ? 'video/webm' : 'audio/webm'
 					});
 
 					// Check storage quota
@@ -135,7 +141,8 @@ export class MediaHandler {
 		if (!this.analyser || !this.audioLevelArray) return;
 
 		this.analyser.getByteFrequencyData(this.audioLevelArray);
-		const average = this.audioLevelArray.reduce((sum, value) => sum + value, 0) / this.audioLevelArray.length;
+		const average =
+			this.audioLevelArray.reduce((sum, value) => sum + value, 0) / this.audioLevelArray.length;
 		const level = Math.round((average / 255) * 100);
 
 		// Update CSS custom property
@@ -166,7 +173,7 @@ export class MediaHandler {
 
 		// Stop media stream
 		if (this.currentStream) {
-			this.currentStream.getTracks().forEach(track => track.stop());
+			this.currentStream.getTracks().forEach((track) => track.stop());
 			this.currentStream = null;
 		}
 
@@ -197,4 +204,4 @@ export class MediaHandler {
 	get hasActiveStream(): boolean {
 		return this.currentStream !== null;
 	}
-} 
+}

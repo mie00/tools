@@ -142,4 +142,4 @@ export function getConfidenceLabel(confidence: number): string {
 	if (confidence >= 0.8) return 'High';
 	if (confidence >= 0.6) return 'Medium';
 	return 'Low';
-} 
+}

@@ -136,45 +136,74 @@ export const appConfigs: Record<string, AppConfig> = {
 function normalizeUnit(unit: string, category: string): string {
 	const normalizations: Record<string, Record<string, string>> = {
 		length: {
-			'meters': 'meter', 'm': 'meter',
-			'kilometers': 'kilometer', 'km': 'kilometer',
-			'centimeters': 'centimeter', 'cm': 'centimeter',
-			'millimeters': 'millimeter', 'mm': 'millimeter',
-			'inches': 'inch', 'in': 'inch',
-			'foot': 'feet', 'ft': 'feet',
-			'yards': 'yard', 'yd': 'yard',
-			'miles': 'mile', 'mi': 'mile'
+			meters: 'meter',
+			m: 'meter',
+			kilometers: 'kilometer',
+			km: 'kilometer',
+			centimeters: 'centimeter',
+			cm: 'centimeter',
+			millimeters: 'millimeter',
+			mm: 'millimeter',
+			inches: 'inch',
+			in: 'inch',
+			foot: 'feet',
+			ft: 'feet',
+			yards: 'yard',
+			yd: 'yard',
+			miles: 'mile',
+			mi: 'mile'
 		},
 		weight: {
-			'kilograms': 'kilogram', 'kg': 'kilogram',
-			'grams': 'gram', 'g': 'gram',
-			'pounds': 'pound', 'lb': 'pound', 'lbs': 'pound',
-			'ounces': 'ounce', 'oz': 'ounce',
-			'tons': 'ton', 't': 'ton',
-			'st': 'stone'
+			kilograms: 'kilogram',
+			kg: 'kilogram',
+			grams: 'gram',
+			g: 'gram',
+			pounds: 'pound',
+			lb: 'pound',
+			lbs: 'pound',
+			ounces: 'ounce',
+			oz: 'ounce',
+			tons: 'ton',
+			t: 'ton',
+			st: 'stone'
 		},
 		temperature: {
-			'°c': 'celsius', '°f': 'fahrenheit', 'k': 'kelvin'
+			'°c': 'celsius',
+			'°f': 'fahrenheit',
+			k: 'kelvin'
 		},
 		volume: {
-			'liters': 'liter', 'l': 'liter',
-			'milliliters': 'milliliter', 'ml': 'milliliter',
-			'gallons': 'gallon', 'gal': 'gallon',
-			'quarts': 'quart', 'qt': 'quart',
-			'pints': 'pint', 'pt': 'pint',
-			'cups': 'cup',
-			'fl_oz': 'fluid_ounce', 'floz': 'fluid_ounce'
+			liters: 'liter',
+			l: 'liter',
+			milliliters: 'milliliter',
+			ml: 'milliliter',
+			gallons: 'gallon',
+			gal: 'gallon',
+			quarts: 'quart',
+			qt: 'quart',
+			pints: 'pint',
+			pt: 'pint',
+			cups: 'cup',
+			fl_oz: 'fluid_ounce',
+			floz: 'fluid_ounce'
 		},
 		area: {
-			'square_meters': 'square_meter', 'm²': 'square_meter',
-			'square_kilometers': 'square_kilometer', 'km²': 'square_kilometer',
-			'square_centimeters': 'square_centimeter', 'cm²': 'square_centimeter',
-			'square_feet': 'square_foot', 'ft²': 'square_foot',
-			'square_inches': 'square_inch', 'in²': 'square_inch',
-			'acres': 'acre', 'hectares': 'hectare', 'ha': 'hectare'
+			square_meters: 'square_meter',
+			'm²': 'square_meter',
+			square_kilometers: 'square_kilometer',
+			'km²': 'square_kilometer',
+			square_centimeters: 'square_centimeter',
+			'cm²': 'square_centimeter',
+			square_feet: 'square_foot',
+			'ft²': 'square_foot',
+			square_inches: 'square_inch',
+			'in²': 'square_inch',
+			acres: 'acre',
+			hectares: 'hectare',
+			ha: 'hectare'
 		}
 	};
-	
+
 	const categoryNormalizations = normalizations[category] || {};
 	return categoryNormalizations[unit.toLowerCase()] || unit.toLowerCase();
 }
@@ -183,32 +212,32 @@ function normalizeUnit(unit: string, category: string): string {
 function parseTimeWithTimezone(input: string): { timeStr: string; timezone: string } {
 	// Map timezone abbreviations to actual timezone names
 	const timezoneMap: { [key: string]: string } = {
-		'ET': 'America/New_York',
-		'EST': 'America/New_York',
-		'EDT': 'America/New_York',
-		'PT': 'America/Los_Angeles',
-		'PST': 'America/Los_Angeles',
-		'PDT': 'America/Los_Angeles',
-		'MT': 'America/Denver',
-		'MST': 'America/Denver',
-		'MDT': 'America/Denver',
-		'CT': 'America/Chicago',
-		'CST': 'America/Chicago',
-		'CDT': 'America/Chicago',
-		'GMT': 'Europe/London',
-		'UTC': 'UTC'
+		ET: 'America/New_York',
+		EST: 'America/New_York',
+		EDT: 'America/New_York',
+		PT: 'America/Los_Angeles',
+		PST: 'America/Los_Angeles',
+		PDT: 'America/Los_Angeles',
+		MT: 'America/Denver',
+		MST: 'America/Denver',
+		MDT: 'America/Denver',
+		CT: 'America/Chicago',
+		CST: 'America/Chicago',
+		CDT: 'America/Chicago',
+		GMT: 'Europe/London',
+		UTC: 'UTC'
 	};
 
 	// Parse different time formats
 	const trimmed = input.trim();
-	
+
 	// Handle formats like "11AM ET", "11 AM ET", "3:30PM PST", etc.
 	const timeMatch = trimmed.match(/(\d{1,2}(?::\d{2})?)\s*(AM|PM)?\s*([A-Z]{2,3})/i);
 	if (timeMatch) {
 		let timeStr = timeMatch[1];
 		const meridian = timeMatch[2];
 		const tzAbbr = timeMatch[3].toUpperCase();
-		
+
 		// Convert to 24-hour format if needed
 		if (meridian) {
 			if (timeStr.includes(':')) {
@@ -230,11 +259,11 @@ function parseTimeWithTimezone(input: string): { timeStr: string; timezone: stri
 				timeStr += ':00';
 			}
 		}
-		
+
 		const timezone = timezoneMap[tzAbbr] || tzAbbr;
 		return { timeStr, timezone };
 	}
-	
+
 	// Fallback: return original input
 	return { timeStr: input, timezone: 'Local' };
 }
@@ -300,20 +329,20 @@ export function analyzeInput(input: string): AppSuggestion[] {
 
 function analyzeMath(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for mathematical expressions - be more precise
 	const mathOperators = /[+\-*/÷×=]/;
 	const hasNumbers = /\d/;
 	const hasVariables = /[a-zA-Z]/;
 	const hasFunctions = /(?:sin|cos|tan|log|ln|sqrt|exp|abs|floor|ceil|round|pi|e)\b/i;
-	
+
 	// Only detect math if it looks like an actual mathematical expression
 	// Must have numbers and operators, and not be part of a URL or command
 	if (hasNumbers.test(input) && mathOperators.test(input)) {
 		// Exclude common false positives
 		const isUrl = /^https?:\/\/|^www\./i.test(input);
 		const isCurlCommand = /^\s*curl\s+/i.test(input);
-		
+
 		if (!isUrl && !isCurlCommand) {
 			// Check if it's more likely to be a function expression
 			if (hasVariables.test(input) || hasFunctions.test(input)) {
@@ -341,21 +370,65 @@ function analyzeMath(input: string): AppSuggestion[] {
 			}
 		}
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeUnit(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Unit mappings for different categories
 	const unitMappings = {
 		length: {
-			units: ['meter', 'meters', 'm', 'km', 'kilometer', 'kilometers', 'cm', 'centimeter', 'centimeters', 'mm', 'millimeter', 'millimeters', 'inch', 'inches', 'in', 'feet', 'foot', 'ft', 'yard', 'yards', 'yd', 'mile', 'miles', 'mi'],
+			units: [
+				'meter',
+				'meters',
+				'm',
+				'km',
+				'kilometer',
+				'kilometers',
+				'cm',
+				'centimeter',
+				'centimeters',
+				'mm',
+				'millimeter',
+				'millimeters',
+				'inch',
+				'inches',
+				'in',
+				'feet',
+				'foot',
+				'ft',
+				'yard',
+				'yards',
+				'yd',
+				'mile',
+				'miles',
+				'mi'
+			],
 			category: 'length'
 		},
 		weight: {
-			units: ['kilogram', 'kilograms', 'kg', 'gram', 'grams', 'g', 'pound', 'pounds', 'lb', 'lbs', 'ounce', 'ounces', 'oz', 'ton', 'tons', 't', 'stone', 'st'],
+			units: [
+				'kilogram',
+				'kilograms',
+				'kg',
+				'gram',
+				'grams',
+				'g',
+				'pound',
+				'pounds',
+				'lb',
+				'lbs',
+				'ounce',
+				'ounces',
+				'oz',
+				'ton',
+				'tons',
+				't',
+				'stone',
+				'st'
+			],
 			category: 'weight'
 		},
 		temperature: {
@@ -363,15 +436,57 @@ function analyzeUnit(input: string): AppSuggestion[] {
 			category: 'temperature'
 		},
 		volume: {
-			units: ['liter', 'liters', 'l', 'milliliter', 'milliliters', 'ml', 'gallon', 'gallons', 'gal', 'quart', 'quarts', 'qt', 'pint', 'pints', 'pt', 'cup', 'cups', 'fluid_ounce', 'fl_oz', 'floz'],
+			units: [
+				'liter',
+				'liters',
+				'l',
+				'milliliter',
+				'milliliters',
+				'ml',
+				'gallon',
+				'gallons',
+				'gal',
+				'quart',
+				'quarts',
+				'qt',
+				'pint',
+				'pints',
+				'pt',
+				'cup',
+				'cups',
+				'fluid_ounce',
+				'fl_oz',
+				'floz'
+			],
 			category: 'volume'
 		},
 		area: {
-			units: ['square_meter', 'square_meters', 'm²', 'square_kilometer', 'square_kilometers', 'km²', 'square_centimeter', 'square_centimeters', 'cm²', 'square_foot', 'square_feet', 'ft²', 'square_inch', 'square_inches', 'in²', 'acre', 'acres', 'hectare', 'hectares', 'ha'],
+			units: [
+				'square_meter',
+				'square_meters',
+				'm²',
+				'square_kilometer',
+				'square_kilometers',
+				'km²',
+				'square_centimeter',
+				'square_centimeters',
+				'cm²',
+				'square_foot',
+				'square_feet',
+				'ft²',
+				'square_inch',
+				'square_inches',
+				'in²',
+				'acre',
+				'acres',
+				'hectare',
+				'hectares',
+				'ha'
+			],
 			category: 'area'
 		}
 	};
-	
+
 	// Convert patterns: "10 meters to feet", "5 kg in pounds", "100°F to celsius"
 	const conversionPatterns = [
 		// Pattern: "10 meters to feet"
@@ -383,10 +498,10 @@ function analyzeUnit(input: string): AppSuggestion[] {
 		// Pattern: "10 meters"
 		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)$/i
 	];
-	
+
 	let match = null;
 	let patternIndex = -1;
-	
+
 	for (let i = 0; i < conversionPatterns.length; i++) {
 		match = input.match(conversionPatterns[i]);
 		if (match) {
@@ -394,58 +509,64 @@ function analyzeUnit(input: string): AppSuggestion[] {
 			break;
 		}
 	}
-	
+
 	if (match) {
 		const value = match[1];
 		const fromUnit = match[2].toLowerCase();
 		const toUnit = match[3] ? match[3].toLowerCase() : '';
-		
+
 		// Find which category the units belong to
 		let category = '';
 		let fromUnitNormalized = '';
 		let toUnitNormalized = '';
-		
+
 		// Check each category to find matching units
 		for (const [cat, data] of Object.entries(unitMappings)) {
-			const fromMatch = data.units.find(unit => unit.toLowerCase() === fromUnit);
-			const toMatch = toUnit ? data.units.find(unit => unit.toLowerCase() === toUnit) : null;
-			
-			if (fromMatch && (toMatch || patternIndex === 3)) { // Last pattern doesn't need 'to' unit
+			const fromMatch = data.units.find((unit) => unit.toLowerCase() === fromUnit);
+			const toMatch = toUnit ? data.units.find((unit) => unit.toLowerCase() === toUnit) : null;
+
+			if (fromMatch && (toMatch || patternIndex === 3)) {
+				// Last pattern doesn't need 'to' unit
 				category = data.category;
 				fromUnitNormalized = normalizeUnit(fromUnit, category);
 				toUnitNormalized = toUnit ? normalizeUnit(toUnit, category) : '';
 				break;
 			}
 		}
-		
+
 		if (category) {
 			const confidence = toUnit ? 0.9 : 0.75; // Higher confidence if both units are specified
-			const reason = toUnit ? 
-				`Convert ${value} ${fromUnit} to ${toUnit}` :
-				`Convert ${value} ${fromUnit} to another unit`;
-			
+			const reason = toUnit
+				? `Convert ${value} ${fromUnit} to ${toUnit}`
+				: `Convert ${value} ${fromUnit} to another unit`;
+
 			suggestions.push({
 				id: 'unitconverter',
 				name: appConfigs.unitconverter.name,
 				icon: appConfigs.unitconverter.icon,
 				description: appConfigs.unitconverter.description,
 				confidence: confidence,
-				url: appConfigs.unitconverter.buildUrl(input, category, fromUnitNormalized, toUnitNormalized),
+				url: appConfigs.unitconverter.buildUrl(
+					input,
+					category,
+					fromUnitNormalized,
+					toUnitNormalized
+				),
 				reason: reason
 			});
 		}
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeEpoch(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for epoch timestamps (10 or 13 digits) - but only if it's a standalone number
 	const epochPattern = /^\d{10}$|^\d{13}$/;
 	const trimmed = input.trim();
-	
+
 	// Only match standalone timestamps, not embedded in longer strings
 	if (epochPattern.test(trimmed)) {
 		suggestions.push({
@@ -458,18 +579,19 @@ function analyzeEpoch(input: string): AppSuggestion[] {
 			reason: 'Appears to be Unix timestamp'
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeTimezone(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for timezone patterns like "11AM ET", "3PM PST", "11 AM ET", etc.
-	const timezonePattern = /\d{1,2}:\d{2}|(?:\d{1,2}\s*(?:AM|PM)?\s*(?:ET|EST|EDT|PT|PST|PDT|MT|MST|MDT|CT|CST|CDT|GMT|UTC))/i;
+	const timezonePattern =
+		/\d{1,2}:\d{2}|(?:\d{1,2}\s*(?:AM|PM)?\s*(?:ET|EST|EDT|PT|PST|PDT|MT|MST|MDT|CT|CST|CDT|GMT|UTC))/i;
 	if (timezonePattern.test(input)) {
 		const { timeStr, timezone } = parseTimeWithTimezone(input);
-		
+
 		suggestions.push({
 			id: 'datetime',
 			name: appConfigs.datetime.name,
@@ -480,31 +602,32 @@ function analyzeTimezone(input: string): AppSuggestion[] {
 			reason: 'Contains time with timezone information'
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeCurrency(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for currency patterns - be more precise to avoid false positives
 	const trimmed = input.trim();
-	
+
 	// More specific currency patterns
-	const currencyConversionPattern = /(?:(\d+(?:\.\d+)?)\s*([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))|(?:([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))/i;
+	const currencyConversionPattern =
+		/(?:(\d+(?:\.\d+)?)\s*([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))|(?:([A-Z]{3})\s*(?:to|in|→)\s*([A-Z]{3}))/i;
 	const currencyAmountPattern = /^(\d+(?:\.\d+)?)\s*([A-Z]{3})$/i;
-	
+
 	// Match conversion patterns or standalone currency amounts
 	let match = trimmed.match(currencyConversionPattern);
 	if (!match) {
 		match = trimmed.match(currencyAmountPattern);
 	}
-	
+
 	if (match) {
 		const amount = match[1] || match[6];
 		const from = match[2] || match[4] || match[7];
 		const to = match[3] || match[5];
-		
+
 		suggestions.push({
 			id: 'currencyconverter',
 			name: appConfigs.currencyconverter.name,
@@ -515,22 +638,22 @@ function analyzeCurrency(input: string): AppSuggestion[] {
 			reason: 'Contains currency conversion pattern'
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeColor(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for various color formats
 	const hexPattern = /^#?[0-9A-Fa-f]{6}$|^#?[0-9A-Fa-f]{3}$/;
 	const rgbPattern = /rgb\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)/i;
 	const hslPattern = /hsl\s*\(\s*\d+\s*,\s*\d+%?\s*,\s*\d+%?\s*\)/i;
-	
+
 	if (hexPattern.test(input.trim()) || rgbPattern.test(input) || hslPattern.test(input)) {
 		// Convert any color format to hex
 		const hexColor = convertColorToHex(input);
-		
+
 		let reason = 'Appears to be color code';
 		if (hexPattern.test(input.trim())) {
 			reason = 'Appears to be hex color code';
@@ -539,7 +662,7 @@ function analyzeColor(input: string): AppSuggestion[] {
 		} else if (hslPattern.test(input)) {
 			reason = 'HSL color (converted to hex)';
 		}
-		
+
 		suggestions.push({
 			id: 'colorpicker',
 			name: appConfigs.colorpicker.name,
@@ -550,13 +673,13 @@ function analyzeColor(input: string): AppSuggestion[] {
 			reason: reason
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeStock(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for stock symbols (starts with $ or 1-5 uppercase letters)
 	const stockPattern = /^\$?[A-Z]{1,5}$|^\$[A-Z]{1,5}$/;
 	if (stockPattern.test(input.trim())) {
@@ -570,52 +693,52 @@ function analyzeStock(input: string): AppSuggestion[] {
 			reason: 'Appears to be stock symbol'
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeTranslation(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Language codes and names for translation detection
 	const languageMap: { [key: string]: string } = {
-		'spanish': 'es',
-		'french': 'fr',
-		'german': 'de',
-		'italian': 'it',
-		'portuguese': 'pt',
-		'russian': 'ru',
-		'japanese': 'ja',
-		'korean': 'ko',
-		'chinese': 'zh',
-		'arabic': 'ar',
-		'hindi': 'hi',
-		'dutch': 'nl',
-		'turkish': 'tr',
-		'english': 'en',
+		spanish: 'es',
+		french: 'fr',
+		german: 'de',
+		italian: 'it',
+		portuguese: 'pt',
+		russian: 'ru',
+		japanese: 'ja',
+		korean: 'ko',
+		chinese: 'zh',
+		arabic: 'ar',
+		hindi: 'hi',
+		dutch: 'nl',
+		turkish: 'tr',
+		english: 'en',
 		// Add language codes as well
-		'es': 'es',
-		'fr': 'fr',
-		'de': 'de',
-		'it': 'it',
-		'pt': 'pt',
-		'ru': 'ru',
-		'ja': 'ja',
-		'ko': 'ko',
-		'zh': 'zh',
-		'ar': 'ar',
-		'hi': 'hi',
-		'nl': 'nl',
-		'tr': 'tr',
-		'en': 'en'
+		es: 'es',
+		fr: 'fr',
+		de: 'de',
+		it: 'it',
+		pt: 'pt',
+		ru: 'ru',
+		ja: 'ja',
+		ko: 'ko',
+		zh: 'zh',
+		ar: 'ar',
+		hi: 'hi',
+		nl: 'nl',
+		tr: 'tr',
+		en: 'en'
 	};
-	
+
 	// Check for multi-line translation patterns first
 	const lines = input.split('\n');
 	if (lines.length >= 2) {
 		const firstLine = lines[0].trim();
 		const textToTranslate = lines.slice(1).join('\n').trim();
-		
+
 		if (textToTranslate) {
 			// Multi-line patterns
 			const multiLinePatterns = [
@@ -628,13 +751,13 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 				// "translate from English to Spanish:"
 				/^translate\s+from\s+([a-zA-Z]+)\s+to\s+([a-zA-Z]+):?$/i
 			];
-			
+
 			for (const pattern of multiLinePatterns) {
 				const match = firstLine.match(pattern);
 				if (match) {
 					let sourceLangInput = '';
 					let targetLangInput = '';
-					
+
 					if (match.length === 2) {
 						// Pattern: "translate to Spanish"
 						targetLangInput = match[1].toLowerCase();
@@ -643,11 +766,11 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 						sourceLangInput = match[1].toLowerCase();
 						targetLangInput = match[2].toLowerCase();
 					}
-					
+
 					if (targetLangInput) {
 						const targetLangCode = languageMap[targetLangInput];
 						const sourceLangCode = sourceLangInput ? languageMap[sourceLangInput] : 'auto';
-						
+
 						if (targetLangCode) {
 							suggestions.push({
 								id: 'translator',
@@ -655,10 +778,15 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 								icon: appConfigs.translator.icon,
 								description: appConfigs.translator.description,
 								confidence: 0.98, // Higher confidence for multi-line patterns
-								url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, sourceLangCode),
-								reason: sourceLangInput ? 
-									`Translate from ${sourceLangInput} to ${targetLangInput}` : 
-									`Translate to ${targetLangInput}`
+								url: appConfigs.translator.buildUrl(
+									input,
+									targetLangCode,
+									textToTranslate,
+									sourceLangCode
+								),
+								reason: sourceLangInput
+									? `Translate from ${sourceLangInput} to ${targetLangInput}`
+									: `Translate to ${targetLangInput}`
 							});
 							return suggestions; // Return early since we found a match
 						}
@@ -667,7 +795,7 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 			}
 		}
 	}
-	
+
 	// Check for single-line translation patterns
 	const patterns = [
 		// "translate to Spanish"
@@ -679,15 +807,15 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 		// "translate hello world to spanish"
 		/^translate\s+([^"']+?)\s+to\s+([a-zA-Z]+)$/i
 	];
-	
+
 	let matchFound = false;
-	
+
 	for (const pattern of patterns) {
 		const match = input.match(pattern);
 		if (match && !matchFound) {
 			let targetLangInput: string = '';
 			let textToTranslate = '';
-			
+
 			if (match.length === 2) {
 				// Pattern: "translate to Spanish"
 				targetLangInput = match[1].toLowerCase();
@@ -696,10 +824,10 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 				textToTranslate = match[1].trim();
 				targetLangInput = match[2].toLowerCase();
 			}
-			
+
 			if (targetLangInput) {
 				const targetLangCode = languageMap[targetLangInput];
-				
+
 				if (targetLangCode) {
 					suggestions.push({
 						id: 'translator',
@@ -708,28 +836,30 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 						description: appConfigs.translator.description,
 						confidence: 0.95,
 						url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, 'auto'),
-						reason: textToTranslate ? `Translate "${textToTranslate}" to ${targetLangInput}` : `Translate to ${targetLangInput}`
+						reason: textToTranslate
+							? `Translate "${textToTranslate}" to ${targetLangInput}`
+							: `Translate to ${targetLangInput}`
 					});
 					matchFound = true;
 				}
 			}
 		}
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeUrl(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for URLs or curl commands
 	const urlPattern = /^https?:\/\/|^www\./i;
 	const curlPattern = /^\s*curl\s+/i;
-	
+
 	if (urlPattern.test(input.trim()) || curlPattern.test(input)) {
 		// Give curl commands higher confidence since they're more specific
 		const confidence = curlPattern.test(input) ? 0.95 : 0.9;
-		
+
 		suggestions.push({
 			id: 'urlexaminer',
 			name: appConfigs.urlexaminer.name,
@@ -740,17 +870,17 @@ function analyzeUrl(input: string): AppSuggestion[] {
 			reason: curlPattern.test(input) ? 'Contains curl command' : 'Appears to be URL'
 		});
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeBase64(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Check for Base64 patterns
 	const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
 	const trimmed = input.trim();
-	
+
 	// Must be at least 4 characters and divisible by 4, and match Base64 pattern
 	if (trimmed.length >= 4 && trimmed.length % 4 === 0 && base64Pattern.test(trimmed)) {
 		// Additional check: should have reasonable Base64 character distribution
@@ -767,19 +897,20 @@ function analyzeBase64(input: string): AppSuggestion[] {
 			});
 		}
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeJson(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	const trimmed = input.trim();
-	
+
 	// Check if it starts and ends with JSON delimiters
-	if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-		(trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-		
+	if (
+		(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+		(trimmed.startsWith('[') && trimmed.endsWith(']'))
+	) {
 		// Try to parse as JSON
 		try {
 			JSON.parse(trimmed);
@@ -805,13 +936,13 @@ function analyzeJson(input: string): AppSuggestion[] {
 			});
 		}
 	}
-	
+
 	return suggestions;
 }
 
 function analyzeGoogleSearch(input: string): AppSuggestion[] {
 	const suggestions: AppSuggestion[] = [];
-	
+
 	// Always suggest Google search as a fallback option with very low confidence
 	// This ensures it appears at the bottom of the suggestions list
 	suggestions.push({
@@ -823,14 +954,14 @@ function analyzeGoogleSearch(input: string): AppSuggestion[] {
 		url: appConfigs.googlesearch.buildUrl(input),
 		reason: `Search "${input}" on Google`
 	});
-	
+
 	return suggestions;
 }
 
 // Color conversion helper function imported from the original file
 function convertColorToHex(input: string): string {
 	const trimmed = input.trim();
-	
+
 	// Check if it's already hex
 	const hexPattern = /^#?[0-9A-Fa-f]{6}$|^#?[0-9A-Fa-f]{3}$/;
 	if (hexPattern.test(trimmed)) {
@@ -842,7 +973,7 @@ function convertColorToHex(input: string): string {
 		}
 		return hex;
 	}
-	
+
 	// Check if it's RGB
 	const rgbMatch = trimmed.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
 	if (rgbMatch) {
@@ -851,7 +982,7 @@ function convertColorToHex(input: string): string {
 		const b = parseInt(rgbMatch[3]);
 		return rgbToHex(r, g, b);
 	}
-	
+
 	// Check if it's HSL
 	const hslMatch = trimmed.match(/hsl\s*\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*\)/i);
 	if (hslMatch) {
@@ -860,7 +991,7 @@ function convertColorToHex(input: string): string {
 		const l = parseInt(hslMatch[3]);
 		return hslToHex(h, s, l);
 	}
-	
+
 	// Fallback
 	return trimmed;
 }
@@ -877,29 +1008,43 @@ function hslToHex(h: number, s: number, l: number): string {
 	// Convert HSL to RGB first, then to hex
 	s /= 100;
 	l /= 100;
-	
+
 	const c = (1 - Math.abs(2 * l - 1)) * s;
 	const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
 	const m = l - c / 2;
-	let r = 0, g = 0, b = 0;
-	
+	let r = 0,
+		g = 0,
+		b = 0;
+
 	if (0 <= h && h < 60) {
-		r = c; g = x; b = 0;
+		r = c;
+		g = x;
+		b = 0;
 	} else if (60 <= h && h < 120) {
-		r = x; g = c; b = 0;
+		r = x;
+		g = c;
+		b = 0;
 	} else if (120 <= h && h < 180) {
-		r = 0; g = c; b = x;
+		r = 0;
+		g = c;
+		b = x;
 	} else if (180 <= h && h < 240) {
-		r = 0; g = x; b = c;
+		r = 0;
+		g = x;
+		b = c;
 	} else if (240 <= h && h < 300) {
-		r = x; g = 0; b = c;
+		r = x;
+		g = 0;
+		b = c;
 	} else if (300 <= h && h < 360) {
-		r = c; g = 0; b = x;
+		r = c;
+		g = 0;
+		b = x;
 	}
-	
+
 	r = Math.round((r + m) * 255);
 	g = Math.round((g + m) * 255);
 	b = Math.round((b + m) * 255);
-	
+
 	return rgbToHex(r, g, b);
-} 
+}

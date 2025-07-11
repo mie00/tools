@@ -29,7 +29,8 @@
 </script>
 
 {#if type === 'html'}
-	<iframe title="HTML Output" sandbox="allow-scripts" srcdoc={code} class="w-full h-64 border"></iframe>
+	<iframe title="HTML Output" sandbox="allow-scripts" srcdoc={code} class="h-64 w-full border"
+	></iframe>
 {:else if type === 'js'}
 	<div class="text-black">
 		<iframe
@@ -39,6 +40,7 @@
 			class="hidden"
 			on:load={executeJs}
 		></iframe>
-		<pre class="p-2 mt-2 text-sm bg-gray-100 border rounded max-h-64 overflow-auto">{@html output || 'Executing...'}</pre>
+		<pre class="mt-2 max-h-64 overflow-auto rounded border bg-gray-100 p-2 text-sm">{@html output ||
+				'Executing...'}</pre>
 	</div>
-{/if} 
+{/if}

@@ -40,8 +40,8 @@
 	}
 </script>
 
-<div class="w-full bg-gray-50 p-2 border-r border-gray-200 h-full flex flex-col">
-	<div class="flex justify-between items-center mb-4">
+<div class="flex h-full w-full flex-col border-r border-gray-200 bg-gray-50 p-2">
+	<div class="mb-4 flex items-center justify-between">
 		<h2 class="text-lg font-semibold text-gray-700">Chats</h2>
 		<div class="flex items-center gap-2">
 			<button
@@ -62,8 +62,8 @@
 	</div>
 
 	{#if showGlobalSettings}
-		<div class="flex-1 min-h-0 overflow-y-auto">
-			<GlobalSettings 
+		<div class="min-h-0 flex-1 overflow-y-auto">
+			<GlobalSettings
 				{config}
 				{isModelLoaded}
 				{hasInitializationError}
@@ -76,7 +76,7 @@
 	{:else}
 		<button
 			on:click={handleCreateTopic}
-			class="w-full bg-blue-500 text-white p-2 rounded mb-4 hover:bg-blue-600"
+			class="mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
 		>
 			+ New Chat
 		</button>
@@ -85,9 +85,9 @@
 				{#each topics as topic (topic.id)}
 					<li class="relative">
 						<div
-							class="w-full text-left rounded {currentActiveTopicId === topic.id
+							class="w-full rounded text-left {currentActiveTopicId === topic.id
 								? 'bg-blue-100'
-								: ''} hover:bg-gray-100 cursor-pointer"
+								: ''} cursor-pointer hover:bg-gray-100"
 							role="button"
 							tabindex="0"
 							on:click={() => handleSelectTopic(topic.id)}
@@ -98,18 +98,20 @@
 								}
 							}}
 						>
-							<div class="flex justify-between items-center p-2">
-								<div class="flex items-center gap-2 truncate {currentActiveTopicId === topic.id
-									? 'text-blue-700'
-									: 'text-gray-600'}">
+							<div class="flex items-center justify-between p-2">
+								<div
+									class="flex items-center gap-2 truncate {currentActiveTopicId === topic.id
+										? 'text-blue-700'
+										: 'text-gray-600'}"
+								>
 									{#if topic.isDraft}
-										<span class="text-orange-500 text-xs">●</span>
+										<span class="text-xs text-orange-500">●</span>
 									{/if}
 									<span class="truncate">{topic.name}</span>
 								</div>
 								<button
 									on:click|stopPropagation={() => handleDeleteTopic(topic.id)}
-									class="text-gray-400 hover:text-red-600 p-1 rounded-full flex-shrink-0 z-10"
+									class="z-10 flex-shrink-0 rounded-full p-1 text-gray-400 hover:text-red-600"
 									title="Delete Chat"
 								>
 									🗑️
@@ -121,4 +123,4 @@
 			</ul>
 		</div>
 	{/if}
-</div> 
+</div>

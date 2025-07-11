@@ -12,7 +12,7 @@
 	import Base64 from '$lib/Base64.svelte';
 	import JsonFormatter from '$lib/JsonFormatter.svelte';
 	import Azkar from '$lib/Azkar.svelte';
-	
+
 	import UrlExaminer from '$lib/UrlExaminer.svelte';
 	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 
@@ -296,7 +296,7 @@
 		</header>
 
 		<!-- Smart Input Suggestions Section -->
-		<div class="mb-12 max-w-3xl mx-auto">
+		<div class="mx-auto mb-12 max-w-3xl">
 			<div class="rounded-2xl bg-white p-6 shadow-lg">
 				<SmartInputSuggestions />
 			</div>

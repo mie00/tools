@@ -97,7 +97,8 @@
 				if (!newProfile.name) {
 					let name = locationData.closestCity.name;
 					if (locationData.closestCity.altnames && locationData.closestCity.languages) {
-						name = locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
+						name =
+							locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
 					}
 					newProfile.name = `${name}, ${locationData.closestCity.country}`;
 				}
@@ -130,7 +131,9 @@
 
 		newProfile.latitude = city.lat;
 		newProfile.longitude = city.lng;
-		newProfile.name = result.matchedName ? `${result.matchedName}, ${city.country}` : `${city.name}, ${city.country}`;
+		newProfile.name = result.matchedName
+			? `${result.matchedName}, ${city.country}`
+			: `${city.name}, ${city.country}`;
 
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
@@ -283,7 +286,9 @@
 
 		<div class="grid gap-6 md:grid-cols-2">
 			<div>
-				<label for="profile-name" class="mb-2 block text-sm font-medium text-gray-700">Profile Name</label>
+				<label for="profile-name" class="mb-2 block text-sm font-medium text-gray-700"
+					>Profile Name</label
+				>
 				<input
 					id="profile-name"
 					type="text"
@@ -294,7 +299,9 @@
 			</div>
 
 			<div>
-				<label for="calculation-method" class="mb-2 block text-sm font-medium text-gray-700">Calculation Method</label>
+				<label for="calculation-method" class="mb-2 block text-sm font-medium text-gray-700"
+					>Calculation Method</label
+				>
 				<select
 					id="calculation-method"
 					bind:value={newProfile.calculationMethod}
@@ -334,7 +341,8 @@
 			</div>
 
 			<div>
-				<label for="longitude" class="mb-2 block text-sm font-medium text-gray-700">Longitude</label>
+				<label for="longitude" class="mb-2 block text-sm font-medium text-gray-700">Longitude</label
+				>
 				<input
 					id="longitude"
 					type="number"
@@ -358,7 +366,9 @@
 			</div>
 
 			<div>
-				<label for="high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700">High Latitude Rule</label>
+				<label for="high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700"
+					>High Latitude Rule</label
+				>
 				<select
 					id="high-latitude-rule"
 					bind:value={newProfile.highLatitudeRule}

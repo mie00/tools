@@ -81,7 +81,7 @@ async function generate(data: any) {
 			stopping_criteria,
 			return_dict_in_generate: true
 		})) as any;
-		
+
 		past_key_values_cache = result.past_key_values;
 		self.postMessage({ type: 'complete', data: streamedContent });
 	} catch (e: any) {
@@ -116,12 +116,12 @@ async function load() {
 
 	const inputs = tokenizer('a', { return_tensors: 'ort' });
 	await model.generate({ ...inputs, max_new_tokens: 1 });
-	
+
 	self.postMessage({
 		type: 'progress',
 		data: { status: 'Model loaded successfully!', file: 'complete', progress: 100 }
 	});
-	
+
 	self.postMessage({ type: 'init_done' });
 }
 
@@ -144,4 +144,4 @@ self.onmessage = async (e: MessageEvent) => {
 			self.postMessage({ type: 'reset_done' });
 			break;
 	}
-}; 
+};

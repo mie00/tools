@@ -11,9 +11,9 @@ export interface Note {
 
 export class NoteOperations {
 	static createNote(
-		text: string, 
-		topic: string, 
-		existingNotes: Note[], 
+		text: string,
+		topic: string,
+		existingNotes: Note[],
 		mediaData?: MediaData
 	): Note {
 		return {
@@ -51,11 +51,7 @@ export class NoteOperations {
 		});
 	}
 
-	static reorderNotesInTopic(
-		notes: Note[], 
-		draggedNote: Note, 
-		dropNote: Note
-	): Note[] {
+	static reorderNotesInTopic(notes: Note[], draggedNote: Note, dropNote: Note): Note[] {
 		if (draggedNote.topic !== dropNote.topic) {
 			return notes; // Can't reorder across different topics
 		}
@@ -80,9 +76,7 @@ export class NoteOperations {
 	}
 
 	static filterNotesByTopic(notes: Note[], selectedTopic: string): Note[] {
-		return notes
-			.filter((note) => note.topic === selectedTopic)
-			.sort((a, b) => a.order - b.order);
+		return notes.filter((note) => note.topic === selectedTopic).sort((a, b) => a.order - b.order);
 	}
 
 	static deleteNotesInTopic(notes: Note[], topicToDelete: string): Note[] {
@@ -103,12 +97,13 @@ export class NoteOperations {
 
 	static searchNotes(notes: Note[], searchTerm: string): Note[] {
 		if (!searchTerm.trim()) return notes;
-		
+
 		const term = searchTerm.toLowerCase();
-		return notes.filter(note => 
-			note.text.toLowerCase().includes(term) ||
-			note.topic.toLowerCase().includes(term) ||
-			(note.media?.name && note.media.name.toLowerCase().includes(term))
+		return notes.filter(
+			(note) =>
+				note.text.toLowerCase().includes(term) ||
+				note.topic.toLowerCase().includes(term) ||
+				(note.media?.name && note.media.name.toLowerCase().includes(term))
 		);
 	}
 
@@ -118,8 +113,8 @@ export class NoteOperations {
 		topics: number;
 		totalSize: number;
 	} {
-		const withMedia = notes.filter(n => n.media).length;
-		const topics = new Set(notes.map(n => n.topic)).size;
+		const withMedia = notes.filter((n) => n.media).length;
+		const topics = new Set(notes.map((n) => n.topic)).size;
 		const totalSize = notes.reduce((sum, note) => {
 			return sum + (note.media?.size || 0);
 		}, 0);
@@ -131,4 +126,4 @@ export class NoteOperations {
 			totalSize
 		};
 	}
-} 
+}

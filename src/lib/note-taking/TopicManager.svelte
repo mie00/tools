@@ -30,7 +30,7 @@
 
 	function deleteTopic(topicToDelete: string) {
 		if (topicToDelete === 'Main') return; // Can't delete main
-		
+
 		if (confirm(`Delete topic "${topicToDelete}"? All notes will be moved to Main.`)) {
 			dispatch('topicDeleted', topicToDelete);
 		}
@@ -78,7 +78,7 @@
 				bind:value={newTopicName}
 				on:keydown={handleKeydown}
 				placeholder="Topic name"
-				class="rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				autofocus
 			/>
 			<div class="flex gap-1">
@@ -122,8 +122,9 @@
 		<details class="text-sm text-gray-600">
 			<summary class="cursor-pointer hover:text-gray-800">Move notes between topics</summary>
 			<div class="mt-2 text-xs">
-				To move a note to a different topic, drag and drop it, or use the move button when editing a note.
+				To move a note to a different topic, drag and drop it, or use the move button when editing a
+				note.
 			</div>
 		</details>
 	</div>
-{/if} 
+{/if}

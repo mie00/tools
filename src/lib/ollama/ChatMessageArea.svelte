@@ -72,7 +72,7 @@
 	}
 </script>
 
-<div bind:this={chatContainer} class="h-full overflow-y-auto p-4 space-y-4 bg-white">
+<div bind:this={chatContainer} class="h-full space-y-4 overflow-y-auto bg-white p-4">
 	{#if activeTopic}
 		{#each groupedMessages as message, loopIndex (message.id)}
 			<ChatMessage
@@ -88,4 +88,4 @@
 			<p class="text-center text-gray-500 py-8">No messages yet. Start the conversation below.</p>
 		{/each}
 	{/if}
-</div> 
+</div>

@@ -47,22 +47,26 @@
 	}
 
 	// Calculate portfolio stats
-	$: portfolioStats = portfolio.reduce((stats, stock) => {
-		stats.totalValue += stock.price;
-		stats.totalChange += stock.change;
-		if (stock.change >= 0) stats.positiveStocks++;
-		else stats.negativeStocks++;
-		return stats;
-	}, {
-		totalValue: 0,
-		totalChange: 0,
-		positiveStocks: 0,
-		negativeStocks: 0
-	});
+	$: portfolioStats = portfolio.reduce(
+		(stats, stock) => {
+			stats.totalValue += stock.price;
+			stats.totalChange += stock.change;
+			if (stock.change >= 0) stats.positiveStocks++;
+			else stats.negativeStocks++;
+			return stats;
+		},
+		{
+			totalValue: 0,
+			totalChange: 0,
+			positiveStocks: 0,
+			negativeStocks: 0
+		}
+	);
 
-	$: averageChangePercent = portfolio.length > 0 
-		? portfolio.reduce((sum, stock) => sum + stock.changePercent, 0) / portfolio.length
-		: 0;
+	$: averageChangePercent =
+		portfolio.length > 0
+			? portfolio.reduce((sum, stock) => sum + stock.changePercent, 0) / portfolio.length
+			: 0;
 </script>
 
 <div class="space-y-6">
@@ -80,13 +84,18 @@
 			class="flex items-center space-x-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
 			title="Refresh all prices"
 		>
-			<svg 
-				class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" 
-				fill="none" 
-				stroke="currentColor" 
+			<svg
+				class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
+				fill="none"
+				stroke="currentColor"
 				viewBox="0 0 24 24"
 			>
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+				></path>
 			</svg>
 			<span>{isRefreshing ? 'Refreshing...' : 'Refresh All'}</span>
 		</button>
@@ -94,27 +103,37 @@
 
 	<!-- Portfolio Summary -->
 	{#if portfolio.length > 0}
-		<div class="grid grid-cols-2 gap-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:grid-cols-4">
+		<div
+			class="grid grid-cols-2 gap-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:grid-cols-4"
+		>
 			<div class="text-center">
-				<div class="text-xs uppercase tracking-wide text-gray-500">Total Value</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase">Total Value</div>
 				<div class="text-lg font-semibold text-gray-900">
 					{formatCurrency(portfolioStats.totalValue)}
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs uppercase tracking-wide text-gray-500">Total Change</div>
-				<div class="text-lg font-semibold {portfolioStats.totalChange >= 0 ? 'text-green-600' : 'text-red-600'}">
+				<div class="text-xs tracking-wide text-gray-500 uppercase">Total Change</div>
+				<div
+					class="text-lg font-semibold {portfolioStats.totalChange >= 0
+						? 'text-green-600'
+						: 'text-red-600'}"
+				>
 					{portfolioStats.totalChange >= 0 ? '+' : ''}{formatCurrency(portfolioStats.totalChange)}
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs uppercase tracking-wide text-gray-500">Avg Change</div>
-				<div class="text-lg font-semibold {averageChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+				<div class="text-xs tracking-wide text-gray-500 uppercase">Avg Change</div>
+				<div
+					class="text-lg font-semibold {averageChangePercent >= 0
+						? 'text-green-600'
+						: 'text-red-600'}"
+				>
 					{formatPercent(averageChangePercent)}
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs uppercase tracking-wide text-gray-500">Gainers/Losers</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase">Gainers/Losers</div>
 				<div class="text-lg font-semibold text-gray-900">
 					<span class="text-green-600">{portfolioStats.positiveStocks}</span>
 					/
@@ -141,8 +160,8 @@
 							<div class="rounded-lg bg-blue-100 px-3 py-2">
 								<span class="text-sm font-bold text-blue-800">{stock.symbol}</span>
 							</div>
-							<div class="flex-1 min-w-0">
-								<h3 class="font-semibold text-gray-900 truncate">{stock.name}</h3>
+							<div class="min-w-0 flex-1">
+								<h3 class="truncate font-semibold text-gray-900">{stock.name}</h3>
 								<p class="text-sm text-gray-500">
 									Added {new Date(stock.addedDate).toLocaleDateString()}
 								</p>
@@ -156,9 +175,9 @@
 							</div>
 							<div class="flex items-center space-x-2">
 								<span class="text-sm {stock.change >= 0 ? 'text-green-600' : 'text-red-600'}">
-									{stock.price > 0 ? (
-										`${stock.change >= 0 ? '+' : ''}${formatCurrency(stock.change)} (${formatPercent(stock.changePercent)})`
-									) : 'Loading...'}
+									{stock.price > 0
+										? `${stock.change >= 0 ? '+' : ''}${formatCurrency(stock.change)} (${formatPercent(stock.changePercent)})`
+										: 'Loading...'}
 								</span>
 							</div>
 							{#if stock.lastUpdate}
@@ -169,14 +188,21 @@
 						</div>
 
 						<!-- Actions -->
-						<div class="ml-4 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+						<div
+							class="ml-4 flex items-center space-x-2 opacity-0 transition-opacity group-hover:opacity-100"
+						>
 							<button
 								on:click={(e) => refreshStock(stock.symbol, e)}
 								class="rounded-lg p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
 								title="Refresh {stock.symbol} price"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+									></path>
 								</svg>
 							</button>
 							<button
@@ -185,7 +211,12 @@
 								title="Remove {stock.symbol} from portfolio"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+									></path>
 								</svg>
 							</button>
 						</div>
@@ -202,17 +233,25 @@
 		</div>
 	{:else}
 		<!-- Empty Portfolio -->
-		<div class="text-center py-12">
-			<svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+		<div class="py-12 text-center">
+			<svg
+				class="mx-auto mb-4 h-16 w-16 text-gray-300"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+				></path>
 			</svg>
-			<h3 class="text-lg font-medium text-gray-900 mb-2">No stocks in portfolio</h3>
-			<p class="text-gray-500 mb-4">
-				Search for stocks above to start building your portfolio
-			</p>
-			<div class="rounded-lg bg-blue-50 p-4 text-left max-w-md mx-auto">
-				<h4 class="text-sm font-medium text-blue-800 mb-2">Getting Started</h4>
-				<ul class="text-sm text-blue-700 space-y-1">
+			<h3 class="mb-2 text-lg font-medium text-gray-900">No stocks in portfolio</h3>
+			<p class="mb-4 text-gray-500">Search for stocks above to start building your portfolio</p>
+			<div class="mx-auto max-w-md rounded-lg bg-blue-50 p-4 text-left">
+				<h4 class="mb-2 text-sm font-medium text-blue-800">Getting Started</h4>
+				<ul class="space-y-1 text-sm text-blue-700">
 					<li>• Search for stocks using the search box above</li>
 					<li>• Click on search results to add them to your portfolio</li>
 					<li>• Track real-time prices and performance</li>
@@ -221,4 +260,4 @@
 			</div>
 		</div>
 	{/if}
-</div> 
+</div>

@@ -67,8 +67,10 @@ CONVERSATION:
 	let mathJaxLoaded = false;
 
 	let activeTopic: ChatTopic | undefined;
-	$: activeTopic = topics.find((t) => t.id === currentActiveTopicId) || (draftTopic?.id === currentActiveTopicId ? draftTopic : undefined);
-	
+	$: activeTopic =
+		topics.find((t) => t.id === currentActiveTopicId) ||
+		(draftTopic?.id === currentActiveTopicId ? draftTopic : undefined);
+
 	// Sort topics by last updated (newest first)
 	$: sortedTopics = [...topics].sort((a, b) => {
 		const aTime = a.lastUpdated || a.createdAt;
@@ -85,9 +87,15 @@ CONVERSATION:
 		if (typeof window !== 'undefined' && !(window as any).MathJax) {
 			(window as any).MathJax = {
 				tex: {
-					inlineMath: [['$', '$'], ['\\(', '\\)']],
-					displayMath: [['$$', '$$'], ['\\[', '\\]']],
-					packages: {'[+]': ['ams', 'newcommand', 'configMacros']},
+					inlineMath: [
+						['$', '$'],
+						['\\(', '\\)']
+					],
+					displayMath: [
+						['$$', '$$'],
+						['\\[', '\\]']
+					],
+					packages: { '[+]': ['ams', 'newcommand', 'configMacros'] },
 					processEscapes: true,
 					processEnvironments: true
 				},
@@ -207,7 +215,7 @@ CONVERSATION:
 
 		// Check WebGPU support
 		await checkWebGpuSupport();
-		
+
 		// Initialize local model if WebGPU is supported
 		if (config.webGpuSupported) {
 			await initializeLocalModel();
@@ -215,7 +223,7 @@ CONVERSATION:
 
 		// Fetch available remote models
 		await fetchAvailableModels();
-		
+
 		// Initialize MathJax
 		initMathJax();
 	});
@@ -245,7 +253,7 @@ CONVERSATION:
 
 		isLoading = true;
 		worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-		
+
 		worker.onmessage = (event) => {
 			const { type, data } = event.data;
 
@@ -297,12 +305,12 @@ CONVERSATION:
 			if (lastMessage.role === 'assistant') {
 				lastMessage.content += data;
 				lastMessage.isLoading = false;
-				
+
 				// Handle thinking state
 				const openThink = (lastMessage.content.match(/<think>/g) || []).length;
 				const closeThink = (lastMessage.content.match(/<\/think>/g) || []).length;
 				lastMessage.isThinking = openThink > closeThink;
-				
+
 				topics = [...topics];
 				persistentTopics.set(topics);
 				// Render math equations
@@ -416,7 +424,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		// Check if it's a draft topic
 		if (draftTopic && draftTopic.id === topicIdToDelete) {
 			draftTopic = undefined;
-			
+
 			// If the active topic was the draft, select another one
 			if (currentActiveTopicId === topicIdToDelete) {
 				if (topics.length > 0) {
@@ -828,8 +836,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 	<!-- Sidebar -->
 	{#if showTopics}
 		<!-- Backdrop overlay to close sidebar -->
-		<div 
-			class="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
+		<div
+			class="bg-opacity-50 fixed inset-0 z-10 bg-black lg:hidden"
 			role="button"
 			tabindex="0"
 			aria-label="Close sidebar"
@@ -841,29 +849,29 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 				}
 			}}
 		></div>
-		
+
 		<!-- Sidebar panel -->
-		<div class="w-80 bg-white shadow-lg fixed left-0 top-0 bottom-0 z-20 lg:relative lg:z-0">
-					<ChatSidebar
-			topics={draftTopic ? [draftTopic, ...sortedTopics] : sortedTopics}
-			{currentActiveTopicId}
-			{config}
-			{isModelLoaded}
-			{hasInitializationError}
-			{loadingProgress}
-			{fileProgress}
-			on:selectTopic={(e) => activeTopicId.set(e.detail)}
-			on:deleteTopic={(e) => deleteTopic(e.detail)}
-			on:createTopic={createNewTopic}
-			on:toggleTopics={() => (showTopics = !showTopics)}
-			on:updateConfig={handleUpdateConfig}
-			on:retryInitialization={handleRetryInitialization}
-		/>
+		<div class="fixed top-0 bottom-0 left-0 z-20 w-80 bg-white shadow-lg lg:relative lg:z-0">
+			<ChatSidebar
+				topics={draftTopic ? [draftTopic, ...sortedTopics] : sortedTopics}
+				{currentActiveTopicId}
+				{config}
+				{isModelLoaded}
+				{hasInitializationError}
+				{loadingProgress}
+				{fileProgress}
+				on:selectTopic={(e) => activeTopicId.set(e.detail)}
+				on:deleteTopic={(e) => deleteTopic(e.detail)}
+				on:createTopic={createNewTopic}
+				on:toggleTopics={() => (showTopics = !showTopics)}
+				on:updateConfig={handleUpdateConfig}
+				on:retryInitialization={handleRetryInitialization}
+			/>
 		</div>
 	{/if}
 
 	<!-- Main Chat Area -->
-	<div class="flex-1 flex flex-col min-h-0">
+	<div class="flex min-h-0 flex-1 flex-col">
 		<!-- Header -->
 		<div class="flex-shrink-0">
 			<ChatHeader
@@ -879,7 +887,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 
 		<!-- Settings Panel -->
 		{#if showSettings}
-			<div class="flex-shrink-0 bg-white border-b border-gray-200">
+			<div class="flex-shrink-0 border-b border-gray-200 bg-white">
 				<div class="max-h-80 overflow-y-auto">
 					<ChatSettings
 						{activeTopic}
@@ -893,7 +901,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		{/if}
 
 		<!-- Chat Messages -->
-		<div class="flex-1 min-h-0 bg-white overflow-hidden">
+		<div class="min-h-0 flex-1 overflow-hidden bg-white">
 			<ChatMessageArea
 				{activeTopic}
 				on:editMessage={handleEditMessage}
@@ -903,13 +911,13 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		</div>
 
 		<!-- Input Area -->
-		<div class="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+		<div class="flex-shrink-0 border-t border-gray-200 bg-white p-4">
 			<ChatInput
 				{isLoading}
-				disabled={(!isModelLoaded && activeTopic?.modelSource === 'local') || 
+				disabled={(!isModelLoaded && activeTopic?.modelSource === 'local') ||
 					(activeTopic?.modelSource === 'remote' && availableModels.length === 0)}
 				on:submit={submitUserInput}
 			/>
 		</div>
 	</div>
-</div> 
+</div>
