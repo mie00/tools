@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { calculationMethods, countryMethodMapping } from './constants';
+	import { calculationMethods } from './constants';
 	import { enrichLocationData, getSuggestedCalculationMethod, parseMawaqitConfig } from './utils';
-	import type { City, MawaqitConfig, SearchResult } from './types';
+	import type { City, SearchResult } from './types';
 	import CitySearch from './CitySearch.svelte';
 
 	export let cities: City[] = [];
@@ -21,6 +21,7 @@
 	let createMode: 'manual' | 'mawaqit' = 'manual';
 	let mawaqitJson = '';
 	let mawaqitError = '';
+	let autoLocationAttempted = false;
 
 	let newProfile = {
 		name: '',
@@ -60,10 +61,12 @@
 		};
 		locationError = '';
 		citySearchQuery = '';
+		autoLocationAttempted = false;
 	}
 
 	function tryGetCurrentLocation() {
 		if (navigator.geolocation) {
+			autoLocationAttempted = true;
 			showLocationPermission = true;
 			navigator.geolocation.getCurrentPosition(
 				async (position) => {
@@ -72,6 +75,7 @@
 					showLocationPermission = false;
 
 					// Get timezone and location details
+					// eslint-disable-next-line svelte/infinite-reactive-loop
 					await enrichCurrentLocation();
 				},
 				(error) => {
@@ -100,27 +104,33 @@
 						name =
 							locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
 					}
+					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.name = `${name}, ${locationData.closestCity.country}`;
 				}
 
 				// Suggest calculation method based on country
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.closestCity.country);
+				// eslint-disable-next-line svelte/infinite-reactive-loop
 				newProfile.calculationMethod = suggestedMethod;
 
 				if (locationData.closestCity.timezone) {
+					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.timezone = locationData.closestCity.timezone;
 				}
 			} else if (locationData.country) {
 				// Fallback if no city found but country available
 				if (!newProfile.name) {
+					// eslint-disable-next-line svelte/infinite-reactive-loop
 					newProfile.name = locationData.country;
 				}
 
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.country);
+				// eslint-disable-next-line svelte/infinite-reactive-loop
 				newProfile.calculationMethod = suggestedMethod;
 			}
 		} catch (error) {
 			console.error('Error enriching location data:', error);
+			// eslint-disable-next-line svelte/infinite-reactive-loop
 			newProfile.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		}
 	}
@@ -225,9 +235,11 @@
 		createMode === 'manual' &&
 		!hasExistingProfiles &&
 		!hasSharedConfig &&
+		!autoLocationAttempted &&
 		!newProfile.latitude &&
 		!newProfile.longitude
 	) {
+		// eslint-disable-next-line svelte/infinite-reactive-loop
 		tryGetCurrentLocation();
 	}
 </script>
@@ -307,7 +319,7 @@
 					bind:value={newProfile.calculationMethod}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					{#each Object.entries(calculationMethods) as [key, method]}
+					{#each Object.entries(calculationMethods) as [key, method] (key)}
 						<option value={key}>{method.name}</option>
 					{/each}
 				</select>

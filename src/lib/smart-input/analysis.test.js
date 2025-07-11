@@ -989,7 +989,7 @@ describe('Complex Input Ordering Tests', () => {
 				}
 			];
 
-			testCases.forEach(({ input, description }) => {
+			testCases.forEach(({ input }) => {
 				const result = analyzeInput(input);
 
 				expect(result.length).toBeGreaterThan(0);

@@ -4,7 +4,6 @@
 	// The linter errors are expected and the functionality works in compatible browsers.
 
 	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
 
 	let inputText = '';
 	let translatedText = '';
@@ -188,7 +187,7 @@
 		}
 	}
 
-	async function detectLanguage() {
+	async function _detectLanguage() {
 		if (!detector || !inputText.trim()) return;
 
 		try {
@@ -562,7 +561,7 @@
 								disabled={isLoading}
 								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
 							>
-								{#each sourceLanguages as lang}
+								{#each sourceLanguages as lang (lang.code)}
 									<option value={lang.code}>{lang.name}</option>
 								{/each}
 							</select>
@@ -655,7 +654,7 @@
 								disabled={isLoading}
 								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
 							>
-								{#each supportedLanguages as lang}
+								{#each supportedLanguages as lang (lang.code)}
 									<option value={lang.code}>{lang.name}</option>
 								{/each}
 							</select>

@@ -49,7 +49,7 @@
 					bind:value={editingProfile.calculationMethod}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					{#each Object.entries(calculationMethods) as [key, method]}
+					{#each Object.entries(calculationMethods) as [key, method] (key)}
 						<option value={key}>{method.name}</option>
 					{/each}
 				</select>

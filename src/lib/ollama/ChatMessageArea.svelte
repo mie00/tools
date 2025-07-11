@@ -8,7 +8,7 @@
 
 	let chatContainer: HTMLElement;
 	let groupedMessages: (Message & { grouped?: Message[]; originalIndex: number })[] = [];
-	let lastAssistantMessageIndex = -1;
+	let _lastAssistantMessageIndex = -1;
 
 	const dispatch = createEventDispatcher();
 
@@ -54,7 +54,7 @@
 			}
 		}
 		groupedMessages = newGroupedMessages;
-		lastAssistantMessageIndex = groupedMessages.findLastIndex((m) => m.role === 'assistant');
+		_lastAssistantMessageIndex = groupedMessages.findLastIndex((m) => m.role === 'assistant');
 
 		tick().then(scrollToBottom);
 	}
@@ -74,7 +74,7 @@
 
 <div bind:this={chatContainer} class="h-full space-y-4 overflow-y-auto bg-white p-4">
 	{#if activeTopic}
-		{#each groupedMessages as message, loopIndex (message.id)}
+		{#each groupedMessages as message, _loopIndex (message.id)}
 			<ChatMessage
 				{message}
 				idx={message.originalIndex}

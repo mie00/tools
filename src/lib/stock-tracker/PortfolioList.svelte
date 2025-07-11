@@ -195,6 +195,7 @@
 								on:click={(e) => refreshStock(stock.symbol, e)}
 								class="rounded-lg p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
 								title="Refresh {stock.symbol} price"
+								aria-label="Refresh {stock.symbol} price"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -209,6 +210,7 @@
 								on:click={(e) => removeStock(stock.symbol, e)}
 								class="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
 								title="Remove {stock.symbol} from portfolio"
+								aria-label="Remove {stock.symbol} from portfolio"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path

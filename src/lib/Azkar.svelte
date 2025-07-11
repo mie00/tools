@@ -236,7 +236,7 @@
 	<!-- Category Tabs -->
 	<div class="category-tabs">
 		<div class="tabs-wrapper">
-			{#each displayedCategories as category}
+			{#each displayedCategories as category (category)}
 				<button
 					on:click={() => switchCategory(category)}
 					class="category-tab {activeCategory === category ? 'active' : ''}"

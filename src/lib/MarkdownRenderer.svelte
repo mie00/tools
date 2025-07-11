@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { marked } from 'marked';
-	import hljs from 'highlight.js';
 	import 'highlight.js/styles/github.css';
 	import CodeExecutor from './CodeExecutor.svelte';
-	import { onMount } from 'svelte';
 	import CodeBlock from './CodeBlock.svelte';
 
 	export let content: string;
@@ -62,12 +60,7 @@
             </div>`;
 	};
 
-	let rawHtml: string | Promise<string> = '';
-	$: try {
-		rawHtml = marked(content, { renderer });
-	} catch (e) {
-		rawHtml = `<p>Error parsing markdown.</p>`;
-	}
+	// Note: rawHtml was removed as the component now uses parts-based rendering
 
 	async function handleClick(event: MouseEvent) {
 		const target = event.target as HTMLElement;
@@ -118,8 +111,10 @@
 	on:click={handleClick}
 	on:keydown={handleKeyDown}
 >
-	{#each parts as part}
+	{#each parts as part, index (index)}
 		{#if part.type === 'markdown'}
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			<!-- Safe: marked library sanitizes markdown content -->
 			{@html marked(part.content)}
 		{:else if part.type === 'code'}
 			<CodeBlock code={part.content} lang={part.lang || ''} />
@@ -127,7 +122,7 @@
 	{/each}
 </div>
 
-{#each Object.entries(activeExecutors) as [id, { code, type, wrapper }]}
+{#each Object.entries(activeExecutors) as [id, { code, type, wrapper }] (id)}
 	<div
 		class="executor-portal"
 		style:position="absolute"

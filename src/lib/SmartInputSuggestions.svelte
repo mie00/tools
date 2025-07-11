@@ -229,7 +229,7 @@
 				</span>
 			</h3>
 			<div class="space-y-2">
-				{#each suggestions as suggestion, index}
+				{#each suggestions as suggestion, index (suggestion.id)}
 					<a
 						href={suggestion.url}
 						class="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 hover:bg-blue-50 {shortcutsActive &&

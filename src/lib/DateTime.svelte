@@ -132,6 +132,7 @@
 				selectedCities = JSON.parse(savedCities);
 			} catch (e) {
 				// If parsing fails, use default cities
+				console.warn('Failed to parse saved cities from localStorage:', e);
 				selectedCities = [
 					'Africa/Cairo',
 					'Asia/Dubai',
@@ -259,6 +260,7 @@
 			};
 		} catch (error) {
 			// Fallback to current time if conversion fails
+			console.warn('Time conversion failed:', error);
 			return getTimeInTimezone(timezone, referenceTime);
 		}
 	}
@@ -365,6 +367,7 @@
 
 			return timeZoneName ? timeZoneName.value : '';
 		} catch (e) {
+			console.warn('Failed to get timezone abbreviation:', e);
 			return '';
 		}
 	}
@@ -525,7 +528,7 @@
 					>
 						<option value="Local">Local</option>
 						<option value="UTC">UTC</option>
-						{#each availableCities as city}
+						{#each availableCities as city (city.timezone)}
 							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
 						{/each}
 					</select>
@@ -592,7 +595,7 @@
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
 					>
 						<option value="">Select a city to add...</option>
-						{#each availableCities.filter((city) => !selectedCities.includes(city.timezone)) as city}
+						{#each availableCities.filter((city) => !selectedCities.includes(city.timezone)) as city (city.timezone)}
 							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
 						{/each}
 					</select>
@@ -601,7 +604,7 @@
 
 			<!-- Cities Grid -->
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{#each selectedCities as timezone}
+				{#each selectedCities as timezone (timezone)}
 					{@const timeInfo = getCustomTimeInTimezone(timezone, currentTime)}
 					<div class="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
 						<button

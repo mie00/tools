@@ -61,7 +61,7 @@ CONVERSATION:
 
 	// Common state
 	let isLoading = false;
-	let error: string | null = null;
+	let _error: string | null = null;
 	let showSettings = false;
 	let showTopics = false; // Default to false (collapsed)
 	let mathJaxLoaded = false;
@@ -78,9 +78,9 @@ CONVERSATION:
 		return new Date(bTime).getTime() - new Date(aTime).getTime();
 	});
 
-	// Add state for editing
-	let editingIndex: number | null = null;
-	let editingContent = '';
+	// Editing state
+	let _editingIndex: number | null = null;
+	let _editingContent: string = '';
 
 	// MathJax configuration
 	const initMathJax = () => {
@@ -497,7 +497,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		if (!activeTopic || !worker || !isModelLoaded) return;
 
 		isLoading = true;
-		error = null;
+		_error = null;
 
 		const assistantMessage: Message = {
 			id: crypto.randomUUID(),
@@ -538,7 +538,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 		if (!activeTopic) return;
 
 		isLoading = true;
-		error = null;
+		_error = null;
 
 		abortController = new AbortController();
 
@@ -767,8 +767,8 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 
 	// Pass through functions for child components
 	function handleEditMessage(event: CustomEvent<{ index: number; content: string }>) {
-		editingIndex = event.detail.index;
-		editingContent = event.detail.content;
+		_editingIndex = event.detail.index;
+		_editingContent = event.detail.content;
 	}
 
 	function handleSaveEdit(event: CustomEvent<{ index: number; content: string }>) {
@@ -778,13 +778,13 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			activeTopic.lastUpdated = new Date().toISOString();
 			persistentTopics.set(topics);
 		}
-		editingIndex = null;
-		editingContent = '';
+		_editingIndex = null;
+		_editingContent = '';
 	}
 
 	function handleCancelEdit() {
-		editingIndex = null;
-		editingContent = '';
+		_editingIndex = null;
+		_editingContent = '';
 	}
 
 	function handleUpdateSystemPrompt(event: CustomEvent<string>) {

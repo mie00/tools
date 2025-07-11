@@ -82,7 +82,7 @@
 	}
 
 	// Watch for expression changes and update URL
-	$: if (typeof window !== 'undefined') {
+	$: if (typeof window !== 'undefined' && expression !== undefined) {
 		updateUrl();
 	}
 
@@ -133,7 +133,7 @@
 					}
 				}
 			}
-		} catch (error) {
+		} catch (_error) {
 			result = 'Error';
 			isError = true;
 		}
@@ -385,7 +385,7 @@
 				</button>
 			</div>
 			<div class="history-items">
-				{#each history.slice(-5).reverse() as item, index}
+				{#each history.slice(-5).reverse() as item, index (`${item.expression}-${item.result}`)}
 					<div class="history-item">
 						<button class="history-content" on:click={() => useHistoryItem(item)}>
 							<span class="history-expression">{item.expression}</span>

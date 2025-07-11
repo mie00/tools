@@ -74,7 +74,7 @@
 					on:change={(e) => handleUpdateModel((e.target as HTMLSelectElement).value)}
 					class="w-full rounded border border-gray-300 p-2"
 				>
-					{#each availableModels as model}
+					{#each availableModels as model (model)}
 						<option value={model}>{model}</option>
 					{:else}
 						<option disabled>No models available</option>

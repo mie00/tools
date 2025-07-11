@@ -1,5 +1,4 @@
 const { app, BrowserWindow } = require('electron');
-const path = require('path');
 
 // Enable WebGPU & Vulkan, and increase memory limit
 app.commandLine.appendSwitch('enable-unsafe-webgpu');

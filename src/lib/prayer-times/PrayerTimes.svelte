@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import type { Profile, PrayerTimes, City, MawaqitConfig } from './types';
+	import type { Profile, PrayerTimes, City } from './types';
 	import { calculateTimesForProfile, parseCsv } from './utils';
 	import ProfileList from './ProfileList.svelte';
 	import CreateProfileForm from './CreateProfileForm.svelte';
@@ -26,7 +26,7 @@
 	$: activePrayerTimes = activeProfile ? profilePrayerTimes.get(activeProfile.id) : null;
 
 	// URL parameter sync functions
-	function updateUrl() {
+	function _updateUrl() {
 		// Prayer times don't automatically update URL - only when explicitly sharing
 	}
 
@@ -227,6 +227,7 @@
 				alert(message);
 			} catch (error) {
 				// Fallback - show the URL in a prompt
+				console.warn('Failed to copy to clipboard:', error);
 				prompt('Share this URL:', shareUrl);
 			} finally {
 				sharingInProgress = false;

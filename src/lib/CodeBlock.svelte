@@ -13,10 +13,12 @@
 
 	$: highlightedCode = hljs.getLanguage(lang)
 		? hljs.highlight(code, { language: lang }).value
-		: code;
+		: hljs.highlightAuto(code).value;
 </script>
 
 <div class="code-block-wrapper">
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	<!-- Safe: highlightedCode is sanitized by highlight.js -->
 	<pre><code class="hljs language-{lang}">{@html highlightedCode}</code></pre>
 	{#if lang === 'js' || lang === 'javascript' || lang === 'html'}
 		<div class="button-container">

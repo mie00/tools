@@ -138,7 +138,7 @@ Paragraphs: ${stats.paragraphs}`;
 
 	<!-- Operation Selection -->
 	<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
-		{#each operations as operation}
+		{#each operations as operation (operation.id)}
 			<button
 				on:click={() => (activeOperation = operation.id)}
 				class="rounded-lg border p-3 text-sm transition-all duration-200 {activeOperation ===

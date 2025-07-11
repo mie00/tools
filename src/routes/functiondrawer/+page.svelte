@@ -190,7 +190,7 @@ result
 			`;
 			const result = pyodide.runPython(pythonCode);
 			return result === true;
-		} catch (e) {
+		} catch (_e) {
 			return false;
 		}
 	}
@@ -798,7 +798,7 @@ result
 
 				// Check if 't' is in the variables
 				const hasT = newVars.includes('t');
-				const wasAnimating = isAnimating;
+				const _wasAnimating = isAnimating;
 
 				// Stop current animation if running
 				if (isAnimating) {
@@ -1156,7 +1156,7 @@ evaluate_function()
 					<label for="expression" class="text-sm font-medium text-gray-700">Expression</label>
 					<div class="text-xs text-gray-500">
 						Presets:
-						{#each presetFunctions.slice(0, 4) as preset, i}
+						{#each presetFunctions.slice(0, 4) as preset, i (preset.name)}
 							<button
 								on:click={() => loadPreset(preset)}
 								disabled={isLoading}
@@ -1191,7 +1191,7 @@ evaluate_function()
 				<div class="mb-6 rounded-lg bg-gray-50 p-4">
 					<h3 class="mb-3 text-lg font-medium text-gray-800">Function Presets</h3>
 					<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-						{#each presetFunctions as preset}
+						{#each presetFunctions as preset (preset.name)}
 							<button
 								on:click={() => loadPreset(preset)}
 								disabled={isLoading}
@@ -1387,7 +1387,7 @@ evaluate_function()
 					</div>
 				</div>
 				<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{#each extractedVars as varName}
+					{#each extractedVars as varName (varName)}
 						<div class="flex items-center gap-2">
 							<label for={varName} class="w-6 flex-shrink-0 text-sm font-medium text-gray-700"
 								>{varName}</label

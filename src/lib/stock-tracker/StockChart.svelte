@@ -68,6 +68,7 @@
 				on:click={refreshChart}
 				class="rounded border border-blue-200 px-3 py-1 text-sm text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
 				title="Refresh chart data"
+				aria-label="Refresh chart data"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path

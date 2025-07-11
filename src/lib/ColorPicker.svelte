@@ -358,7 +358,7 @@
 	<div class="space-y-2">
 		<span class="block text-sm font-medium text-gray-700">Quick Colors</span>
 		<div class="grid grid-cols-8 gap-2">
-			{#each colorPalette as color}
+			{#each colorPalette as color (color)}
 				<button
 					aria-label="Select color {color}"
 					on:click={() => selectPaletteColor(color)}

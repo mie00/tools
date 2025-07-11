@@ -129,6 +129,7 @@
 				}
 			}
 		} catch (e) {
+			console.warn('Failed to parse URL:', e);
 			error = 'Invalid URL format';
 		}
 	}
@@ -216,6 +217,7 @@
 			try {
 				urlComponents['hashDecoded'] = decodeURIComponent(editingValue);
 			} catch (e) {
+				console.warn('Failed to decode hash:', e);
 				urlComponents['hashDecoded'] = editingValue;
 			}
 		}
@@ -254,6 +256,7 @@
 		try {
 			parsedCurl.bodyPretty = JSON.stringify(JSON.parse(editingValue), null, 2);
 		} catch (e) {
+			console.warn('Failed to parse JSON body:', e);
 			parsedCurl.bodyPretty = undefined;
 		}
 		rebuildAndUpdateInput();
@@ -327,12 +330,13 @@
 					i++;
 					break;
 				case '-H':
-				case '--header':
+				case '--header': {
 					const [key, ...valueParts] = nextPart.split(':');
 					const value = valueParts.join(':').trim();
 					result.headers[unquote(key)] = unquote(value);
 					i++;
 					break;
+				}
 				case '-d':
 				case '--data':
 				case '--data-raw':
@@ -353,7 +357,8 @@
 				const jsonBody = JSON.parse(result.body);
 				result.bodyPretty = JSON.stringify(jsonBody, null, 2);
 			} catch (e) {
-				// not a json body
+				// not a json body - this is expected for non-JSON content
+				console.debug('Body is not JSON:', e);
 			}
 		}
 
@@ -465,7 +470,7 @@
 					<div class="space-y-4">
 						<h4 class="text-md font-semibold text-gray-800">Headers</h4>
 						<div class="space-y-3">
-							{#each Object.entries(parsedCurl.headers) as [key, value]}
+							{#each Object.entries(parsedCurl.headers) as [key, value] (key)}
 								<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
 									<div class="grid gap-3 md:grid-cols-2">
 										<div>
@@ -633,7 +638,7 @@
 			<div class="space-y-4">
 				<h3 class="text-lg font-semibold text-gray-800">URL Components</h3>
 				<div class="grid gap-3">
-					{#each Object.entries(urlComponents) as [key, value]}
+					{#each Object.entries(urlComponents) as [key, value] (key)}
 						{#if value}
 							<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
 								<div class="mb-1 flex items-center justify-between">
@@ -689,7 +694,7 @@
 			<div class="space-y-4">
 				<h3 class="text-lg font-semibold text-gray-800">Search Parameters</h3>
 				<div class="space-y-3">
-					{#each searchParams as param, i}
+					{#each searchParams as param, i (`${param.key}-${i}`)}
 						<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
 							<div class="grid gap-3 md:grid-cols-2">
 								<!-- Key -->

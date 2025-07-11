@@ -49,20 +49,20 @@
 <!-- Topic Tabs -->
 <div class="mb-6">
 	<div class="flex flex-wrap items-center gap-2">
-		{#each topics as topic}
-			<button
-				on:click={() => selectTopic(topic)}
-				class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedTopic === topic
-					? 'bg-blue-600 text-white'
-					: 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
-			>
-				{topic}
+		{#each topics as topic (topic)}
+			<div class="flex items-center">
+				<button
+					on:click={() => selectTopic(topic)}
+					class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedTopic ===
+					topic
+						? 'bg-blue-600 text-white'
+						: 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
+				>
+					{topic}
+				</button>
 				{#if topic !== 'Main'}
 					<button
-						on:click={(e) => {
-							e.stopPropagation();
-							deleteTopic(topic);
-						}}
+						on:click={() => deleteTopic(topic)}
 						class="ml-2 text-red-500 hover:text-red-700"
 						title="Delete topic"
 						aria-label="Delete topic {topic}"
@@ -70,7 +70,7 @@
 						×
 					</button>
 				{/if}
-			</button>
+			</div>
 		{/each}
 
 		{#if showNewTopicInput}
@@ -79,7 +79,6 @@
 				on:keydown={handleKeydown}
 				placeholder="Topic name"
 				class="rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-				autofocus
 			/>
 			<div class="flex gap-1">
 				<button

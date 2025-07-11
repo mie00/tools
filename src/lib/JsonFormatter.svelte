@@ -140,7 +140,7 @@
 			} else if (typeof value === 'object') {
 				stats.objects++;
 				stats.values++;
-				Object.entries(value).forEach(([key, val]) => {
+				Object.entries(value).forEach(([_key, val]) => {
 					stats.keys++;
 					traverse(val, currentDepth + 1);
 				});
@@ -287,6 +287,7 @@
 			extractKeysRecursive(parsed);
 			outputJson = Array.from(keys).sort().join('\n');
 		} catch (error) {
+			console.warn('Failed to extract keys from JSON:', error);
 			errorMessage = 'Cannot extract keys from invalid JSON';
 		}
 	}
@@ -468,6 +469,8 @@
 				<div
 					class="h-40 w-full resize-none overflow-auto rounded-lg border border-red-300 bg-red-50 px-3 py-2 font-mono text-sm"
 				>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					<!-- Safe: highlightedErrorJson is escaped using escapeHtml() function -->
 					<pre class="whitespace-pre-wrap">{@html highlightedErrorJson}</pre>
 				</div>
 			{:else}

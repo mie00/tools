@@ -10,12 +10,7 @@
 	import StockChart from './stock-tracker/StockChart.svelte';
 	import { StockApiManager } from './stock-tracker/StockApiManager';
 	import { PortfolioManager } from './stock-tracker/PortfolioManager';
-	import type {
-		StockSearchResult,
-		StockQuote,
-		ChartPoint,
-		TimeWindow
-	} from './stock-tracker/StockApiManager';
+	import type { StockSearchResult, ChartPoint } from './stock-tracker/StockApiManager';
 	import type { PortfolioStock } from './stock-tracker/PortfolioManager';
 
 	// Component state
@@ -114,7 +109,7 @@
 			} else {
 				apiKeyError = 'Invalid API key. Please check your key and try again.';
 			}
-		} catch (error) {
+		} catch (_error) {
 			apiKeyError = 'Failed to validate API key. Please try again.';
 		} finally {
 			isValidatingApiKey = false;
@@ -167,7 +162,7 @@
 	async function handleStockSelect(searchResult: StockSearchResult) {
 		try {
 			// Add to portfolio
-			const portfolioStock = portfolioManager.addStock(searchResult);
+			portfolioManager.addStock(searchResult);
 			portfolio = portfolioManager.getPortfolio();
 
 			// Get current quote

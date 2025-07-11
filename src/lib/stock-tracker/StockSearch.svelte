@@ -100,6 +100,7 @@
 					on:click={clearSearch}
 					class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
 					title="Clear search"
+					aria-label="Clear search"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path

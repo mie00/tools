@@ -6,11 +6,11 @@
 	export let activeProfile: Profile;
 	export let prayerTimes: PrayerTimes;
 
-	let currentTime = new Date();
+	let _currentTime = new Date();
 
 	// Update current time every minute
 	setInterval(() => {
-		currentTime = new Date();
+		_currentTime = new Date();
 	}, 60000);
 
 	$: nextPrayer = getNextPrayerForProfile(activeProfile, prayerTimes);
@@ -48,7 +48,7 @@
 	{/if}
 
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-		{#each prayers as prayer}
+		{#each prayers as prayer (prayer.name)}
 			<div
 				class="rounded-lg border border-gray-200 p-4 text-center {nextPrayer?.name === prayer.name
 					? 'border-blue-300 bg-blue-50'

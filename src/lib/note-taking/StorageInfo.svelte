@@ -6,7 +6,7 @@
 	export let storageInfo: StorageInfo;
 	export let showStorageWarning: boolean = false;
 	export let notes: Note[] = [];
-	export let formatBytes: (bytes: number) => string;
+	export let formatBytes: (_bytes: number) => string;
 
 	const dispatch = createEventDispatcher<{
 		clearAllData: void;

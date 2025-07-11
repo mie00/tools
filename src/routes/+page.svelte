@@ -1,22 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Calculator from '$lib/Calculator.svelte';
-	import QRCodeReader from '$lib/QRCodeReader.svelte';
-	import UnitConverter from '$lib/UnitConverter.svelte';
-	import CurrencyConverter from '$lib/CurrencyConverter.svelte';
-	import NoteTaking from '$lib/NoteTaking.svelte';
-	import DateTime from '$lib/DateTime.svelte';
-	import StockTracker from '$lib/StockTracker.svelte';
-	import TextTools from '$lib/TextTools.svelte';
-	import ColorPicker from '$lib/ColorPicker.svelte';
-	import Base64 from '$lib/Base64.svelte';
-	import JsonFormatter from '$lib/JsonFormatter.svelte';
-	import Azkar from '$lib/Azkar.svelte';
-
-	import UrlExaminer from '$lib/UrlExaminer.svelte';
+	// Components are loaded dynamically through routing, not imported directly
 	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 
-	let selectedTool: string | null = null;
+	let _selectedTool: string | null = null;
 	let draggedIndex: number | null = null;
 	let draggedOverIndex: number | null = null;
 	let draggedElement: HTMLElement | null = null;
@@ -132,13 +119,7 @@
 		}
 	];
 
-	function selectTool(toolId: string) {
-		selectedTool = selectedTool === toolId ? null : toolId;
-	}
-
-	function goHome() {
-		selectedTool = null;
-	}
+	// selectTool and goHome functions removed as they're not used (navigation is handled by routing)
 
 	// Drag and drop functions
 	function handleDragStart(event: DragEvent, index: number) {

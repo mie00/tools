@@ -127,7 +127,7 @@
 					<span></span>
 				</div>
 			{:else}
-				{#each parts as part}
+				{#each parts as part, index (index)}
 					{#if part.type === 'text'}
 						<MarkdownRenderer content={part.content} />
 					{:else if part.type === 'think'}

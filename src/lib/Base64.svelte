@@ -50,7 +50,7 @@
 	function encodeBase64(text: string): string {
 		try {
 			return btoa(unescape(encodeURIComponent(text)));
-		} catch (error) {
+		} catch {
 			throw new Error('Failed to encode text');
 		}
 	}
@@ -58,7 +58,7 @@
 	function decodeBase64(text: string): string {
 		try {
 			return decodeURIComponent(escape(atob(text)));
-		} catch (error) {
+		} catch {
 			throw new Error('Invalid Base64 string');
 		}
 	}

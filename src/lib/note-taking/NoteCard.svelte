@@ -7,8 +7,8 @@
 	export let topics: string[] = ['Main'];
 	export let isEditing: boolean = false;
 	export let isFocused: boolean = false;
-	export let formatFileSize: (size: number) => string;
-	export let downloadFile: (media: MediaData) => void;
+	export let formatFileSize: (_size: number) => string;
+	export let downloadFile: (_media: MediaData) => void;
 
 	const dispatch = createEventDispatcher<{
 		edit: Note;
@@ -175,7 +175,7 @@
 					bind:value={editingTopic}
 					class="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				>
-					{#each topics as topic}
+					{#each topics as topic (topic)}
 						<option value={topic}>{topic}</option>
 					{/each}
 				</select>
@@ -333,7 +333,7 @@
 				<div class="mt-3 border-t pt-3">
 					<p class="mb-2 text-xs text-gray-500">Move to topic:</p>
 					<div class="flex flex-wrap gap-1">
-						{#each topics.filter((t) => t !== note.topic) as topic}
+						{#each topics.filter((t) => t !== note.topic) as topic (topic)}
 							<button
 								on:click={(e) => {
 									e.stopPropagation();

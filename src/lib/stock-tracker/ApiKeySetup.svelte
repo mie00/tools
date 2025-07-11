@@ -44,13 +44,10 @@
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="api-key-title"
+		tabindex="-1"
 	>
 		<!-- Modal Content -->
-		<div
-			class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-			on:click|stopPropagation
-			role="document"
-		>
+		<div class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl" role="document">
 			<h3 id="api-key-title" class="mb-4 text-xl font-bold text-gray-800">
 				Setup Alpha Vantage API Key
 			</h3>
@@ -93,7 +90,6 @@
 						placeholder="Your Alpha Vantage API key"
 						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
 						disabled={isValidating}
-						autofocus
 					/>
 				</div>
 

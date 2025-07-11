@@ -28,6 +28,7 @@
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/vite": "^4.0.0",
+		"@typescript-eslint/parser": "^8.36.0",
 		"@vitest/browser": "^3.2.3",
 		"concurrently": "^9.2.0",
 		"electron": "^37.1.0",

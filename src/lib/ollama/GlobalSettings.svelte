@@ -212,7 +212,7 @@
 					<p>{loadingProgress.status}</p>
 					{#if Object.keys(fileProgress).length > 0}
 						<div class="mt-2">
-							{#each Object.values(fileProgress) as file}
+							{#each Object.values(fileProgress) as file (file.name)}
 								<div class="mb-1">
 									<div class="flex justify-between text-xs">
 										<span>{file.name}</span>

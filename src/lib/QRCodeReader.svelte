@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	// Type definitions
-	interface JSQRResult {
-		data: string;
-		location: any;
-	}
+	// Type definitions (JSQRResult was removed as it's not used)
 
 	let fileInput: HTMLInputElement;
 	let videoElement: HTMLVideoElement;
@@ -160,9 +156,10 @@
 			{#if !isScanning}
 				<button
 					on:click={startCamera}
-					class="rounded-lg bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600"
+					disabled={loading}
+					class="rounded-lg bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50"
 				>
-					Start Camera
+					{loading ? 'Loading...' : 'Start Camera'}
 				</button>
 			{:else}
 				<button
@@ -197,9 +194,12 @@
 				type="file"
 				accept="image/*"
 				on:change={handleFileUpload}
-				class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+				disabled={loading}
+				class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
 			/>
-			<p class="text-sm text-gray-600">Select an image file containing a QR code to decode</p>
+			<p class="text-sm text-gray-600">
+				{loading ? 'Processing image...' : 'Select an image file containing a QR code to decode'}
+			</p>
 		</div>
 	</div>
 

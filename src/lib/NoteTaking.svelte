@@ -19,7 +19,6 @@
 	let topics: string[] = ['Main'];
 	let selectedTopic: string = 'Main';
 	let newNoteText: string = '';
-	let newTopicName: string = '';
 	let showNewTopicInput: boolean = false;
 	let editingNote: Note | null = null;
 	let focusedNote: number | null = null;
@@ -298,6 +297,7 @@
 							disabled={!newNoteText.trim()}
 							class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 							title="Add note (Ctrl+Enter)"
+							aria-label="Add note"
 						>
 							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -388,10 +388,6 @@
 <style>
 	:global(:root) {
 		--audio-level: 0%;
-	}
-
-	.audio-bar {
-		animation: audioLevel 150ms ease-in-out infinite alternate;
 	}
 
 	@keyframes audioLevel {

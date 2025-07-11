@@ -18,10 +18,34 @@ export default [
 	{
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
+		},
+		rules: {
+			'no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_'
+				}
+			],
+			'svelte/no-at-html-tags': 'warn',
+			'svelte/require-each-key': 'warn',
+			'no-useless-escape': 'warn',
+			'svelte/no-immutable-reactive-statements': 'warn',
+			'svelte/infinite-reactive-loop': 'warn',
+			'no-case-declarations': 'warn'
 		}
 	},
 	{
-		files: ['**/*.svelte', '**/*.svelte.js'],
-		languageOptions: { parserOptions: { svelteConfig } }
+		files: ['**/*.svelte'],
+		languageOptions: {
+			parserOptions: {
+				svelteConfig,
+				parser: '@typescript-eslint/parser'
+			}
+		}
+	},
+	{
+		ignores: ['static/pyodide/**']
 	}
 ];

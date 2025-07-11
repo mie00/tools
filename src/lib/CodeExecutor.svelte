@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
+	import { onMount } from 'svelte';
 
 	export let code: string;
 	export let type: 'js' | 'html';
@@ -35,8 +35,8 @@
 	<div class="text-black">
 		<iframe
 			bind:this={iframe}
-			title="JavaScript Execution Frame"
-			srcdoc={`<script>self.onmessage = (e) => { const { code, port } = e.data; const log = (...args) => { port.postMessage(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' ')); }; const originalLog = console.log; console.log = log; try { new Function(code)(); } catch (err) { port.postMessage(err.toString()); } finally { console.log = originalLog; port.close(); } };<\/script>`}
+			title="JavaScript Executor"
+			srcdoc={`<script>self.onmessage = (e) => { const { code, port } = e.data; const log = (...args) => { port.postMessage(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' ')); }; const originalLog = console.log; console.log = log; try { new Function(code)(); } catch (err) { port.postMessage(err.toString()); } finally { console.log = originalLog; port.close(); } };</script>`}
 			class="hidden"
 			on:load={executeJs}
 		></iframe>
