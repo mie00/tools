@@ -127,6 +127,14 @@ function normalizeUnit(unit: string, category: string): string {
 			'square_feet': 'square_foot', 'ft²': 'square_foot',
 			'square_inches': 'square_inch', 'in²': 'square_inch',
 			'acres': 'acre', 'hectares': 'hectare', 'ha': 'hectare'
+		},
+		speed: {
+			'mph': 'miles_per_hour', 'miles_per_hour': 'miles_per_hour',
+			'kmh': 'kilometers_per_hour', 'km/h': 'kilometers_per_hour', 'kph': 'kilometers_per_hour',
+			'kilometers_per_hour': 'kilometers_per_hour',
+			'mps': 'meters_per_second', 'm/s': 'meters_per_second', 'meters_per_second': 'meters_per_second',
+			'fps': 'feet_per_second', 'ft/s': 'feet_per_second', 'feet_per_second': 'feet_per_second',
+			'knots': 'knot', 'kt': 'knot'
 		}
 	};
 	
@@ -262,9 +270,12 @@ function analyzeMath(input: string): AppSuggestion[] {
 	const hasVariables = /[a-zA-Z]/;
 	const hasFunctions = /(?:sin|cos|tan|log|ln|sqrt|exp|abs|floor|ceil|round|pi|e)\b/i;
 	
+	// Exclude unit conversion patterns first
+	const isUnitConversion = /\d+(?:\.\d+)?\s*[a-zA-Z°²³/]+\s*(?:to|in|→)\s*[a-zA-Z°²³/]+/i;
+	
 	// Only detect math if it looks like an actual mathematical expression
 	// Must have numbers and operators, and not be part of a URL or command
-	if (hasNumbers.test(input) && mathOperators.test(input)) {
+	if (hasNumbers.test(input) && mathOperators.test(input) && !isUnitConversion.test(input)) {
 		// Exclude common false positives
 		const isUrl = /^https?:\/\/|^www\./i.test(input);
 		const isCurlCommand = /^\s*curl\s+/i.test(input);
@@ -324,19 +335,21 @@ function analyzeUnit(input: string): AppSuggestion[] {
 		area: {
 			units: ['square_meter', 'square_meters', 'm²', 'square_kilometer', 'square_kilometers', 'km²', 'square_centimeter', 'square_centimeters', 'cm²', 'square_foot', 'square_feet', 'ft²', 'square_inch', 'square_inches', 'in²', 'acre', 'acres', 'hectare', 'hectares', 'ha'],
 			category: 'area'
+		},
+		speed: {
+			units: ['mph', 'miles_per_hour', 'kmh', 'km/h', 'kph', 'kilometers_per_hour', 'mps', 'meters_per_second', 'm/s', 'fps', 'feet_per_second', 'ft/s', 'knot', 'knots', 'kt'],
+			category: 'speed'
 		}
 	};
 	
-	// Convert patterns: "10 meters to feet", "5 kg in pounds", "100°F to celsius"
+	// Convert patterns: "10 meters to feet", "5 kg in pounds", "100°F to celsius", "50 mph to km/h"
 	const conversionPatterns = [
-		// Pattern: "10 meters to feet"
-		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
-		// Pattern: "10 m to ft"
-		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
+		// Pattern: "10 meters to feet" or "50 mph to km/h"
+		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³/]+)\s*(?:to|in|→)\s*([a-zA-Z°²³/]+)/i,
 		// Pattern: "convert 10 meters to feet"
-		/convert\s+(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)\s*(?:to|in|→)\s*([a-zA-Z°²³]+)/i,
+		/convert\s+(\d+(?:\.\d+)?)\s*([a-zA-Z°²³/]+)\s*(?:to|in|→)\s*([a-zA-Z°²³/]+)/i,
 		// Pattern: "10 meters"
-		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³]+)$/i
+		/(\d+(?:\.\d+)?)\s*([a-zA-Z°²³/]+)$/i
 	];
 	
 	let match = null;
@@ -632,7 +645,11 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 		// "translate 'hello world' to spanish"
 		/^translate\s+['"](.+?)['"]\s+to\s+([a-zA-Z]+)$/i,
 		// "translate hello world to spanish"
-		/^translate\s+([^"']+?)\s+to\s+([a-zA-Z]+)$/i
+		/^translate\s+([^"']+?)\s+to\s+([a-zA-Z]+)$/i,
+		// "tr 'hello world' en es" or "tr hello en es"
+		/^tr\s+['"](.+?)['"]\s+([a-zA-Z]{2})\s+([a-zA-Z]{2})$/i,
+		// "tr hello en es"
+		/^tr\s+(\w+)\s+([a-zA-Z]{2})\s+([a-zA-Z]{2})$/i
 	];
 	
 	let matchFound = false;
@@ -641,6 +658,7 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 		const match = input.match(pattern);
 		if (match && !matchFound) {
 			let targetLangInput: string = '';
+			let sourceLangInput: string = '';
 			let textToTranslate = '';
 			
 			if (match.length === 2) {
@@ -650,20 +668,35 @@ function analyzeTranslation(input: string): AppSuggestion[] {
 				// Pattern: "translate hello to Spanish"
 				textToTranslate = match[1].trim();
 				targetLangInput = match[2].toLowerCase();
+			} else if (match.length === 4) {
+				// Pattern: "tr 'hello world' en es" or "tr hello en es"
+				textToTranslate = match[1].trim();
+				sourceLangInput = match[2].toLowerCase();
+				targetLangInput = match[3].toLowerCase();
 			}
 			
 			if (targetLangInput) {
 				const targetLangCode = languageMap[targetLangInput];
+				const sourceLangCode = sourceLangInput ? languageMap[sourceLangInput] : 'auto';
 				
 				if (targetLangCode) {
+					let reason = '';
+					if (textToTranslate && sourceLangInput) {
+						reason = `Translate "${textToTranslate}" from ${sourceLangInput} to ${targetLangInput}`;
+					} else if (textToTranslate) {
+						reason = `Translate "${textToTranslate}" to ${targetLangInput}`;
+					} else {
+						reason = `Translate to ${targetLangInput}`;
+					}
+					
 					suggestions.push({
 						id: 'translator',
 						name: appConfigs.translator.name,
 						icon: appConfigs.translator.icon,
 						description: appConfigs.translator.description,
 						confidence: 0.95,
-						url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, 'auto'),
-						reason: textToTranslate ? `Translate "${textToTranslate}" to ${targetLangInput}` : `Translate to ${targetLangInput}`
+						url: appConfigs.translator.buildUrl(input, targetLangCode, textToTranslate, sourceLangCode || 'auto'),
+						reason: reason
 					});
 					matchFound = true;
 				}
