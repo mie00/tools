@@ -750,4 +750,321 @@ describe('URL Generation', () => {
 		
 		expect(jsonSuggestion?.url).toContain(encodeURIComponent('{"key with spaces": "value & more"}'));
 	});
+});
+
+describe('Complex Input Ordering Tests', () => {
+	describe('Multiple analyzer matches', () => {
+		it('should prioritize JSON over unit conversion for {"input": "10 kg to lb"}', () => {
+			const result = analyzeInput('{"input": "10 kg to lb"}');
+			
+			// Should detect JSON but NOT unit conversion (since it's inside structured data)
+			const jsonSuggestion = result.find(s => s.id === 'jsonformat');
+			const unitSuggestion = result.find(s => s.id === 'unitconverter');
+			
+			expect(jsonSuggestion).toBeDefined();
+			expect(unitSuggestion).toBeUndefined(); // Should not detect patterns inside JSON
+			
+			// JSON should be the top suggestion
+			expect(result[0].id).toBe('jsonformat');
+			if (jsonSuggestion) {
+				expect(jsonSuggestion.confidence).toBe(0.95);
+			}
+		});
+
+		it('should prioritize URL over time conversion for URLs with time-like patterns', () => {
+			const testCases = [
+				'https://www.google.com/11amedt',
+				'https://example.com/12345678',
+				'https://api.test.com/endpoint?timestamp=1634567890',
+				'https://site.com/path/2023-12-25'
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const urlSuggestion = result.find(s => s.id === 'urlexaminer');
+				const timeSuggestion = result.find(s => s.id === 'datetime');
+				
+				expect(urlSuggestion).toBeDefined();
+				
+				// If time suggestion exists, URL should have higher confidence
+				if (timeSuggestion && urlSuggestion) {
+					expect(urlSuggestion.confidence).toBeGreaterThan(timeSuggestion.confidence);
+					
+					const urlIndex = result.findIndex(s => s.id === 'urlexaminer');
+					const timeIndex = result.findIndex(s => s.id === 'datetime');
+					expect(urlIndex).toBeLessThan(timeIndex);
+				}
+			});
+		});
+
+		it('should prioritize JSON over color detection for {"color": "#FF5733"}', () => {
+			const result = analyzeInput('{"color": "#FF5733"}');
+			
+			const jsonSuggestion = result.find(s => s.id === 'jsonformat');
+			const colorSuggestion = result.find(s => s.id === 'colorpicker');
+			
+			expect(jsonSuggestion).toBeDefined();
+			expect(colorSuggestion).toBeUndefined(); // Should not detect patterns inside JSON
+			
+			// JSON should be the top suggestion
+			expect(result[0].id).toBe('jsonformat');
+			if (jsonSuggestion) {
+				expect(jsonSuggestion.confidence).toBe(0.95);
+			}
+		});
+
+		it('should prioritize JSON over stock tracking for {"stock": "$AAPL"}', () => {
+			const result = analyzeInput('{"stock": "$AAPL"}');
+			
+			const jsonSuggestion = result.find(s => s.id === 'jsonformat');
+			const stockSuggestion = result.find(s => s.id === 'stocktracker');
+			
+			expect(jsonSuggestion).toBeDefined();
+			expect(stockSuggestion).toBeUndefined(); // Should not detect patterns inside JSON
+			
+			// JSON should be the top suggestion
+			expect(result[0].id).toBe('jsonformat');
+			if (jsonSuggestion) {
+				expect(jsonSuggestion.confidence).toBe(0.95);
+			}
+		});
+
+		it('should prioritize URL over math for URLs with math-like patterns', () => {
+			const testCases = [
+				'https://example.com/calc?expr=2+3*4',
+				'https://api.math.com/calculate/5+10',
+				'https://calculator.com/result?expression=100/4+6'
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const urlSuggestion = result.find(s => s.id === 'urlexaminer');
+				const mathSuggestion = result.find(s => s.id === 'calculator');
+				
+				expect(urlSuggestion).toBeDefined();
+				
+				// If math suggestion exists, URL should have higher confidence
+				if (mathSuggestion && urlSuggestion) {
+					expect(urlSuggestion.confidence).toBeGreaterThan(mathSuggestion.confidence);
+					
+					const urlIndex = result.findIndex(s => s.id === 'urlexaminer');
+					const mathIndex = result.findIndex(s => s.id === 'calculator');
+					expect(urlIndex).toBeLessThan(mathIndex);
+				}
+			});
+		});
+
+		it('should prioritize cURL over URL for cURL commands', () => {
+			const testCases = [
+				'curl https://api.example.com/data',
+				'curl -X POST https://api.example.com/users',
+				'curl -H "Content-Type: application/json" https://api.example.com'
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const urlSuggestion = result.find(s => s.id === 'urlexaminer');
+				expect(urlSuggestion).toBeDefined();
+				
+				// cURL should have higher confidence (0.95) than plain URL (0.9)
+				if (urlSuggestion) {
+					expect(urlSuggestion.confidence).toBe(0.95);
+					expect(urlSuggestion.reason).toContain('curl');
+				}
+			});
+		});
+
+		it('should prioritize translation over other analyzers for complex translation commands', () => {
+			const testCases = [
+				'translate "2+3*4" to spanish',
+				'translate "#FF5733" to french',
+				'translate "$AAPL" to german'
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const translationSuggestion = result.find(s => s.id === 'translator');
+				expect(translationSuggestion).toBeDefined();
+				
+				// Translation should have very high confidence (0.95)
+				if (translationSuggestion) {
+					expect(translationSuggestion.confidence).toBe(0.95);
+					
+					// Translation should appear first
+					expect(result[0].id).toBe('translator');
+				}
+			});
+		});
+
+		it('should handle JSON arrays with mixed content types', () => {
+			const testCases = [
+				'[{"amount": "10 kg to lb"}, {"color": "#FF5733"}]',
+				'[{"expression": "2+3*4"}, {"url": "https://example.com"}]',
+				'[{"stock": "$AAPL"}, {"timestamp": 1634567890}]'
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const jsonSuggestion = result.find(s => s.id === 'jsonformat');
+				expect(jsonSuggestion).toBeDefined();
+				
+				// JSON should be the top suggestion
+				expect(result[0].id).toBe('jsonformat');
+				if (jsonSuggestion) {
+					expect(jsonSuggestion.confidence).toBeGreaterThanOrEqual(0.95);
+				}
+			});
+		});
+
+		it('should handle Base64 strings that look like other patterns', () => {
+			const testCases = [
+				'MjIzKzMqNA==', // "2+3*4" in Base64
+				'IzAwRkY1NzMz', // "#FF5733" in Base64
+				'JEFBUEw=', // "$AAPL" in Base64
+				'eyJrZXkiOiAidmFsdWUifQ==' // '{"key": "value"}' in Base64
+			];
+
+			testCases.forEach(input => {
+				const result = analyzeInput(input);
+				
+				const base64Suggestion = result.find(s => s.id === 'base64');
+				expect(base64Suggestion).toBeDefined();
+				
+				// Base64 should have reasonable confidence
+				if (base64Suggestion) {
+					expect(base64Suggestion.confidence).toBeGreaterThanOrEqual(0.6);
+				}
+			});
+		});
+
+		it('should properly order suggestions by confidence for complex inputs', () => {
+			const testCases = [
+				{
+					input: '{"math": "2+3*4", "color": "#FF5733"}',
+					expectedTopSuggestion: 'jsonformat'
+				},
+				{
+					input: 'curl https://api.example.com/calculate?expr=2+3*4',
+					expectedTopSuggestion: 'urlexaminer'
+				},
+				{
+					input: 'translate "convert 10 kg to lb" to spanish',
+					expectedTopSuggestion: 'translator'
+				},
+				{
+					input: 'sin(x) + cos(y)',
+					expectedTopSuggestion: 'functiondrawer'
+				},
+				{
+					input: '100°F to celsius',
+					expectedTopSuggestion: 'unitconverter'
+				}
+			];
+
+			testCases.forEach(({ input, expectedTopSuggestion }) => {
+				const result = analyzeInput(input);
+				
+				expect(result.length).toBeGreaterThan(0);
+				expect(result[0].id).toBe(expectedTopSuggestion);
+				
+				// Verify suggestions are ordered by confidence descending
+				for (let i = 0; i < result.length - 1; i++) {
+					expect(result[i].confidence).toBeGreaterThanOrEqual(result[i + 1].confidence);
+				}
+			});
+		});
+
+		it('should handle edge cases with multiple matches', () => {
+			const testCases = [
+				{
+					input: 'https://example.com/data.json?content={"key":"value"}',
+					description: 'URL with JSON in query parameter'
+				},
+				{
+					input: '{"url": "https://example.com", "calculation": "2+3*4"}',
+					description: 'JSON containing URL and math expression'
+				},
+				{
+					input: 'translate https://example.com/translate?text=hello to spanish',
+					description: 'Translation command with URL'
+				},
+				{
+					input: '{"timestamp": 1634567890, "base64": "SGVsbG8gV29ybGQ="}',
+					description: 'JSON with timestamp and base64'
+				}
+			];
+
+			testCases.forEach(({ input, description }) => {
+				const result = analyzeInput(input);
+				
+				expect(result.length).toBeGreaterThan(0);
+				
+				// All suggestions should have valid confidence scores
+				result.forEach(suggestion => {
+					expect(suggestion.confidence).toBeGreaterThan(0);
+					expect(suggestion.confidence).toBeLessThanOrEqual(1);
+				});
+				
+				// Results should be sorted by confidence descending
+				for (let i = 0; i < result.length - 1; i++) {
+					expect(result[i].confidence).toBeGreaterThanOrEqual(result[i + 1].confidence);
+				}
+				
+				// Google search should always be present as fallback
+				const googleSuggestion = result.find(s => s.id === 'googlesearch');
+				expect(googleSuggestion).toBeDefined();
+				if (googleSuggestion) {
+					expect(googleSuggestion.confidence).toBe(0.1);
+				}
+			});
+		});
+
+		it('should maintain consistent confidence values across similar inputs', () => {
+			const similarInputs = [
+				'{"test": "value"}',
+				'{"different": "content"}',
+				'{"another": "example"}'
+			];
+
+			const confidenceValues = similarInputs.map(input => {
+				const result = analyzeInput(input);
+				const jsonSuggestion = result.find(s => s.id === 'jsonformat');
+				return jsonSuggestion?.confidence;
+			});
+
+			// All should have the same confidence for valid JSON
+			expect(confidenceValues.every(conf => conf === 0.95)).toBe(true);
+		});
+	});
+
+	describe('Analyzer priority verification', () => {
+		it('should have expected confidence ranges for different analyzer types', () => {
+			const testCases = [
+				{ input: 'curl https://api.example.com', expectedId: 'urlexaminer', expectedConfidence: 0.95 },
+				{ input: 'translate hello to spanish', expectedId: 'translator', expectedConfidence: 0.95 },
+				{ input: '2+3*4', expectedId: 'calculator', expectedConfidence: 0.95 },
+				{ input: 'sin(x) + cos(y)', expectedId: 'functiondrawer', expectedConfidence: 0.9 },
+				{ input: '{"key": "value"}', expectedId: 'jsonformat', expectedConfidence: 0.95 },
+				{ input: 'https://example.com', expectedId: 'urlexaminer', expectedConfidence: 0.9 },
+				{ input: '10 kg to lb', expectedId: 'unitconverter', expectedConfidence: 0.9 },
+				{ input: '$AAPL', expectedId: 'stocktracker', expectedConfidence: 0.8 },
+				{ input: 'google search', expectedId: 'googlesearch', expectedConfidence: 0.1 }
+			];
+
+			testCases.forEach(({ input, expectedId, expectedConfidence }) => {
+				const result = analyzeInput(input);
+				const suggestion = result.find(s => s.id === expectedId);
+				
+				expect(suggestion).toBeDefined();
+				if (suggestion) {
+					expect(suggestion.confidence).toBe(expectedConfidence);
+				}
+			});
+		});
+	});
 }); 

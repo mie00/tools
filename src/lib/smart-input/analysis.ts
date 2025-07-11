@@ -209,49 +209,55 @@ export function analyzeInput(input: string): AppSuggestion[] {
 
 	if (!trimmed) return suggestions;
 
-	// Math expressions (calculator vs function drawer)
-	const mathSuggestions = analyzeMath(trimmed);
-	suggestions.push(...mathSuggestions);
+	// Check for structured data first (JSON, Base64) - these should have priority
+	const jsonSuggestions = analyzeJson(trimmed);
+	suggestions.push(...jsonSuggestions);
 
-	// Unit conversions
-	const unitSuggestions = analyzeUnit(trimmed);
-	suggestions.push(...unitSuggestions);
-
-	// Epoch time detection
-	const epochSuggestions = analyzeEpoch(trimmed);
-	suggestions.push(...epochSuggestions);
-
-	// Timezone conversions
-	const timezoneSuggestions = analyzeTimezone(trimmed);
-	suggestions.push(...timezoneSuggestions);
-
-	// Currency conversion
-	const currencySuggestions = analyzeCurrency(trimmed);
-	suggestions.push(...currencySuggestions);
-
-	// Color detection
-	const colorSuggestions = analyzeColor(trimmed);
-	suggestions.push(...colorSuggestions);
-
-	// Stock symbols
-	const stockSuggestions = analyzeStock(trimmed);
-	suggestions.push(...stockSuggestions);
-
-	// Translation patterns
-	const translationSuggestions = analyzeTranslation(trimmed);
-	suggestions.push(...translationSuggestions);
-
-	// URLs and curl commands
-	const urlSuggestions = analyzeUrl(trimmed);
-	suggestions.push(...urlSuggestions);
-
-	// Base64 strings
 	const base64Suggestions = analyzeBase64(trimmed);
 	suggestions.push(...base64Suggestions);
 
-	// JSON strings
-	const jsonSuggestions = analyzeJson(trimmed);
-	suggestions.push(...jsonSuggestions);
+	// If we detected JSON or Base64, we should still check for URLs and translations
+	// but skip other pattern-based analyzers to avoid false positives
+	const isStructuredData = jsonSuggestions.length > 0 || base64Suggestions.length > 0;
+
+	// URLs and curl commands (always check - can contain structured data)
+	const urlSuggestions = analyzeUrl(trimmed);
+	suggestions.push(...urlSuggestions);
+
+	// Translation patterns (always check - can translate structured data)
+	const translationSuggestions = analyzeTranslation(trimmed);
+	suggestions.push(...translationSuggestions);
+
+	// Only run content-based analyzers if we haven't detected structured data
+	if (!isStructuredData) {
+		// Math expressions (calculator vs function drawer)
+		const mathSuggestions = analyzeMath(trimmed);
+		suggestions.push(...mathSuggestions);
+
+		// Unit conversions
+		const unitSuggestions = analyzeUnit(trimmed);
+		suggestions.push(...unitSuggestions);
+
+		// Epoch time detection
+		const epochSuggestions = analyzeEpoch(trimmed);
+		suggestions.push(...epochSuggestions);
+
+		// Timezone conversions
+		const timezoneSuggestions = analyzeTimezone(trimmed);
+		suggestions.push(...timezoneSuggestions);
+
+		// Currency conversion
+		const currencySuggestions = analyzeCurrency(trimmed);
+		suggestions.push(...currencySuggestions);
+
+		// Color detection
+		const colorSuggestions = analyzeColor(trimmed);
+		suggestions.push(...colorSuggestions);
+
+		// Stock symbols
+		const stockSuggestions = analyzeStock(trimmed);
+		suggestions.push(...stockSuggestions);
+	}
 
 	// Google search (always available as fallback)
 	const googleSuggestions = analyzeGoogleSearch(trimmed);
@@ -274,8 +280,11 @@ function analyzeMath(input: string): AppSuggestion[] {
 	const isUnitConversion = /\d+(?:\.\d+)?\s*[a-zA-Z°²³/]+\s*(?:to|in|→)\s*[a-zA-Z°²³/]+/i;
 	
 	// Only detect math if it looks like an actual mathematical expression
-	// Must have numbers and operators, and not be part of a URL or command
-	if (hasNumbers.test(input) && mathOperators.test(input) && !isUnitConversion.test(input)) {
+	// Must have (numbers and operators) OR (functions/variables and operators)
+	const hasBasicMath = hasNumbers.test(input) && mathOperators.test(input);
+	const hasFunctionMath = (hasVariables.test(input) || hasFunctions.test(input)) && mathOperators.test(input);
+	
+	if ((hasBasicMath || hasFunctionMath) && !isUnitConversion.test(input)) {
 		// Exclude common false positives
 		const isUrl = /^https?:\/\/|^www\./i.test(input);
 		const isCurlCommand = /^\s*curl\s+/i.test(input);
@@ -776,7 +785,7 @@ function analyzeJson(input: string): AppSuggestion[] {
 				name: appConfigs.jsonformat.name,
 				icon: appConfigs.jsonformat.icon,
 				description: appConfigs.jsonformat.description,
-				confidence: 0.9,
+				confidence: 0.95, // Higher confidence for structured data
 				url: appConfigs.jsonformat.buildUrl(input),
 				reason: 'Valid JSON format detected'
 			});
@@ -787,7 +796,7 @@ function analyzeJson(input: string): AppSuggestion[] {
 				name: appConfigs.jsonformat.name,
 				icon: appConfigs.jsonformat.icon,
 				description: appConfigs.jsonformat.description,
-				confidence: 0.6,
+				confidence: 0.7, // Higher confidence for malformed JSON too
 				url: appConfigs.jsonformat.buildUrl(input),
 				reason: 'Appears to be JSON (may need formatting)'
 			});
