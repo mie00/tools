@@ -4,8 +4,17 @@
 	import { markedHighlight } from 'marked-highlight';
 	import hljs from 'highlight.js';
 	import 'highlight.js/styles/atom-one-light.css';
+	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 
-	import { persistentTopics, persistentConfig, activeTopicId } from './store';
+	import {
+		persistentTopics,
+		persistentConfig,
+		activeTopicId,
+		llmState,
+		persistentLlmState
+	} from './store';
+	import { get } from 'svelte/store';
 	import type { Message, ChatTopic, ChatConfig, ModelLoadingProgress, FileProgress } from './types';
 
 	import ChatSidebar from './ChatSidebar.svelte';
@@ -140,6 +149,41 @@ CONVERSATION:
 		}
 	});
 
+	// Sync local LLM state with shared stores
+	$effect(() => {
+		llmState.set({
+			isModelLoaded,
+			worker,
+			hasInitializationError
+		});
+		persistentLlmState.set({
+			isModelLoaded,
+			hasInitializationError
+		});
+	});
+
+	// Sync shared state back to local state when model is loaded elsewhere
+	$effect(() => {
+		const unsubscribe = llmState.subscribe((state) => {
+			// Only sync if the shared state has a model loaded and we don't have one locally
+			if (state.isModelLoaded && state.worker && !isModelLoaded) {
+				worker = state.worker;
+				isModelLoaded = true;
+				isLoading = false;
+				hasInitializationError = false;
+				loadingProgress = { status: 'Model loaded successfully!', file: 'complete', progress: 100 };
+				fileProgress = {};
+			}
+			// Also sync error state
+			if (state.hasInitializationError && !hasInitializationError) {
+				hasInitializationError = true;
+				isLoading = false;
+				loadingProgress = { status: 'Error: Model failed to load', file: 'error', progress: 0 };
+			}
+		});
+		return unsubscribe;
+	});
+
 	onMount(async () => {
 		// Load from localStorage and migrate old data
 		const savedTopics = localStorage.getItem('ollamaChatTopics');
@@ -214,8 +258,170 @@ CONVERSATION:
 			currentActiveTopicId = value;
 		});
 
+		// Load and persist LLM state
+		const savedLlmState = localStorage.getItem('ollamaChatLlmState');
+		if (savedLlmState) {
+			try {
+				const parsedLlmState = JSON.parse(savedLlmState);
+				persistentLlmState.set(parsedLlmState);
+			} catch (e) {
+				console.error('Failed to parse LLM state:', e);
+			}
+		}
+
+		persistentLlmState.subscribe((value) => {
+			localStorage.setItem('ollamaChatLlmState', JSON.stringify(value));
+		});
+
 		if (topics.length === 0 && !draftTopic) {
 			createNewTopic();
+		}
+
+		// Handle URL parameters for initializing conversations
+		if (browser) {
+			const urlParams = new URLSearchParams($page.url.search);
+			const initialQuestion = urlParams.get('q');
+			const originalAnswer = urlParams.get('answer');
+			const followupQuestion = urlParams.get('followup');
+
+			if (initialQuestion && followupQuestion) {
+				// Create initial messages array with the original question
+				const initialMessages: Message[] = [
+					{
+						id: crypto.randomUUID(),
+						role: 'user',
+						content: initialQuestion,
+						timestamp: new Date().toISOString()
+					}
+				];
+
+				// Add the original answer if provided
+				if (originalAnswer) {
+					initialMessages.push({
+						id: crypto.randomUUID(),
+						role: 'assistant',
+						content: originalAnswer,
+						timestamp: new Date().toISOString()
+					});
+				}
+
+				// Create a new topic with the initial conversation
+				const newTopic: ChatTopic = {
+					id: crypto.randomUUID(),
+					name:
+						initialQuestion.length > 30
+							? initialQuestion.substring(0, 30) + '...'
+							: initialQuestion,
+					messages: initialMessages,
+					systemPrompt: `You are a helpful assistant. You go into conversation with the user so you answer. Keep your answers short unless the user says otherwise.
+
+Sometimes you need to know things that can easily be programmed, like the length of a string or the current date and time, etc.
+In that case you can create a code snippet in javascript that calculates the answer and logs it,
+make sure to log it to see the result, and the user will respond back with the output,
+use this output to write back the actual answer and don't answer by yourself, you need to encapsulate the snippets in <execute> tags,
+the user will respond with the results enclosed with the tag <answer> so you can continue your answer based on this.
+Do not ask the user to provide an answer or anything after wards, this happens automatically.
+Also do not answer immediately after asking for code execution, instead stop after the closing tag and wait for a user response with the answer.
+
+Think before answering, this usually holds better quality answers. Use <think> tags to enclose your thinking process, this will not be shown to the user as a part of the answer. Make sure that the thinking process is enclosed in a <think> tag and not sent as is.
+
+Note that the actual user of the system doesn't see execute or answer tags or what's inside, so you'd need to continue your answer as if these do not exist.
+
+The user just asked: "${initialQuestion}"
+
+Please provide a helpful answer. The user will then follow up with: "${followupQuestion}"`,
+					model: config.defaultModelSource === 'local' ? 'local' : availableModels[0] || 'llama2',
+					modelSource: config.defaultModelSource,
+					createdAt: new Date().toISOString(),
+					lastUpdated: new Date().toISOString(),
+					isDraft: false
+				};
+
+				// Add the new topic and make it active
+				persistentTopics.update((currentTopics) => [...currentTopics, newTopic]);
+				activeTopicId.set(newTopic.id);
+
+				// Clear URL parameters
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('q');
+				newUrl.searchParams.delete('answer');
+				newUrl.searchParams.delete('followup');
+				window.history.replaceState({}, '', newUrl.toString());
+
+				// Helper: wait until local model is fully loaded
+				async function waitForLocalModelReady() {
+					if (isModelLoaded && worker) return;
+					return new Promise<void>((resolve) => {
+						const unsubscribe = llmState.subscribe((state) => {
+							if (state.isModelLoaded && state.worker) {
+								unsubscribe();
+								resolve();
+							}
+						});
+					});
+				}
+
+				// Only generate initial answer if no original answer was provided
+				if (!originalAnswer) {
+					// Generate assistant response to the initial question before handling follow-up
+					const generateInitialAnswer = async () => {
+						if (newTopic.modelSource === 'local') {
+							await waitForLocalModelReady();
+							activeTopicId.set(newTopic.id);
+							tick().then(() => generateLocalResponse());
+						} else {
+							activeTopicId.set(newTopic.id);
+							tick().then(() => generateRemoteResponse());
+						}
+					};
+					generateInitialAnswer();
+				} else {
+					// Just set the active topic since we already have the answer
+					activeTopicId.set(newTopic.id);
+				}
+
+				// Wait for the model to be ready, then submit the follow-up question
+				const processFollowup = async () => {
+					// Wait for the initial answer to be generated if needed
+					if (!originalAnswer) {
+						await new Promise<void>((resolve) => {
+							const checkForCompletion = () => {
+								const currentTopic = topics.find((t) => t.id === newTopic.id);
+								if (currentTopic && currentTopic.messages.length >= 2) {
+									// We have both user question and assistant answer
+									resolve();
+								} else {
+									setTimeout(checkForCompletion, 100);
+								}
+							};
+							checkForCompletion();
+						});
+					}
+
+					const followupMessage: Message = {
+						id: crypto.randomUUID(),
+						role: 'user',
+						content: followupQuestion,
+						timestamp: new Date().toISOString()
+					};
+
+					const currentTopic = topics.find((t) => t.id === newTopic.id);
+					if (currentTopic) {
+						currentTopic.messages.push(followupMessage);
+						currentTopic.lastUpdated = new Date().toISOString();
+						persistentTopics.set(topics);
+
+						if (currentTopic.modelSource === 'local') {
+							await waitForLocalModelReady();
+							tick().then(() => generateLocalResponse());
+						} else {
+							tick().then(() => generateRemoteResponse());
+						}
+					}
+				};
+
+				tick().then(processFollowup);
+			}
 		}
 
 		// Check WebGPU support
@@ -255,6 +461,27 @@ CONVERSATION:
 
 	async function initializeLocalModel() {
 		if (!config.webGpuSupported) return;
+
+		// Check if model is already loaded in shared state
+		const currentLlmState = get(llmState);
+		if (currentLlmState.isModelLoaded && currentLlmState.worker) {
+			// Use existing worker from shared state
+			worker = currentLlmState.worker;
+			isModelLoaded = true;
+			isLoading = false;
+			hasInitializationError = false;
+			loadingProgress = { status: 'Model loaded successfully!', file: 'complete', progress: 100 };
+			fileProgress = {};
+			return;
+		}
+
+		// Check if model failed to load previously
+		if (currentLlmState.hasInitializationError) {
+			hasInitializationError = true;
+			isLoading = false;
+			loadingProgress = { status: 'Error: Model failed to load', file: 'error', progress: 0 };
+			return;
+		}
 
 		isLoading = true;
 		worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });

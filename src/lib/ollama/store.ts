@@ -20,3 +20,23 @@ export const persistentConfig = writable<ChatConfig>({
 	defaultModelSource: 'local' // Set local as default
 });
 export const activeTopicId = writable<string | null>(null);
+
+// LLM runtime state for sharing across components
+export const llmState = writable<{
+	isModelLoaded: boolean;
+	worker: Worker | null;
+	hasInitializationError: boolean;
+}>({
+	isModelLoaded: false,
+	worker: null,
+	hasInitializationError: false
+});
+
+// Persistent LLM state (excluding worker which can't be serialized)
+export const persistentLlmState = writable<{
+	isModelLoaded: boolean;
+	hasInitializationError: boolean;
+}>({
+	isModelLoaded: false,
+	hasInitializationError: false
+});
