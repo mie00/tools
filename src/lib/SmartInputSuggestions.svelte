@@ -433,7 +433,16 @@
 					type: 'generate',
 					data: {
 						userInput: input,
-						chat_history: [],
+						chat_history: [
+							{
+								role: 'system',
+								content:
+									`You are a helpful assistant that suggests answers based on the user search query in a search engine.
+									Do not spend too much time thinking.
+									Be concise and to the point.
+									`.replace(/\t/g, '')
+							}
+						],
 						maxTokens: config?.local?.maxTokens || 2000,
 						topK: 40,
 						temperature: 0.7
