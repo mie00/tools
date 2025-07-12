@@ -4,9 +4,14 @@
 	import CodeExecutor from './CodeExecutor.svelte';
 	import CodeBlock from './CodeBlock.svelte';
 
-	const { content, proseClass = '' } = $props<{
+	const {
+		content,
+		proseClass = '',
+		llmMode = false
+	} = $props<{
 		content: string;
 		proseClass?: string;
+		llmMode?: boolean;
 	}>();
 
 	let mainEl: HTMLElement;
@@ -50,10 +55,12 @@
 		const id = `codeblock-${Math.random().toString(36).substr(2, 9)}`;
 
 		let btn = '';
-		if (language === 'js' || language === 'javascript') {
-			btn = `<button class='exec-btn' data-type='js' data-id='${id}'>Execute</button>`;
-		} else if (language === 'html') {
-			btn = `<button class='exec-btn' data-type='html' data-id='${id}'>Render</button>`;
+		if (!llmMode) {
+			if (language === 'js' || language === 'javascript') {
+				btn = `<button class='exec-btn' data-type='js' data-id='${id}'>Execute</button>`;
+			} else if (language === 'html') {
+				btn = `<button class='exec-btn' data-type='html' data-id='${id}'>Render</button>`;
+			}
 		}
 
 		return `<div class='code-block-wrapper' data-id='${id}'>
@@ -116,7 +123,7 @@
 	{#each parts as part, index (index)}
 		{#if part.type === 'markdown'}
 			<!-- Safe: marked library sanitizes markdown content -->
-			{@html marked(part.content)}<!-- eslint-disable-line svelte/no-at-html-tags -->
+			{@html marked(part.content, { renderer })}<!-- eslint-disable-line svelte/no-at-html-tags -->
 		{:else if part.type === 'code'}
 			<CodeBlock code={part.content} lang={part.lang || ''} />
 		{/if}
@@ -157,5 +164,25 @@
 	}
 	.executor-portal {
 		z-index: 10;
+	}
+	/* Style all links in markdown content */
+	:global(.prose a) {
+		color: #2563eb;
+		text-decoration: underline;
+		font-weight: 500;
+		transition: color 0.2s;
+		word-break: break-all;
+	}
+	:global(.prose a:hover) {
+		color: #1d4ed8;
+		text-decoration: underline wavy;
+	}
+	/* External link indicator */
+	:global(.prose a[href^="http://"]::after),
+	:global(.prose a[href^="https://"]::after)
+	{
+		content: ' ↗';
+		font-size: 0.8em;
+		color: #2563eb;
 	}
 </style>

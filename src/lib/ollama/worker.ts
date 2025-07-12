@@ -37,7 +37,11 @@ class TextGenerationPipelineSingleton {
 
 let past_key_values_cache: any = null;
 
-async function generate(data: any, port: MessagePort, stopping_criteria: InterruptableStoppingCriteria) {
+async function generate(
+	data: any,
+	port: MessagePort,
+	stopping_criteria: InterruptableStoppingCriteria
+) {
 	const { userInput, chat_history, topK, temperature, maxTokens } = data;
 	const messages = [...chat_history, { role: 'user', content: userInput }];
 

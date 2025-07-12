@@ -12,6 +12,7 @@
 	} from './smart-input/shortcuts';
 	import type { AppSuggestion } from './smart-input/analysis';
 	import { llmState, persistentLlmState, persistentConfig } from './ollama/store';
+	import MarkdownRenderer from './MarkdownRenderer.svelte';
 
 	let inputText = $state('');
 	let suggestions: AppSuggestion[] = $state([]);
@@ -41,6 +42,7 @@
 	}>({ isModelLoaded: false, hasInitializationError: false });
 	let config = $state<any>(null);
 	let localWorker: SharedWorker | null = null;
+	let llmManualTriggered = $state(false);
 
 	// Track LLM state
 	$effect(() => {
@@ -440,6 +442,17 @@
 									`You are a helpful assistant that suggests answers based on the user search query in a search engine.
 									Do not spend too much time thinking.
 									Be concise and to the point.
+
+									If the user is looking for a website, suggest the website using the markdown link format.
+									If you think the website has a typo or incorrect, do not ask the user, instead suggest the correct website.
+									For example if the user types facebook, suggest https://www.facebook.com/
+									If the user types yt, suggest https://www.youtube.com/
+									Do not answer with an explanation, just suggest the website in one line.
+									If there are multiple websites, suggest them with the highest probability first.
+
+									The time now is ${new Date().toLocaleString()}. Do not use any other time.
+									If the user asks for the time, answer with the time.
+									You may use a different format depending on the user's request.
 									`.replace(/\t/g, '')
 							}
 						],
@@ -546,6 +559,8 @@
 		// Prevent redundant processing to avoid potential loops
 		if (inputText === lastProcessedInput) return;
 		lastProcessedInput = inputText;
+
+		llmManualTriggered = false; // Reset manual trigger on input change
 
 		if (inputText.trim()) {
 			suggestions = analyzeInput(inputText);
@@ -668,6 +683,29 @@
 		{/if}
 	</div>
 
+	<!-- Manual LLM Answer Button at the top -->
+	{#if inputText.trim().length > 3 && config && config.webGpuSupported && config.defaultModelSource === 'local' && !llmManualTriggered && !llmLoading && !llmStreaming && !llmModelInitializing && !llmAnswer}
+		<div class="mt-4 text-center">
+			<button
+				onclick={() => {
+					llmManualTriggered = true;
+					getLlmAnswer(inputText.trim());
+				}}
+				class="inline-flex items-center space-x-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+					></path>
+				</svg>
+				<span>Ask AI Assistant</span>
+			</button>
+		</div>
+	{/if}
+
 	<!-- LLM Answer Preview -->
 	{#if llmModelInitializing || llmLoading || llmStreaming || llmAnswer}
 		<div class="space-y-2">
@@ -705,9 +743,9 @@
 										<div class="mt-2 space-y-2">
 											{#each processed.thinkingSections as thinking, index (index)}
 												<div
-													class="rounded border-l-4 border-blue-200 bg-white p-2 text-sm whitespace-pre-wrap text-gray-700"
+													class="rounded border-l-4 border-blue-200 bg-white p-2 text-sm text-gray-700"
 												>
-													{thinking}
+													<MarkdownRenderer content={thinking} llmMode={true} />
 												</div>
 											{/each}
 										</div>
@@ -726,18 +764,21 @@
 										{#if processed.incompleteThinkContent}
 											<div class="mt-2">
 												<div
-													class="rounded border-l-4 border-blue-200 bg-white p-2 text-sm whitespace-pre-wrap text-gray-700"
+													class="rounded border-l-4 border-blue-200 bg-white p-2 text-sm text-gray-700"
 												>
-													{processed.incompleteThinkContent}<span
-														class="ml-1 inline-block h-4 w-2 animate-pulse bg-purple-500"
+													<MarkdownRenderer
+														content={processed.incompleteThinkContent}
+														llmMode={true}
+													/>
+													<span class="ml-1 inline-block h-4 w-2 animate-pulse bg-purple-500"
 													></span>
 												</div>
 											</div>
 										{/if}
 									</details>
 								{/if}
-								<div class="text-sm whitespace-pre-wrap text-gray-700">
-									{processed.mainContent}
+								<div class="text-sm text-gray-700">
+									<MarkdownRenderer content={processed.mainContent} llmMode={true} />
 									{#if llmStreaming && processed.mainContent && !processed.hasIncompleteThink}
 										<span class="ml-1 inline-block h-4 w-2 animate-pulse bg-purple-500"></span>
 									{/if}
@@ -754,10 +795,15 @@
 										<span class="text-xs">Thinking...</span>
 									</div>
 								{/if}
-								<div class="line-clamp-3 whitespace-pre-wrap">
-									{processed.mainContent.length > 200
-										? processed.mainContent.substring(0, 200) + '...'
-										: processed.mainContent}
+								<div class="line-clamp-3">
+									{#if processed.mainContent.length > 200}
+										<MarkdownRenderer
+											content={processed.mainContent.substring(0, 200) + '...'}
+											llmMode={true}
+										/>
+									{:else}
+										<MarkdownRenderer content={processed.mainContent} llmMode={true} />
+									{/if}
 									{#if llmStreaming && (processed.mainContent || processed.hasIncompleteThink)}
 										<span class="ml-1 inline-block h-4 w-2 animate-pulse bg-purple-500"></span>
 									{/if}
