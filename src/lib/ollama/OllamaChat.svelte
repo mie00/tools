@@ -58,7 +58,7 @@ CONVERSATION:
 	let abortController: AbortController | null = null;
 
 	// Local model state
-	let worker: Worker | null = null;
+	let worker: SharedWorker | null = null;
 	let isModelLoaded = $state(false);
 	let loadingProgress: ModelLoadingProgress = $state({
 		status: 'loading',
@@ -484,9 +484,9 @@ Please provide a helpful answer. The user will then follow up with: "${followupQ
 		}
 
 		isLoading = true;
-		worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+		worker = new SharedWorker(new URL('./worker.ts', import.meta.url), { type: 'module' });
 
-		worker.onmessage = (event) => {
+		worker.port.onmessage = (event) => {
 			const { type, data } = event.data;
 
 			switch (type) {
@@ -528,7 +528,7 @@ Please provide a helpful answer. The user will then follow up with: "${followupQ
 			}
 		};
 
-		worker.postMessage({ type: 'init', data: { modelPath: config.local.modelPath } });
+		worker.port.postMessage({ type: 'init', data: { modelPath: config.local.modelPath } });
 	}
 
 	function handleLocalModelUpdate(data: string) {
@@ -639,7 +639,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 	function stopGeneration() {
 		if (activeTopic?.modelSource === 'local') {
 			if (worker) {
-				worker.postMessage({ type: 'interrupt' });
+				worker.port.postMessage({ type: 'interrupt' });
 			}
 		} else {
 			if (abortController) {
@@ -754,7 +754,7 @@ You don't know anything about "now", the date you have is incorrect, so you'd al
 			messagesToSend.unshift({ role: 'system', content: activeTopic.systemPrompt });
 		}
 
-		worker.postMessage({
+		worker.port.postMessage({
 			type: 'generate',
 			data: {
 				userInput: activeTopic.messages[activeTopic.messages.length - 2].content,

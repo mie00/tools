@@ -24,7 +24,7 @@ export const activeTopicId = writable<string | null>(null);
 // LLM runtime state for sharing across components
 export const llmState = writable<{
 	isModelLoaded: boolean;
-	worker: Worker | null;
+	worker: SharedWorker | null;
 	hasInitializationError: boolean;
 }>({
 	isModelLoaded: false,

@@ -32,7 +32,7 @@
 	let pendingInput = $state(''); // Store input to process after model loads
 	let currentLlmState = $state<{
 		isModelLoaded: boolean;
-		worker: Worker | null;
+		worker: SharedWorker | null;
 		hasInitializationError: boolean;
 	}>({ isModelLoaded: false, worker: null, hasInitializationError: false });
 	let _persistentLlmStateValue = $state<{
@@ -40,7 +40,7 @@
 		hasInitializationError: boolean;
 	}>({ isModelLoaded: false, hasInitializationError: false });
 	let config = $state<any>(null);
-	let localWorker: Worker | null = null;
+	let localWorker: SharedWorker | null = null;
 
 	// Track LLM state
 	$effect(() => {
@@ -131,9 +131,6 @@
 		}
 		if (llmAnswerTimeout) {
 			clearTimeout(llmAnswerTimeout);
-		}
-		if (localWorker) {
-			localWorker.terminate();
 		}
 	});
 
@@ -251,21 +248,15 @@
 			return;
 		}
 
-		// If we already have a local worker but shared state isn't updated, something went wrong
-		if (localWorker && !currentLlmState.isModelLoaded) {
-			localWorker.terminate();
-			localWorker = null;
-		}
-
 		// If model is not loaded and we don't have a local worker, try to initialize
 		if (!currentLlmState.isModelLoaded && !currentLlmState.worker && !localWorker) {
 			try {
 				llmModelInitializing = true;
-				localWorker = new Worker(new URL('./ollama/worker.ts', import.meta.url), {
+				localWorker = new SharedWorker(new URL('./ollama/worker.ts', import.meta.url), {
 					type: 'module'
 				});
 
-				localWorker.onmessage = (event) => {
+				localWorker.port.onmessage = (event) => {
 					const { type, data } = event.data;
 
 					switch (type) {
@@ -299,7 +290,6 @@
 								hasInitializationError: true
 							});
 							if (localWorker) {
-								localWorker.terminate();
 								localWorker = null;
 							}
 							llmModelInitializing = false;
@@ -308,7 +298,7 @@
 					}
 				};
 
-				localWorker.postMessage({ type: 'init', data: { modelPath: config.local.modelPath } });
+				localWorker.port.postMessage({ type: 'init', data: { modelPath: config.local.modelPath } });
 			} catch (error) {
 				console.error('Failed to initialize local model:', error);
 				llmState.set({
@@ -321,7 +311,6 @@
 					hasInitializationError: true
 				});
 				if (localWorker) {
-					localWorker.terminate();
 					localWorker = null;
 				}
 				llmModelInitializing = false;
@@ -355,14 +344,14 @@
 				// Listen for reset_done once
 				const resetHandler = (event: MessageEvent) => {
 					if (event.data?.type === 'reset_done') {
-						worker.removeEventListener('message', resetHandler);
+						worker.port.removeEventListener('message', resetHandler);
 						resolve();
 					}
 				};
-				worker.addEventListener('message', resetHandler);
+				worker.port.addEventListener('message', resetHandler);
 				// Interrupt current generation & clear caches
-				worker.postMessage({ type: 'interrupt' });
-				worker.postMessage({ type: 'reset' });
+				worker.port.postMessage({ type: 'interrupt' });
+				worker.port.postMessage({ type: 'reset' });
 			});
 
 			// --- END RESET LOGIC ---
@@ -404,13 +393,13 @@
 				};
 
 				const cleanup = () => {
-					worker.removeEventListener('message', handleMessage);
+					worker.port.removeEventListener('message', handleMessage);
 				};
 
-				worker.addEventListener('message', handleMessage);
+				worker.port.addEventListener('message', handleMessage);
 
 				// Send the query to the worker
-				worker.postMessage({
+				worker.port.postMessage({
 					type: 'generate',
 					data: {
 						userInput: input,

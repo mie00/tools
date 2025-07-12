@@ -38,7 +38,7 @@ class TextGenerationPipelineSingleton {
 const stopping_criteria = new InterruptableStoppingCriteria();
 let past_key_values_cache: any = null;
 
-async function generate(data: any) {
+async function generate(data: any, port: MessagePort) {
 	const { userInput, chat_history, topK, temperature, maxTokens } = data;
 	const messages = [...chat_history, { role: 'user', content: userInput }];
 
@@ -48,7 +48,7 @@ async function generate(data: any) {
 	});
 
 	if (!tokenizer || !model) {
-		self.postMessage({ type: 'generate_error', data: 'Tokenizer or model not loaded.' });
+		port.postMessage({ type: 'generate_error', data: 'Tokenizer or model not loaded.' });
 		return;
 	}
 
@@ -63,11 +63,11 @@ async function generate(data: any) {
 		skip_special_tokens: true,
 		callback_function: (output: string) => {
 			streamedContent += output;
-			self.postMessage({ type: 'update', data: output }); // Send only the new token
+			port.postMessage({ type: 'update', data: output }); // Send only the new token
 		}
 	});
 
-	self.postMessage({ type: 'start_generate' });
+	port.postMessage({ type: 'start_generate' });
 
 	try {
 		const result = (await model.generate({
@@ -83,14 +83,14 @@ async function generate(data: any) {
 		})) as any;
 
 		past_key_values_cache = result.past_key_values;
-		self.postMessage({ type: 'complete', data: streamedContent });
+		port.postMessage({ type: 'complete', data: streamedContent });
 	} catch (e: any) {
-		self.postMessage({ type: 'generate_error', data: e.message });
+		port.postMessage({ type: 'generate_error', data: e.message });
 	}
 }
 
-async function load() {
-	self.postMessage({ type: 'progress', data: { status: 'loading', file: 'model', progress: 0 } });
+async function load(port: MessagePort) {
+	port.postMessage({ type: 'progress', data: { status: 'loading', file: 'model', progress: 0 } });
 
 	const [tokenizer, model] = await TextGenerationPipelineSingleton.getInstance((progress: any) => {
 		// Format progress data to match UI expectations
@@ -101,15 +101,15 @@ async function load() {
 			loaded: progress.loaded || 0,
 			total: progress.total || 0
 		};
-		self.postMessage({ type: 'progress', data: formattedProgress });
+		port.postMessage({ type: 'progress', data: formattedProgress });
 	});
 
 	if (!tokenizer || !model) {
-		self.postMessage({ type: 'init_error', data: 'Failed to load model.' });
+		port.postMessage({ type: 'init_error', data: 'Failed to load model.' });
 		return;
 	}
 
-	self.postMessage({
+	port.postMessage({
 		type: 'progress',
 		data: { status: 'Compiling shaders...', file: 'WebGPU shaders', progress: 95 }
 	});
@@ -117,31 +117,35 @@ async function load() {
 	const inputs = tokenizer('a', { return_tensors: 'ort' });
 	await model.generate({ ...inputs, max_new_tokens: 1 });
 
-	self.postMessage({
+	port.postMessage({
 		type: 'progress',
 		data: { status: 'Model loaded successfully!', file: 'complete', progress: 100 }
 	});
 
-	self.postMessage({ type: 'init_done' });
+	port.postMessage({ type: 'init_done' });
 }
 
-self.onmessage = async (e: MessageEvent) => {
-	const { type, data } = e.data;
-	switch (type) {
-		case 'init': // Changed from 'load' to 'init' to match svelte component
-			await load();
-			break;
-		case 'generate':
-			stopping_criteria.reset();
-			await generate(data);
-			break;
-		case 'interrupt':
-			stopping_criteria.interrupt();
-			break;
-		case 'reset':
-			past_key_values_cache = null;
-			stopping_criteria.reset();
-			self.postMessage({ type: 'reset_done' });
-			break;
-	}
+(self as any).onconnect = function (event: MessageEvent) {
+	const port = (event as MessageEvent).ports[0];
+
+	port.onmessage = async (e: MessageEvent) => {
+		const { type, data } = e.data;
+		switch (type) {
+			case 'init': // Changed from 'load' to 'init' to match svelte component
+				await load(port);
+				break;
+			case 'generate':
+				stopping_criteria.reset();
+				await generate(data, port);
+				break;
+			case 'interrupt':
+				stopping_criteria.interrupt();
+				break;
+			case 'reset':
+				past_key_values_cache = null;
+				stopping_criteria.reset();
+				port.postMessage({ type: 'reset_done' });
+				break;
+		}
+	};
 };
