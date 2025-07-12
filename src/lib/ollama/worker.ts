@@ -35,10 +35,9 @@ class TextGenerationPipelineSingleton {
 	}
 }
 
-const stopping_criteria = new InterruptableStoppingCriteria();
 let past_key_values_cache: any = null;
 
-async function generate(data: any, port: MessagePort) {
+async function generate(data: any, port: MessagePort, stopping_criteria: InterruptableStoppingCriteria) {
 	const { userInput, chat_history, topK, temperature, maxTokens } = data;
 	const messages = [...chat_history, { role: 'user', content: userInput }];
 
@@ -127,6 +126,7 @@ async function load(port: MessagePort) {
 
 (self as any).onconnect = function (event: MessageEvent) {
 	const port = (event as MessageEvent).ports[0];
+	const stopping_criteria = new InterruptableStoppingCriteria();
 
 	port.onmessage = async (e: MessageEvent) => {
 		const { type, data } = e.data;
@@ -136,7 +136,7 @@ async function load(port: MessagePort) {
 				break;
 			case 'generate':
 				stopping_criteria.reset();
-				await generate(data, port);
+				await generate(data, port, stopping_criteria);
 				break;
 			case 'interrupt':
 				stopping_criteria.interrupt();

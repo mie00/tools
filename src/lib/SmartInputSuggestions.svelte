@@ -193,6 +193,10 @@
 					return;
 				}
 			}
+			// If it's a letter but not a valid shortcut, exit shortcut mode
+			shortcutsActive = false;
+			selectedSuggestionIndex = -1;
+			return;
 		}
 
 		// Handle arrow keys for navigation
@@ -213,6 +217,18 @@
 			event.preventDefault();
 			selectSuggestion(selectedSuggestionIndex);
 			return;
+		}
+
+		// If shortcuts are active and user types anything other than the above keys, exit shortcut mode
+		// (excluding special keys like Shift, Ctrl, Alt, etc.)
+		if (
+			event.key.length === 1 ||
+			event.key === 'Backspace' ||
+			event.key === 'Delete' ||
+			event.key === 'Tab'
+		) {
+			shortcutsActive = false;
+			selectedSuggestionIndex = -1;
 		}
 	}
 
@@ -340,6 +356,22 @@
 			pendingInput = '';
 
 			// --- NEW: Gracefully reset any previous generation ---
+			if (llmStreaming) {
+				await new Promise<void>((resolve) => {
+					// Listen for reset_done once
+					const interruptHandler = (event: MessageEvent) => {
+						// If a generation is ongoing, only resolve on 'complete'
+						if (event.data?.type === 'complete') {
+							worker.port.removeEventListener('message', interruptHandler);
+							resolve();
+						}
+					};
+					worker.port.addEventListener('message', interruptHandler);
+					// Interrupt current generation & clear caches
+					worker.port.postMessage({ type: 'interrupt' });
+				});
+			}
+
 			await new Promise<void>((resolve) => {
 				// Listen for reset_done once
 				const resetHandler = (event: MessageEvent) => {
@@ -350,10 +382,8 @@
 				};
 				worker.port.addEventListener('message', resetHandler);
 				// Interrupt current generation & clear caches
-				worker.port.postMessage({ type: 'interrupt' });
 				worker.port.postMessage({ type: 'reset' });
 			});
-
 			// --- END RESET LOGIC ---
 
 			llmLoading = true;
@@ -495,7 +525,6 @@
 		// Clear current answer while user is typing
 		llmAnswer = '';
 		llmLoading = false;
-		llmStreaming = false;
 
 		// Set a new timeout for 500ms after user stops typing
 		llmAnswerTimeout = setTimeout(() => {
