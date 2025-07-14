@@ -2,19 +2,21 @@
 	import { createEventDispatcher } from 'svelte';
 	import { calculationMethods } from './constants';
 	import { enrichLocationData, getSuggestedCalculationMethod, parseMawaqitConfig } from './utils';
-	import type { City } from './types';
+	import type { City, CitySearchResult } from './types';
 	import CitySearch from './CitySearch.svelte';
 
 	let {
 		cities = [],
 		loadingCities = false,
 		hasExistingProfiles = false,
-		hasSharedConfig = false
+		hasSharedConfig = false,
+		isAutoRedirect = false
 	}: {
 		cities: City[];
 		loadingCities: boolean;
 		hasExistingProfiles: boolean;
 		hasSharedConfig: boolean;
+		isAutoRedirect: boolean;
 	} = $props();
 
 	const dispatch = createEventDispatcher<{
@@ -135,10 +137,12 @@
 		}
 	}
 
-	function handleCitySelect(city: City) {
+	function handleCitySelect(city: CitySearchResult) {
 		newProfile.latitude = city.lat;
 		newProfile.longitude = city.lng;
-		newProfile.name = `${city.name}, ${city.country}`;
+		// Use the matched name if available, otherwise fall back to the default name
+		const displayName = city.matchedName || city.name;
+		newProfile.name = `${displayName}, ${city.country}`;
 
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
@@ -225,12 +229,13 @@
 		}
 	}
 
-	// Auto-get location for new users (only if no existing profiles and no shared config)
+	// Auto-get location only when user is automatically redirected to create their first profile
 	$effect(() => {
 		if (
 			createMode === 'manual' &&
 			!hasExistingProfiles &&
 			!hasSharedConfig &&
+			isAutoRedirect &&
 			!autoLocationAttempted &&
 			!newProfile.latitude &&
 			!newProfile.longitude

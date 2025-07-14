@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { City } from './types';
+	import type { CitySearchResult } from './types';
 
-	type SearchResult = City;
+	type SearchResult = CitySearchResult;
 
 	let {
 		cities,
@@ -28,31 +28,72 @@
 		}
 
 		const searchTerm = query.toLowerCase();
+		// Build a list of { city, score, matchedName } objects, then sort by score and extract cities
+		const scoredResults: { city: SearchResult; score: number; matchedName: string }[] = [];
 
-		filteredResults = cities.filter((city: SearchResult) => {
-			// Search in primary name and country
-			if (
-				city.name.toLowerCase().includes(searchTerm) ||
-				city.country.toLowerCase().includes(searchTerm)
-			) {
-				return true;
-			}
-
-			// Search in alternative names if they exist
+		for (const city of cities) {
+			const names: string[] = [city.name];
 			if (city.altnames) {
 				for (const langCode in city.altnames) {
 					const altNamesArray = city.altnames[langCode];
-					if (
-						altNamesArray &&
-						altNamesArray.some((altName) => altName.toLowerCase().includes(searchTerm))
-					) {
-						return true;
+					if (Array.isArray(altNamesArray)) {
+						names.push(...altNamesArray);
 					}
 				}
 			}
 
-			return false;
+			let bestScore: number | null = null;
+			let bestMatchedName: string = city.name;
+
+			for (const name of names) {
+				const lowerName = name.toLowerCase();
+
+				// 1. Match from beginning
+				const idx = lowerName.indexOf(searchTerm);
+				if (idx === 0) {
+					// Higher score for shorter leftover
+					const score = 1000 - (lowerName.length - searchTerm.length);
+					if (bestScore === null || score > bestScore) {
+						bestScore = score;
+						bestMatchedName = name;
+					}
+				} else if (idx > 0) {
+					// Match from anywhere else, lower base score
+					const score = 500 - (lowerName.length - searchTerm.length) - idx * 2;
+					if (bestScore === null || score > bestScore) {
+						bestScore = score;
+						bestMatchedName = name;
+					}
+				}
+			}
+
+			// Also check country
+			if (city.country && city.country.toLowerCase().includes(searchTerm)) {
+				const idx = city.country.toLowerCase().indexOf(searchTerm);
+				const score =
+					idx === 0
+						? 400 - (city.country.length - searchTerm.length)
+						: 200 - (city.country.length - searchTerm.length) - idx * 2;
+				if (bestScore === null || score > bestScore) {
+					bestScore = score;
+					bestMatchedName = city.name; // Keep original name when matching by country
+				}
+			}
+
+			if (bestScore !== null) {
+				scoredResults.push({ city, score: bestScore, matchedName: bestMatchedName });
+			}
+		}
+
+		// Sort by descending score, then alphabetically by city name for tie-breaker
+		scoredResults.sort((a, b) => {
+			if (b.score !== a.score) return b.score - a.score;
+			return a.city.name.localeCompare(b.city.name);
 		});
+		filteredResults = scoredResults.slice(0, 10).map((item) => ({
+			...item.city,
+			matchedName: item.matchedName
+		}));
 
 		showDropdown = filteredResults.length > 0;
 	}
@@ -114,7 +155,7 @@
 					class="w-full border-b border-gray-100 px-4 py-2 text-left last:border-b-0 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
 					onclick={() => handleSelect(result)}
 				>
-					<div class="font-medium">{result.name}</div>
+					<div class="font-medium">{result.matchedName || result.name}</div>
 					<div class="text-sm text-gray-500">
 						{result.country} • {result.lat.toFixed(4)}, {result.lng.toFixed(4)}
 					</div>

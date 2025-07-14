@@ -74,6 +74,10 @@ export interface SearchResult {
 	matchedName?: string;
 }
 
+export interface CitySearchResult extends City {
+	matchedName?: string;
+}
+
 export interface NextPrayer {
 	name: string;
 	time: string;

@@ -20,6 +20,9 @@
 	let editingKey: string | null = $state(null);
 	let editingValue = $state('');
 
+	// Body tab state
+	let activeBodyTab = $state('raw');
+
 	// URL parameter sync
 	function updateUrl() {
 		if (typeof window !== 'undefined') {
@@ -203,6 +206,13 @@
 			}
 		}
 
+		if (parsedCurl.cookies && Object.keys(parsedCurl.cookies).length > 0) {
+			const cookieString = Object.entries(parsedCurl.cookies)
+				.map(([name, value]) => `${name}=${value}`)
+				.join('; ');
+			command.push(`-b '${cookieString}'`);
+		}
+
 		if (parsedCurl.body) {
 			const escapedBody = parsedCurl.body.replace(/'/g, "'\\''");
 			command.push(`--data-raw '${escapedBody}'`);
@@ -289,6 +299,24 @@
 		cancelEditing();
 	}
 
+	function saveCurlCookieKeyChange(oldKey: string) {
+		if (!parsedCurl) return;
+		const newKey = editingValue;
+		if (newKey !== oldKey) {
+			parsedCurl.cookies[newKey] = parsedCurl.cookies[oldKey];
+			delete parsedCurl.cookies[oldKey];
+		}
+		rebuildAndUpdateInput();
+		cancelEditing();
+	}
+
+	function saveCurlCookieValueChange(key: string) {
+		if (!parsedCurl) return;
+		parsedCurl.cookies[key] = editingValue;
+		rebuildAndUpdateInput();
+		cancelEditing();
+	}
+
 	function saveCurlBodyChange() {
 		if (!parsedCurl) return;
 		parsedCurl.body = editingValue;
@@ -300,6 +328,68 @@
 		}
 		rebuildAndUpdateInput();
 		cancelEditing();
+	}
+
+	function deleteCurlHeader(key: string) {
+		if (!parsedCurl) return;
+		delete parsedCurl.headers[key];
+		rebuildAndUpdateInput();
+	}
+
+	function deleteCurlCookie(name: string) {
+		if (!parsedCurl) return;
+		delete parsedCurl.cookies[name];
+		rebuildAndUpdateInput();
+	}
+
+	function deleteSearchParam(index: number) {
+		searchParams.splice(index, 1);
+		searchParams = [...searchParams];
+		rebuildAndUpdateInput();
+	}
+
+	function addNewCurlHeader() {
+		if (!parsedCurl) return;
+		const newKey = 'New-Header';
+		let counter = 1;
+		let finalKey = newKey;
+
+		// Ensure unique key name
+		while (parsedCurl.headers[finalKey]) {
+			finalKey = `${newKey}-${counter}`;
+			counter++;
+		}
+
+		parsedCurl.headers[finalKey] = 'value';
+		rebuildAndUpdateInput();
+	}
+
+	function addNewCurlCookie() {
+		if (!parsedCurl) return;
+		const newName = 'newCookie';
+		let counter = 1;
+		let finalName = newName;
+
+		// Ensure unique cookie name
+		while (parsedCurl.cookies[finalName]) {
+			finalName = `${newName}${counter}`;
+			counter++;
+		}
+
+		parsedCurl.cookies[finalName] = 'value';
+		rebuildAndUpdateInput();
+	}
+
+	function addNewSearchParam() {
+		const newParam = {
+			key: 'newParam',
+			value: 'value',
+			keyDecoded: 'newParam',
+			valueDecoded: 'value'
+		};
+		searchParams.push(newParam);
+		searchParams = [...searchParams];
+		rebuildAndUpdateInput();
 	}
 
 	function saveSearchParamChange(index: number, field: 'key' | 'value', isDecoded: boolean) {
@@ -328,77 +418,348 @@
 
 	/**
 	 * Parses a cURL command string into its components.
-	 * This is a simplified implementation.
+	 * Handles proper shell-style quoting and escaping.
 	 */
 	function parseCurl(curlCommand: string) {
 		const result: {
 			url: string;
 			method: string;
 			headers: Record<string, string>;
+			cookies: Record<string, string>;
 			body: string | null;
 			bodyPretty?: string;
 		} = {
 			url: '',
 			method: 'GET',
 			headers: {},
+			cookies: {},
 			body: null
 		};
 
-		// A simple regex to capture key parts of a curl command.
-		// This is not exhaustive and has limitations.
-		const parts = curlCommand.match(/'[^']*'|"[^"]*"|\S+/g) || [];
+		// Tokenize the command properly handling quotes and escapes
+		function tokenize(str: string): string[] {
+			const tokens: string[] = [];
+			let current = '';
+			let inSingleQuote = false;
+			let inDoubleQuote = false;
+			let inAnsiCQuote = false; // For $'string' format
+			let escaped = false;
+
+			function processAnsiCEscape(char: string, i: number): { result: string; skipChars: number } {
+				switch (char) {
+					case 'a':
+						return { result: '\x07', skipChars: 0 }; // alert (bell)
+					case 'b':
+						return { result: '\b', skipChars: 0 }; // backspace
+					case 'e':
+						return { result: '\x1b', skipChars: 0 }; // escape character
+					case 'f':
+						return { result: '\f', skipChars: 0 }; // form feed
+					case 'n':
+						return { result: '\n', skipChars: 0 }; // new line
+					case 'r':
+						return { result: '\r', skipChars: 0 }; // carriage return
+					case 't':
+						return { result: '\t', skipChars: 0 }; // horizontal tab
+					case 'v':
+						return { result: '\v', skipChars: 0 }; // vertical tab
+					case '\\':
+						return { result: '\\', skipChars: 0 }; // backslash
+					case "'":
+						return { result: "'", skipChars: 0 }; // single quote
+					case 'x': {
+						// \xHH - hexadecimal
+						const hex = str.substr(i + 1, 2);
+						const match = hex.match(/^[0-9a-fA-F]{1,2}/);
+						if (match) {
+							const value = parseInt(match[0], 16);
+							return { result: String.fromCharCode(value), skipChars: match[0].length };
+						}
+						return { result: char, skipChars: 0 };
+					}
+					case 'c': {
+						// \cx - control character
+						const controlChar = str[i + 1];
+						if (controlChar) {
+							const code = controlChar.toUpperCase().charCodeAt(0);
+							if (code >= 64 && code <= 95) {
+								// @-_
+								return { result: String.fromCharCode(code - 64), skipChars: 1 };
+							}
+						}
+						return { result: char, skipChars: 0 };
+					}
+					default: {
+						// \nnn - octal
+						const octal = str.substr(i - 1, 3);
+						const match = octal.match(/^[0-7]{1,3}/);
+						if (match) {
+							const value = parseInt(match[0], 8);
+							if (value <= 255) {
+								return { result: String.fromCharCode(value), skipChars: match[0].length - 1 };
+							}
+						}
+						return { result: '\\' + char, skipChars: 0 };
+					}
+				}
+			}
+
+			for (let i = 0; i < str.length; i++) {
+				const char = str[i];
+				const nextChar = str[i + 1];
+
+				if (escaped) {
+					if (inAnsiCQuote) {
+						const escapeResult = processAnsiCEscape(char, i + 1);
+						current += escapeResult.result;
+						i += escapeResult.skipChars;
+					} else {
+						current += char;
+					}
+					escaped = false;
+					continue;
+				}
+
+				if (char === '\\' && (inAnsiCQuote || !inSingleQuote)) {
+					escaped = true;
+					continue;
+				}
+
+				// Check for $'string' start
+				if (char === '$' && nextChar === "'" && !inSingleQuote && !inDoubleQuote && !inAnsiCQuote) {
+					inAnsiCQuote = true;
+					i++; // Skip the single quote after $
+					continue;
+				}
+
+				if (char === "'" && inAnsiCQuote) {
+					inAnsiCQuote = false;
+					continue;
+				}
+
+				if (char === "'" && !inDoubleQuote && !inAnsiCQuote) {
+					inSingleQuote = !inSingleQuote;
+					continue;
+				}
+
+				if (char === '"' && !inSingleQuote && !inAnsiCQuote) {
+					inDoubleQuote = !inDoubleQuote;
+					continue;
+				}
+
+				if (!inSingleQuote && !inDoubleQuote && !inAnsiCQuote && /\s/.test(char)) {
+					if (current) {
+						tokens.push(current);
+						current = '';
+					}
+					continue;
+				}
+
+				current += char;
+			}
+
+			if (current) {
+				tokens.push(current);
+			}
+
+			return tokens;
+		}
+
+		const tokens = tokenize(curlCommand.trim());
+
+		if (tokens.length === 0) {
+			throw new Error('Empty cURL command');
+		}
 
 		let i = 0;
-		// first part is curl
-		if (parts[i].toLowerCase() === 'curl') {
+
+		// Skip 'curl' if present
+		if (tokens[i]?.toLowerCase() === 'curl') {
 			i++;
 		}
 
-		result.url = parts[i++].replace(/'/g, '');
+		// The URL should be the first non-option argument
+		while (i < tokens.length) {
+			const token = tokens[i];
 
-		for (; i < parts.length; i++) {
-			const part = parts[i];
-			const nextPart = parts[i + 1];
+			// Skip options that take arguments
+			if (
+				[
+					'-X',
+					'--request',
+					'-H',
+					'--header',
+					'-d',
+					'--data',
+					'--data-raw',
+					'--data-binary',
+					'-u',
+					'--user',
+					'-A',
+					'--user-agent',
+					'-b',
+					'--cookie',
+					'-c',
+					'--cookie-jar',
+					'--connect-timeout',
+					'--max-time',
+					'-o',
+					'--output',
+					'-w',
+					'--write-out'
+				].includes(token)
+			) {
+				i += 2; // Skip option and its argument
+				continue;
+			}
 
-			const unquote = (str: string) => str?.replace(/^['"]|['"]$/g, '');
+			// Skip standalone flags
+			if (token.startsWith('-')) {
+				i++;
+				continue;
+			}
 
-			switch (part) {
+			// This should be the URL
+			result.url = token;
+			i++;
+			break;
+		}
+
+		// Reset to parse all options
+		i = 0;
+		if (tokens[i]?.toLowerCase() === 'curl') {
+			i++;
+		}
+
+		while (i < tokens.length) {
+			const token = tokens[i];
+			const nextToken = tokens[i + 1];
+
+			switch (token) {
 				case '-X':
 				case '--request':
-					result.method = nextPart;
-					i++;
+					if (nextToken) {
+						result.method = nextToken.toUpperCase();
+						i += 2;
+					} else {
+						i++;
+					}
 					break;
+
 				case '-H':
-				case '--header': {
-					const [key, ...valueParts] = nextPart.split(':');
-					const value = valueParts.join(':').trim();
-					result.headers[unquote(key)] = unquote(value);
-					i++;
+				case '--header':
+					if (nextToken) {
+						const colonIndex = nextToken.indexOf(':');
+						if (colonIndex > 0) {
+							const key = nextToken.substring(0, colonIndex).trim();
+							const value = nextToken.substring(colonIndex + 1).trim();
+							result.headers[key] = value;
+						}
+						i += 2;
+					} else {
+						i++;
+					}
 					break;
-				}
+
 				case '-d':
 				case '--data':
 				case '--data-raw':
-					result.body = unquote(nextPart);
-					result.method = 'POST';
-					i++;
+					if (nextToken) {
+						result.body = nextToken;
+						if (result.method === 'GET') {
+							result.method = 'POST';
+						}
+						i += 2;
+					} else {
+						i++;
+					}
 					break;
+
 				case '--data-binary':
-					result.body = unquote(nextPart);
-					result.method = 'POST';
+					if (nextToken) {
+						result.body = nextToken;
+						if (result.method === 'GET') {
+							result.method = 'POST';
+						}
+						i += 2;
+					} else {
+						i++;
+					}
+					break;
+
+				case '-u':
+				case '--user':
+					if (nextToken) {
+						// Basic auth - could be parsed further if needed
+						const authHeader = 'Basic ' + btoa(nextToken);
+						result.headers['Authorization'] = authHeader;
+						i += 2;
+					} else {
+						i++;
+					}
+					break;
+
+				case '-A':
+				case '--user-agent':
+					if (nextToken) {
+						result.headers['User-Agent'] = nextToken;
+						i += 2;
+					} else {
+						i++;
+					}
+					break;
+
+				case '-b':
+				case '--cookie':
+					if (nextToken) {
+						// Parse cookies in format "name1=value1; name2=value2"
+						const cookiePairs = nextToken.split(';');
+						for (const pair of cookiePairs) {
+							const trimmed = pair.trim();
+							const equalIndex = trimmed.indexOf('=');
+							if (equalIndex > 0) {
+								const name = trimmed.substring(0, equalIndex).trim();
+								const value = trimmed.substring(equalIndex + 1).trim();
+								result.cookies[name] = value;
+							}
+						}
+						i += 2;
+					} else {
+						i++;
+					}
+					break;
+
+				case '-c':
+				case '--cookie-jar':
+					// Cookie jar is for storing cookies, not sending them
+					// We'll skip this but consume the argument
+					if (nextToken) {
+						i += 2;
+					} else {
+						i++;
+					}
+					break;
+
+				default:
+					// Skip unknown options or the URL (already handled)
 					i++;
 					break;
 			}
 		}
 
+		// Try to pretty-print JSON body
 		if (result.body) {
 			try {
 				const jsonBody = JSON.parse(result.body);
 				result.bodyPretty = JSON.stringify(jsonBody, null, 2);
 			} catch (e) {
-				// not a json body - this is expected for non-JSON content
+				// Not JSON, keep as-is
 				console.debug('Body is not JSON:', e);
 			}
+		}
+
+		if (!result.url) {
+			throw new Error('No URL found in cURL command');
 		}
 
 		return result;
@@ -505,10 +866,10 @@
 				</div>
 
 				<!-- Headers -->
-				{#if Object.keys(parsedCurl.headers).length > 0}
-					<div class="space-y-4">
-						<h4 class="text-md font-semibold text-gray-800">Headers</h4>
-						<div class="space-y-3">
+				<div class="space-y-4">
+					<h4 class="text-md font-semibold text-gray-800">Headers</h4>
+					<div class="space-y-3">
+						{#if Object.keys(parsedCurl.headers).length > 0}
 							{#each Object.entries(parsedCurl.headers) as [key, value] (key)}
 								<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
 									<div class="grid gap-3 md:grid-cols-2">
@@ -532,6 +893,28 @@
 															>Edit</button
 														>
 													{/if}
+													<button
+														onclick={() => deleteCurlHeader(key)}
+														class="rounded bg-red-500 px-2 py-1 text-xs text-white transition-colors hover:bg-red-600"
+														title="Delete header"
+														aria-label="Delete header"
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															class="lucide lucide-trash-2"
+															><path d="M3 6h18L21 20H5L3 6" /><path d="M16 10V18" /><path
+																d="M8 10V18"
+															/><path d="M12 6V18" /></svg
+														>
+													</button>
 												</div>
 											</div>
 											{#if editingKey === `curl-header-key-${key}`}
@@ -603,9 +986,150 @@
 									</div>
 								</div>
 							{/each}
-						</div>
+						{:else}
+							<p class="text-sm text-gray-500 italic">No headers present</p>
+						{/if}
+						<button
+							onclick={addNewCurlHeader}
+							class="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+						>
+							Add New Header
+						</button>
 					</div>
-				{/if}
+				</div>
+
+				<!-- Cookies -->
+				<div class="space-y-4">
+					<h4 class="text-md font-semibold text-gray-800">Cookies</h4>
+					<div class="space-y-3">
+						{#if Object.keys(parsedCurl.cookies).length > 0}
+							{#each Object.entries(parsedCurl.cookies) as [name, value] (name)}
+								<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+									<div class="grid gap-3 md:grid-cols-2">
+										<div>
+											<div class="mb-2 flex items-center justify-between">
+												<span class="text-sm font-medium text-gray-700">Cookie Name</span>
+												<div class="flex items-center gap-2">
+													<button
+														onclick={() => copyToClipboard(name, `curl-cookie-name-${name}`)}
+														class="rounded px-2 py-1 text-xs {copiedItem ===
+														`curl-cookie-name-${name}`
+															? 'bg-green-500'
+															: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
+													>
+														{copiedItem === `curl-cookie-name-${name}` ? 'Copied!' : 'Copy'}
+													</button>
+													{#if editingKey !== `curl-cookie-name-${name}`}
+														<button
+															onclick={() => startEditing(`curl-cookie-name-${name}`, name)}
+															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
+															>Edit</button
+														>
+													{/if}
+													<button
+														onclick={() => deleteCurlCookie(name)}
+														class="rounded bg-red-500 px-2 py-1 text-xs text-white transition-colors hover:bg-red-600"
+														title="Delete cookie"
+														aria-label="Delete cookie"
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															class="lucide lucide-trash-2"
+															><path d="M3 6h18L21 20H5L3 6" /><path d="M16 10V18" /><path
+																d="M8 10V18"
+															/><path d="M12 6V18" /></svg
+														>
+													</button>
+												</div>
+											</div>
+											{#if editingKey === `curl-cookie-name-${name}`}
+												<div class="mt-1 flex items-center gap-2">
+													<input
+														class="w-full rounded border p-1 font-mono text-xs"
+														bind:value={editingValue}
+													/>
+													<button
+														onclick={() => saveCurlCookieKeyChange(name)}
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+													>
+													<button
+														onclick={cancelEditing}
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+													>
+												</div>
+											{:else}
+												<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+													{name}
+												</div>
+											{/if}
+										</div>
+										<div>
+											<div class="mb-2 flex items-center justify-between">
+												<span class="text-sm font-medium text-gray-700">Cookie Value</span>
+												<div class="flex items-center gap-2">
+													<button
+														onclick={() =>
+															copyToClipboard(String(value), `curl-cookie-value-${name}`)}
+														class="rounded px-2 py-1 text-xs {copiedItem ===
+														`curl-cookie-value-${name}`
+															? 'bg-green-500'
+															: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
+													>
+														{copiedItem === `curl-cookie-value-${name}` ? 'Copied!' : 'Copy'}
+													</button>
+													{#if editingKey !== `curl-cookie-value-${name}`}
+														<button
+															onclick={() =>
+																startEditing(`curl-cookie-value-${name}`, String(value))}
+															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
+															>Edit</button
+														>
+													{/if}
+												</div>
+											</div>
+											{#if editingKey === `curl-cookie-value-${name}`}
+												<div class="mt-1 flex items-center gap-2">
+													<input
+														class="w-full rounded border p-1 font-mono text-xs"
+														bind:value={editingValue}
+													/>
+													<button
+														onclick={() => saveCurlCookieValueChange(name)}
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+													>
+													<button
+														onclick={cancelEditing}
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+													>
+												</div>
+											{:else}
+												<div class="rounded border bg-white p-2 font-mono text-xs break-all">
+													{value}
+												</div>
+											{/if}
+										</div>
+									</div>
+								</div>
+							{/each}
+						{:else}
+							<p class="text-sm text-gray-500 italic">No cookies present</p>
+						{/if}
+						<button
+							onclick={addNewCurlCookie}
+							class="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+						>
+							Add New Cookie
+						</button>
+					</div>
+				</div>
 
 				<!-- Body -->
 				{#if parsedCurl.body}
@@ -616,7 +1140,13 @@
 								<span class="text-sm font-medium text-gray-700">Request Body</span>
 								<div class="flex items-center gap-2">
 									<button
-										onclick={() => copyToClipboard(parsedCurl.body, 'curl-body')}
+										onclick={() =>
+											copyToClipboard(
+												activeBodyTab === 'preview' && parsedCurl.bodyPretty
+													? parsedCurl.bodyPretty
+													: parsedCurl.body,
+												'curl-body'
+											)}
 										class="rounded px-2 py-1 text-xs {copiedItem === 'curl-body'
 											? 'bg-green-500'
 											: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
@@ -633,6 +1163,29 @@
 									{/if}
 								</div>
 							</div>
+
+							<!-- Tabs (only show if JSON is detected) -->
+							{#if parsedCurl.bodyPretty}
+								<div class="mb-3 flex border-b border-gray-200">
+									<button
+										onclick={() => (activeBodyTab = 'raw')}
+										class="px-4 py-2 text-sm font-medium {activeBodyTab === 'raw'
+											? 'border-b-2 border-blue-500 text-blue-600'
+											: 'text-gray-500 hover:text-gray-700'}"
+									>
+										Raw
+									</button>
+									<button
+										onclick={() => (activeBodyTab = 'preview')}
+										class="px-4 py-2 text-sm font-medium {activeBodyTab === 'preview'
+											? 'border-b-2 border-blue-500 text-blue-600'
+											: 'text-gray-500 hover:text-gray-700'}"
+									>
+										Preview
+									</button>
+								</div>
+							{/if}
+
 							{#if editingKey === 'curl-body'}
 								<div class="mt-1 flex flex-col items-end gap-2">
 									<textarea
@@ -652,10 +1205,26 @@
 									</div>
 								</div>
 							{:else}
-								<pre
-									class="max-h-60 overflow-auto rounded border bg-white p-2 font-mono text-xs break-all"><code
-										>{parsedCurl.bodyPretty || parsedCurl.body}</code
-									></pre>
+								<!-- Tab content -->
+								{#if parsedCurl.bodyPretty}
+									{#if activeBodyTab === 'raw'}
+										<pre
+											class="max-h-60 overflow-auto rounded border bg-white p-2 font-mono text-xs break-all"><code
+												>{parsedCurl.body}</code
+											></pre>
+									{:else}
+										<pre
+											class="max-h-60 overflow-auto rounded border bg-white p-2 font-mono text-xs"><code
+												>{parsedCurl.bodyPretty}</code
+											></pre>
+									{/if}
+								{:else}
+									<!-- No JSON detected, show raw body -->
+									<pre
+										class="max-h-60 overflow-auto rounded border bg-white p-2 font-mono text-xs break-all"><code
+											>{parsedCurl.body}</code
+										></pre>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -729,10 +1298,10 @@
 		{/if}
 
 		<!-- Search Parameters -->
-		{#if searchParams.length > 0}
-			<div class="space-y-4">
-				<h3 class="text-lg font-semibold text-gray-800">Search Parameters</h3>
-				<div class="space-y-3">
+		<div class="space-y-4">
+			<h3 class="text-lg font-semibold text-gray-800">Search Parameters</h3>
+			<div class="space-y-3">
+				{#if searchParams.length > 0}
 					{#each searchParams as param, i (`${param.key}-${i}`)}
 						<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
 							<div class="grid gap-3 md:grid-cols-2">
@@ -740,14 +1309,43 @@
 								<div>
 									<div class="mb-2 flex items-center justify-between">
 										<span class="text-sm font-medium text-gray-700">Key</span>
-										<button
-											onclick={() => copyToClipboard(param.key, `key-${param.key}`)}
-											class="rounded px-2 py-1 text-xs {copiedItem === `key-${param.key}`
-												? 'bg-green-500'
-												: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
-										>
-											{copiedItem === `key-${param.key}` ? 'Copied!' : 'Copy'}
-										</button>
+										<div class="flex items-center gap-2">
+											<button
+												onclick={() => copyToClipboard(param.key, `key-${param.key}`)}
+												class="rounded px-2 py-1 text-xs {copiedItem === `key-${param.key}`
+													? 'bg-green-500'
+													: 'bg-blue-500'} text-white transition-colors hover:bg-blue-600"
+											>
+												{copiedItem === `key-${param.key}` ? 'Copied!' : 'Copy'}
+											</button>
+											<button
+												onclick={() => deleteSearchParam(i)}
+												class="rounded bg-red-500 px-2 py-1 text-xs text-white transition-colors hover:bg-red-600"
+												title="Delete parameter"
+												aria-label="Delete parameter"
+											>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="12"
+													height="12"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													class="lucide lucide-trash-2"
+													><path d="m3 6 18 0" /><path
+														d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+													/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line
+														x1="10"
+														x2="10"
+														y1="11"
+														y2="17"
+													/><line x1="14" x2="14" y1="11" y2="17" /></svg
+												>
+											</button>
+										</div>
 									</div>
 									<div class="space-y-1">
 										<div class="flex items-center justify-between text-sm text-gray-600">
@@ -895,8 +1493,16 @@
 							</div>
 						</div>
 					{/each}
-				</div>
+				{:else}
+					<p class="text-sm text-gray-500 italic">No search parameters present</p>
+				{/if}
+				<button
+					onclick={addNewSearchParam}
+					class="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+				>
+					Add New Search Parameter
+				</button>
 			</div>
-		{/if}
+		</div>
 	{/if}
 </div>

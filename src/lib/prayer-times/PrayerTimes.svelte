@@ -676,6 +676,7 @@
 			{loadingCities}
 			hasExistingProfiles={hasProfiles}
 			hasSharedConfig={sharedConfig !== null}
+			isAutoRedirect={!hasProfiles}
 			on:create={handleCreateProfile}
 			on:cancel={handleCancelCreate}
 		/>
