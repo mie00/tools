@@ -55,6 +55,7 @@
 		"@mediapipe/tasks-genai": "^0.10.23",
 		"@types/marked": "^6.0.0",
 		"adhan": "^4.4.3",
+		"diff": "^8.0.2",
 		"highlight.js": "^11.11.1",
 		"marked": "^16.0.0",
 		"marked-highlight": "^2.2.2",

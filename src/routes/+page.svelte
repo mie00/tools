@@ -116,6 +116,19 @@
 			name: 'Function Drawer',
 			icon: '📈',
 			description: 'Draw mathematical functions using Python expressions with numpy'
+		},
+		{
+			id: 'difftool',
+			name: 'Diff Tool',
+			icon: '🔀',
+			description: 'Compare and visualize differences between text, JSON, and YAML'
+		},
+		{
+			id: 'stunip',
+			name: 'STUN IP Finder',
+			icon: '🌐',
+			description: 'Find your public and local IP addresses using STUN',
+			usesAPI: true
 		}
 	]);
 
@@ -300,18 +313,22 @@
 						: ''}"
 				>
 					{#if tool.usesAPI}
-						<div
-							class="absolute top-3 right-3 rounded-full bg-blue-100 p-1 text-blue-600"
-							title="Uses external API"
-						>
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"
-								></path>
-							</svg>
+						<div class="group/indicator absolute top-3 right-3">
+							<div class="cursor-pointer rounded-full bg-blue-100 p-1 text-blue-600">
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"
+									></path>
+								</svg>
+							</div>
+							<div
+								class="absolute right-0 z-20 mt-2 hidden w-48 rounded-lg border border-blue-200 bg-white p-3 text-xs text-blue-800 shadow-lg group-hover/indicator:block"
+							>
+								This tool uses an online API and requires internet access.
+							</div>
 						</div>
 					{/if}
 

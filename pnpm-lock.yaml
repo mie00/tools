@@ -20,6 +20,9 @@ importers:
       adhan:
         specifier: ^4.4.3
         version: 4.4.3
+      diff:
+        specifier: ^8.0.2
+        version: 8.0.2
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1176,6 +1179,10 @@ packages:
 
   devalue@5.1.1:
     resolution: {integrity: sha512-maua5KUiapvEwiEAe+XnlZ3Rh0GD+qI1J/nb9vrJc3muPXvcF/8gXYTWF76+5DAqHyDUtOIImEuo0YKE9mshVw==}
+
+  diff@8.0.2:
+    resolution: {integrity: sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg==}
+    engines: {node: '>=0.3.1'}
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
@@ -3309,6 +3316,8 @@ snapshots:
   detect-node@2.1.0: {}
 
   devalue@5.1.1: {}
+
+  diff@8.0.2: {}
 
   dom-accessibility-api@0.5.16: {}
 

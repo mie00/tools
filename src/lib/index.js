@@ -14,6 +14,8 @@ export { default as Azkar } from './Azkar.svelte';
 
 export { default as UrlExaminer } from './UrlExaminer.svelte';
 export { default as PrayerTimes } from './PrayerTimes.svelte';
+export { default as DiffTool } from './DiffTool.svelte';
+export { default as StunIp } from './StunIp.svelte';
 
 // Export prayer times components and utilities
 export * from './prayer-times';
