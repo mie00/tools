@@ -187,26 +187,6 @@
 		}
 	}
 
-	async function _detectLanguage() {
-		if (!detector || !inputText.trim()) return;
-
-		try {
-			const results = await detector.detect(inputText);
-			if (results.length > 0) {
-				detectedLanguage = results[0].detectedLanguage;
-				const confidence = Math.round(results[0].confidence * 100);
-
-				// Find language name
-				const langName =
-					supportedLanguages.find((lang) => lang.code === detectedLanguage)?.name ||
-					detectedLanguage;
-				detectedLanguage = `${langName} (${confidence}% confidence)`;
-			}
-		} catch (err: any) {
-			error = 'Error detecting language: ' + err.message;
-		}
-	}
-
 	let translationTimeout: ReturnType<typeof setTimeout>;
 
 	async function translateText() {
@@ -215,7 +195,6 @@
 			return;
 		}
 
-		isLoading = true;
 		error = '';
 
 		try {
@@ -255,7 +234,6 @@
 
 			if (translatorAvailability === 'unavailable') {
 				error = `Translation from ${actualSourceLanguage} to ${targetLanguage} is not available.`;
-				isLoading = false;
 				return;
 			}
 
@@ -273,6 +251,7 @@
 			if (!translator) {
 				if (translatorAvailability === 'downloadable' || translatorAvailability === 'downloading') {
 					isDownloading = true;
+					isLoading = true;
 					// @ts-ignore - Chrome AI API is experimental
 					translator = await (self as any).Translator.create({
 						sourceLanguage: actualSourceLanguage,
@@ -284,6 +263,7 @@
 						}
 					});
 					await translator.ready;
+					isLoading = false;
 					isDownloading = false;
 				} else {
 					// @ts-ignore - Chrome AI API is experimental
@@ -320,8 +300,6 @@
 			}
 		} catch (err) {
 			error = 'Translation error: ' + String(err);
-		} finally {
-			isLoading = false;
 		}
 	}
 
@@ -487,12 +465,15 @@
 		speakText(translatedText, targetLanguage, false);
 	}
 
-	// Fix for focus issue: handle input change without immediate translation
-	function handleInputChange(event: Event) {
-		const target = event.target as HTMLTextAreaElement;
-		inputText = target.value;
-		debouncedTranslate();
-	}
+	// Reactive effect to trigger translation when input changes
+	$effect(() => {
+		if (inputText.trim()) {
+			debouncedTranslate();
+		} else {
+			translatedText = '';
+			detectedLanguage = '';
+		}
+	});
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -574,8 +555,7 @@
 							>
 							<textarea
 								id="input-text"
-								value={inputText}
-								oninput={handleInputChange}
+								bind:value={inputText}
 								placeholder="Type or paste text here..."
 								rows="8"
 								disabled={isLoading}
