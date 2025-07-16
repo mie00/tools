@@ -163,6 +163,25 @@
 			suggestions = analyzeInput(inputText);
 			showSuggestions = suggestions.length > 0;
 			selectedSuggestionIndex = -1; // Reset selection when suggestions change
+
+			// Auto-redirect for high-confidence suggestions (like bang shortcuts) ONLY when shortcuts are active
+			if (shortcutsActive) {
+				const autoRedirectSuggestion = suggestions.find((s) => s.confidence >= 1.0);
+				if (autoRedirectSuggestion) {
+					// Automatically navigate to the suggestion
+					if (
+						autoRedirectSuggestion.url.startsWith('http://') ||
+						autoRedirectSuggestion.url.startsWith('https://')
+					) {
+						// External URL - use window.location
+						window.location.href = autoRedirectSuggestion.url;
+					} else {
+						// Internal URL - use goto
+						goto(autoRedirectSuggestion.url);
+					}
+					return; // Exit early to prevent further processing
+				}
+			}
 		} else {
 			suggestions = [];
 			showSuggestions = false;
@@ -267,7 +286,10 @@
 						index === selectedSuggestionIndex
 							? 'border-blue-500 bg-blue-50'
 							: ''}"
-						data-sveltekit-preload-data={suggestion.id === 'googlesearch' ? 'false' : 'hover'}
+						data-sveltekit-preload-data={suggestion.id === 'googlesearch' ||
+						suggestion.id === 'bangsearch'
+							? 'false'
+							: 'hover'}
 						onmouseenter={() => shortcutsActive && (selectedSuggestionIndex = index)}
 						onmouseleave={() => shortcutsActive && (selectedSuggestionIndex = -1)}
 					>

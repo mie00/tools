@@ -820,6 +820,305 @@ Good morning`;
 			});
 		});
 
+		it('should detect !g Google search shortcuts with immediate redirect', () => {
+			const testCases = [
+				{
+					input: '!g search query',
+					expectedQuery: 'search query',
+					expectedUrl: 'https://www.google.com/search?q=search%20query'
+				},
+				{
+					input: '!g how to cook pasta',
+					expectedQuery: 'how to cook pasta',
+					expectedUrl: 'https://www.google.com/search?q=how%20to%20cook%20pasta'
+				},
+				{
+					input: '!G JavaScript tutorial',
+					expectedQuery: 'JavaScript tutorial',
+					expectedUrl: 'https://www.google.com/search?q=JavaScript%20tutorial'
+				},
+				{
+					input: '!g machine learning AI',
+					expectedQuery: 'machine learning AI',
+					expectedUrl: 'https://www.google.com/search?q=machine%20learning%20AI'
+				},
+				{
+					input: '!g "exact phrase search"',
+					expectedQuery: '"exact phrase search"',
+					expectedUrl: 'https://www.google.com/search?q=%22exact%20phrase%20search%22'
+				},
+				{
+					input: '!g complex query with symbols & characters',
+					expectedQuery: 'complex query with symbols & characters',
+					expectedUrl:
+						'https://www.google.com/search?q=complex%20query%20with%20symbols%20%26%20characters'
+				}
+			];
+
+			testCases.forEach(({ input, expectedQuery, expectedUrl }) => {
+				const result = analyzeInput(input);
+
+				expect(result).toHaveLength(1); // Only bang search, no other suggestions
+				expect(result[0].id).toBe('bangsearch');
+				expect(result[0].confidence).toBe(1.0); // Maximum confidence for potential redirect
+				expect(result[0].url).toBe(expectedUrl);
+				expect(result[0].reason).toBe(`Search "${expectedQuery}" on Google`);
+			});
+		});
+
+		it('should detect various bang shortcuts anywhere in the query', () => {
+			const testCases = [
+				{
+					input: 'machine learning !w',
+					expectedService: 'Wikipedia',
+					expectedQuery: 'machine learning',
+					expectedUrl: 'https://en.wikipedia.org/wiki/Special:Search?search=machine%20learning'
+				},
+				{
+					input: '!tw elon musk tweets',
+					expectedService: 'Twitter',
+					expectedQuery: 'elon musk tweets',
+					expectedUrl: 'https://twitter.com/search?q=elon%20musk%20tweets'
+				},
+				{
+					input: 'avengers !imdb endgame',
+					expectedService: 'IMDB',
+					expectedQuery: 'avengers endgame',
+					expectedUrl: 'https://www.imdb.com/find?q=avengers%20endgame'
+				},
+				{
+					input: '!a wireless headphones',
+					expectedService: 'Amazon',
+					expectedQuery: 'wireless headphones',
+					expectedUrl: 'https://www.amazon.com/s?k=wireless%20headphones'
+				},
+				{
+					input: 'vintage camera !e',
+					expectedService: 'eBay',
+					expectedQuery: 'vintage camera',
+					expectedUrl: 'https://www.ebay.com/sch/i.html?_nkw=vintage%20camera'
+				},
+				{
+					input: '!so react hooks tutorial',
+					expectedService: 'Stack Overflow',
+					expectedQuery: 'react hooks tutorial',
+					expectedUrl: 'https://stackoverflow.com/search?q=react%20hooks%20tutorial'
+				},
+				{
+					input: 'awesome project !gh',
+					expectedService: 'GitHub',
+					expectedQuery: 'awesome project',
+					expectedUrl: 'https://github.com/search?q=awesome%20project'
+				},
+				{
+					input: '!r programming tips',
+					expectedService: 'Reddit',
+					expectedQuery: 'programming tips',
+					expectedUrl: 'https://www.reddit.com/search/?q=programming%20tips'
+				},
+				{
+					input: 'cyberpunk !ste 2077',
+					expectedService: 'Steam',
+					expectedQuery: 'cyberpunk 2077',
+					expectedUrl: 'https://store.steampowered.com/search/?term=cyberpunk%202077'
+				},
+				{
+					input: '!nf stranger things',
+					expectedService: 'Netflix',
+					expectedQuery: 'stranger things',
+					expectedUrl: 'https://www.netflix.com/search?q=stranger%20things'
+				},
+				{
+					input: 'cooking recipes !p',
+					expectedService: 'Pinterest',
+					expectedQuery: 'cooking recipes',
+					expectedUrl: 'https://www.pinterest.com/search/pins/?q=cooking%20recipes'
+				},
+				{
+					input: '!wa integral of sin(x)',
+					expectedService: 'Wolfram Alpha',
+					expectedQuery: 'integral of sin(x)',
+					expectedUrl: 'https://www.wolframalpha.com/input/?i=integral%20of%20sin(x)'
+				},
+				{
+					input: 'funny cats !yt',
+					expectedService: 'YouTube',
+					expectedQuery: 'funny cats',
+					expectedUrl: 'https://www.youtube.com/results?search_query=funny%20cats'
+				},
+				{
+					input: '!maps central park',
+					expectedService: 'Google Maps',
+					expectedQuery: 'central park',
+					expectedUrl: 'https://www.google.com/maps/search/central%20park'
+				},
+				{
+					input: 'bonjour !translate',
+					expectedService: 'Google Translate',
+					expectedQuery: 'bonjour',
+					expectedUrl: 'https://translate.google.com/?sl=auto&tl=en&text=bonjour'
+				}
+			];
+
+			testCases.forEach(({ input, expectedService, expectedQuery, expectedUrl }) => {
+				const result = analyzeInput(input);
+
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('bangsearch');
+				expect(result[0].confidence).toBe(1.0);
+				expect(result[0].url).toBe(expectedUrl);
+				expect(result[0].reason).toBe(`Search "${expectedQuery}" on ${expectedService}`);
+				expect(result[0].name).toBe(`${expectedService} Search`);
+			});
+		});
+
+		it('should not trigger bang auto-redirect for invalid patterns', () => {
+			const testCases = [
+				'!g', // No search query
+				'!g   ', // Only spaces after !g
+				'!g\n', // Only newline after !g
+				'!g\t', // Only tab after !g
+				'!gtest', // No space after !g
+				'! g search', // Space between ! and g
+				'!invalid search', // Invalid bang
+				'!!g search', // Double exclamation
+				'text!g search', // No space before !g
+				'!xyz unknown bang' // Unsupported bang
+			];
+
+			testCases.forEach((input) => {
+				const result = analyzeInput(input);
+
+				// Should not have confidence 1.0 (auto-redirect potential)
+				const hasAutoRedirect = result.some((s) => s.confidence >= 1.0);
+				expect(hasAutoRedirect).toBe(false);
+
+				// Should still have regular Google search as fallback
+				const googleSuggestion = result.find((s) => s.id === 'googlesearch');
+				expect(googleSuggestion).toBeDefined();
+				if (googleSuggestion) {
+					expect(googleSuggestion.confidence).toBe(0.1); // Regular fallback confidence
+				}
+			});
+		});
+
+		it('should handle !g with various query formats correctly', () => {
+			const testCases = [
+				{
+					input: '!g site:stackoverflow.com javascript',
+					expectedQuery: 'site:stackoverflow.com javascript'
+				},
+				{
+					input: '!g filetype:pdf machine learning',
+					expectedQuery: 'filetype:pdf machine learning'
+				},
+				{
+					input: '!g "search phrase" -exclude +include',
+					expectedQuery: '"search phrase" -exclude +include'
+				},
+				{
+					input: '!g weather new york',
+					expectedQuery: 'weather new york'
+				},
+				{
+					input: '!g define: algorithm',
+					expectedQuery: 'define: algorithm'
+				},
+				{
+					input: '!g 2+2*3', // Math expression as search query
+					expectedQuery: '2+2*3'
+				},
+				{
+					input: '!g #FF5733 color code', // Color code as search query
+					expectedQuery: '#FF5733 color code'
+				}
+			];
+
+			testCases.forEach(({ input, expectedQuery }) => {
+				const result = analyzeInput(input);
+
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('bangsearch');
+				expect(result[0].confidence).toBe(1.0);
+				expect(result[0].reason).toBe(`Search "${expectedQuery}" on Google`);
+
+				// Verify URL encoding
+				const expectedUrl = `https://www.google.com/search?q=${encodeURIComponent(expectedQuery)}`;
+				expect(result[0].url).toBe(expectedUrl);
+			});
+		});
+
+		it('should prioritize bangs over other analyzer patterns', () => {
+			const testCases = [
+				'!g 2+3*4', // Math expression in search
+				'!g 10 kg to lb', // Unit conversion in search
+				'!g #FF5733', // Color code in search
+				'!g $AAPL stock price', // Stock symbol in search
+				'!g {"key": "value"}', // JSON in search
+				'!g https://example.com review', // URL in search
+				'!g translate hello to spanish', // Translation command in search
+				'!g 1634567890 timestamp', // Epoch timestamp in search
+				'math problem !w', // Bang anywhere in query
+				'react tutorial !so', // Bang at end
+				'!yt music videos' // Different bang
+			];
+
+			testCases.forEach((input) => {
+				const result = analyzeInput(input);
+
+				// Should only return bang search with potential redirect
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('bangsearch');
+				expect(result[0].confidence).toBe(1.0);
+
+				// Should not detect other patterns when bangs are used
+				const hasOtherSuggestions = result.some((s) => s.id !== 'bangsearch');
+				expect(hasOtherSuggestions).toBe(false);
+			});
+		});
+
+		it('should handle Unicode and special characters in bang queries', () => {
+			const testCases = [
+				{
+					input: '!g 你好世界',
+					expectedQuery: '你好世界'
+				},
+				{
+					input: '!g café París',
+					expectedQuery: 'café París'
+				},
+				{
+					input: '!g αβγδε Greek letters',
+					expectedQuery: 'αβγδε Greek letters'
+				},
+				{
+					input: '!g 🚀 rocket emoji',
+					expectedQuery: '🚀 rocket emoji'
+				},
+				{
+					input: '!g résumé français',
+					expectedQuery: 'résumé français'
+				},
+				{
+					input: 'unicode test !w 测试',
+					expectedQuery: 'unicode test 测试'
+				}
+			];
+
+			testCases.forEach(({ input, expectedQuery }) => {
+				const result = analyzeInput(input);
+
+				expect(result).toHaveLength(1);
+				expect(result[0].id).toBe('bangsearch');
+				expect(result[0].confidence).toBe(1.0);
+				expect(result[0].reason).toContain(`Search "${expectedQuery}"`);
+
+				// Verify URL encoding handles Unicode correctly
+				const decodedUrl = decodeURIComponent(result[0].url);
+				expect(decodedUrl).toContain(expectedQuery);
+			});
+		});
+
 		it('should return suggestions with required properties', () => {
 			const result = analyzeInput('2+3*4');
 			expect(result.length).toBeGreaterThan(0);

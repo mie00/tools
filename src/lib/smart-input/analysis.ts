@@ -260,6 +260,72 @@ export function analyzeInput(input: string): AppSuggestion[] {
 
 	if (!trimmed) return suggestions;
 
+	// Check for bang shortcuts (like DuckDuckGo bangs) anywhere in the query
+	const bangShortcuts: Record<string, { name: string; url: string; icon: string }> = {
+		'!g': { name: 'Google', url: 'https://www.google.com/search?q=', icon: '🔍' },
+		'!w': {
+			name: 'Wikipedia',
+			url: 'https://en.wikipedia.org/wiki/Special:Search?search=',
+			icon: '📖'
+		},
+		'!tw': { name: 'Twitter', url: 'https://twitter.com/search?q=', icon: '🐦' },
+		'!imdb': { name: 'IMDB', url: 'https://www.imdb.com/find?q=', icon: '🎬' },
+		'!a': { name: 'Amazon', url: 'https://www.amazon.com/s?k=', icon: '📦' },
+		'!e': { name: 'eBay', url: 'https://www.ebay.com/sch/i.html?_nkw=', icon: '🏪' },
+		'!so': { name: 'Stack Overflow', url: 'https://stackoverflow.com/search?q=', icon: '💻' },
+		'!gh': { name: 'GitHub', url: 'https://github.com/search?q=', icon: '🐙' },
+		'!r': { name: 'Reddit', url: 'https://www.reddit.com/search/?q=', icon: '🤖' },
+		'!ste': { name: 'Steam', url: 'https://store.steampowered.com/search/?term=', icon: '🎮' },
+		'!nf': { name: 'Netflix', url: 'https://www.netflix.com/search?q=', icon: '📺' },
+		'!p': { name: 'Pinterest', url: 'https://www.pinterest.com/search/pins/?q=', icon: '📌' },
+		'!wa': { name: 'Wolfram Alpha', url: 'https://www.wolframalpha.com/input/?i=', icon: '🧮' },
+		'!yt': { name: 'YouTube', url: 'https://www.youtube.com/results?search_query=', icon: '📹' },
+		'!maps': { name: 'Google Maps', url: 'https://www.google.com/maps/search/', icon: '🗺️' },
+		'!translate': {
+			name: 'Google Translate',
+			url: 'https://translate.google.com/?sl=auto&tl=en&text=',
+			icon: '🔤'
+		}
+	};
+
+	// Look for bang shortcuts anywhere in the input
+	// Bang must be at start or preceded by whitespace, and followed by whitespace or end of string
+	const bangPattern =
+		/(?:^|\s)(!(?:g|w|tw|imdb|a|e|so|gh|r|ste|nf|p|wa|yt|maps|translate))(?:\s|$)/i;
+	const bangMatch = trimmed.match(bangPattern);
+
+	if (bangMatch) {
+		const bang = bangMatch[1].toLowerCase();
+		const bangConfig = bangShortcuts[bang];
+
+		if (bangConfig) {
+			// Extract the search query by removing the bang and cleaning up spaces
+			// Handle cases where bang is at beginning, middle, or end
+			const escapedBang = bangMatch[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
+			let searchQuery = trimmed
+				.replace(new RegExp(`\\s*${escapedBang}\\s*`, 'i'), ' ') // Replace the bang with space
+				.trim(); // Remove leading/trailing spaces
+
+			// Clean up multiple spaces
+			searchQuery = searchQuery.replace(/\s+/g, ' ');
+
+			// Only create suggestion if we have a non-empty search query
+			if (searchQuery && searchQuery.length > 0) {
+				// Create a high-priority suggestion for bang shortcuts
+				suggestions.push({
+					id: 'bangsearch',
+					name: `${bangConfig.name} Search`,
+					icon: bangConfig.icon,
+					description: `Search ${bangConfig.name}`,
+					confidence: 1.0, // Maximum confidence for potential auto-redirect
+					url: bangConfig.url + encodeURIComponent(searchQuery),
+					reason: `Search "${searchQuery}" on ${bangConfig.name}`
+				});
+				return suggestions; // Return immediately, don't analyze other patterns
+			}
+		}
+	}
+
 	// Check for structured data first (JSON, Base64) - these should have priority
 	const jsonSuggestions = analyzeJson(trimmed);
 	suggestions.push(...jsonSuggestions);

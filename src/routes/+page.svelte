@@ -322,68 +322,68 @@
 
 				<!-- Language Selector -->
 				{#if false}
-				<div class="language-dropdown relative">
-					<button
-						onclick={() => (showLanguageDropdown = !showLanguageDropdown)}
-						class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-all duration-300 hover:scale-105 hover:bg-blue-700"
-					>
-						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-							></path>
-						</svg>
-						<span class="font-medium">{currentLanguage.nativeName}</span>
-						<svg
-							class="h-4 w-4 transition-transform"
-							class:rotate-180={showLanguageDropdown}
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+					<div class="language-dropdown relative">
+						<button
+							onclick={() => (showLanguageDropdown = !showLanguageDropdown)}
+							class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-all duration-300 hover:scale-105 hover:bg-blue-700"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 9l-7 7-7-7"
-							></path>
-						</svg>
-					</button>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+								></path>
+							</svg>
+							<span class="font-medium">{currentLanguage.nativeName}</span>
+							<svg
+								class="h-4 w-4 transition-transform"
+								class:rotate-180={showLanguageDropdown}
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 9l-7 7-7-7"
+								></path>
+							</svg>
+						</button>
 
-					{#if showLanguageDropdown}
-						<div
-							class="absolute top-full left-0 z-50 mt-2 max-h-80 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
-						>
-							{#each supportedLanguages as language (language.code)}
-								<button
-									onclick={() => handleLanguageChange(language.code)}
-									class="flex w-full items-center gap-3 px-4 py-3 text-left text-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-blue-50"
-									class:bg-blue-100={currentLanguage.code === language.code}
-									class:font-semibold={currentLanguage.code === language.code}
-								>
-									<span class="flex-1">{language.nativeName}</span>
-									<span class="text-sm text-gray-500">{language.name}</span>
-									{#if currentLanguage.code === language.code}
-										<svg
-											class="h-4 w-4 text-blue-600"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											></path>
-										</svg>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					{/if}
+						{#if showLanguageDropdown}
+							<div
+								class="absolute top-full left-0 z-50 mt-2 max-h-80 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+							>
+								{#each supportedLanguages as language (language.code)}
+									<button
+										onclick={() => handleLanguageChange(language.code)}
+										class="flex w-full items-center gap-3 px-4 py-3 text-left text-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-blue-50"
+										class:bg-blue-100={currentLanguage.code === language.code}
+										class:font-semibold={currentLanguage.code === language.code}
+									>
+										<span class="flex-1">{language.nativeName}</span>
+										<span class="text-sm text-gray-500">{language.name}</span>
+										{#if currentLanguage.code === language.code}
+											<svg
+												class="h-4 w-4 text-blue-600"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M5 13l4 4L19 7"
+												></path>
+											</svg>
+										{/if}
+									</button>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
