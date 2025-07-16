@@ -1,4 +1,6 @@
 <script lang="ts">
+	import T from '../T.svelte';
+
 	let {
 		leftInput = $bindable(''),
 		rightInput = $bindable('')
@@ -433,7 +435,7 @@
 							bind:checked={config.showUnchanged}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Show Unchanged</span>
+						<span class="text-sm text-gray-700"><T>Show Unchanged</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -441,7 +443,7 @@
 							bind:checked={config.sortByPath}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Sort by Path</span>
+						<span class="text-sm text-gray-700"><T>Sort by Path</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -449,7 +451,7 @@
 							bind:checked={config.ignoreArrayOrder}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore Array Order</span>
+						<span class="text-sm text-gray-700"><T>Ignore Array Order</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -457,7 +459,7 @@
 							bind:checked={config.ignoreCase}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore Case</span>
+						<span class="text-sm text-gray-700"><T>Ignore Case</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -473,7 +475,7 @@
 							bind:checked={config.showValueTypes}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Show Types</span>
+						<span class="text-sm text-gray-700"><T>Show Types</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -481,7 +483,7 @@
 							bind:checked={config.preserveWhitespace}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Preserve Whitespace</span>
+						<span class="text-sm text-gray-700"><T>Preserve Whitespace</T></span>
 					</label>
 				</div>
 
@@ -525,7 +527,7 @@
 		<!-- Left Input -->
 		<div class="rounded-lg border border-gray-200 bg-white shadow-sm">
 			<div class="rounded-t-lg border-b border-gray-200 bg-gray-50 px-4 py-3">
-				<h3 class="text-sm font-medium text-gray-900">Original YAML</h3>
+				<h3 class="text-sm font-medium text-gray-900"><T>Original YAML</T></h3>
 			</div>
 			<div class="p-4">
 				<textarea
@@ -543,7 +545,7 @@ items:
 		<!-- Right Input -->
 		<div class="rounded-lg border border-gray-200 bg-white shadow-sm">
 			<div class="rounded-t-lg border-b border-gray-200 bg-gray-50 px-4 py-3">
-				<h3 class="text-sm font-medium text-gray-900">Modified YAML</h3>
+				<h3 class="text-sm font-medium text-gray-900"><T>Modified YAML</T></h3>
 			</div>
 			<div class="p-4">
 				<textarea
@@ -571,7 +573,7 @@ items:
 		<!-- Statistics -->
 		{#if diffResult.length > 0}
 			<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-				<h3 class="mb-2 text-sm font-medium text-gray-900">Statistics</h3>
+				<h3 class="mb-2 text-sm font-medium text-gray-900"><T>Statistics</T></h3>
 				<div class="flex gap-4 text-sm">
 					<span class="text-green-600">+{diffStats.added} added</span>
 					<span class="text-red-600">-{diffStats.removed} removed</span>
@@ -586,7 +588,7 @@ items:
 		<!-- Diff Result -->
 		<div class="rounded-lg border border-gray-200 bg-white shadow-sm">
 			<div class="rounded-t-lg border-b border-gray-200 bg-gray-50 px-4 py-3">
-				<h3 class="text-sm font-medium text-gray-900">YAML Diff Result</h3>
+				<h3 class="text-sm font-medium text-gray-900"><T>YAML Diff Result</T></h3>
 			</div>
 			<div class="p-4">
 				{#if diffResult.length === 0}

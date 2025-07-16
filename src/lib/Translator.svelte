@@ -4,6 +4,7 @@
 	// The linter errors are expected and the functionality works in compatible browsers.
 
 	import { onMount } from 'svelte';
+	import T from './T.svelte';
 
 	let inputText = $state('');
 	let translatedText = $state('');
@@ -486,7 +487,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">Language Translator</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>Language Translator</T></h1>
 		</header>
 
 		<div class="rounded-2xl bg-white p-6 shadow-lg">
@@ -502,14 +503,14 @@
 					<p class="mb-3 text-red-700">{error}</p>
 					<details>
 						<summary class="cursor-pointer font-medium text-red-600 hover:text-red-800"
-							>Requirements</summary
+							><T>Requirements</T></summary
 						>
 						<ul class="mt-2 list-inside list-disc text-sm text-red-600">
 							<li>Chrome 138+ on desktop</li>
 							<li>Windows 10/11, macOS 13+, or Linux</li>
 							<li>At least 22 GB free storage</li>
 							<li>GPU with 4+ GB VRAM</li>
-							<li>Unmetered internet connection</li>
+							<li><T>Unmetered internet connection</T></li>
 						</ul>
 					</details>
 				</div>
@@ -534,7 +535,7 @@
 					<div class="space-y-3">
 						<div>
 							<label for="source-language" class="mb-2 block text-sm font-medium text-gray-700"
-								>From:</label
+								><T>From:</T></label
 							>
 							<select
 								id="source-language"
@@ -551,7 +552,7 @@
 
 						<div class="relative">
 							<label for="input-text" class="mb-2 block text-sm font-medium text-gray-700"
-								>Enter text:</label
+								><T>Enter text:</T></label
 							>
 							<textarea
 								id="input-text"
@@ -626,7 +627,7 @@
 					<div class="space-y-3">
 						<div>
 							<label for="target-language" class="mb-2 block text-sm font-medium text-gray-700"
-								>To:</label
+								><T>To:</T></label
 							>
 							<select
 								id="target-language"
@@ -643,7 +644,7 @@
 
 						<div class="relative">
 							<label for="output-text" class="mb-2 block text-sm font-medium text-gray-700"
-								>Translation:</label
+								><T>Translation:</T></label
 							>
 							<textarea
 								id="output-text"
@@ -707,7 +708,7 @@
 												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 											></path>
 										</svg>
-										<span class="text-sm">Translating...</span>
+										<span class="text-sm"><T>Translating...</T></span>
 									</div>
 								</div>
 							{/if}
@@ -718,14 +719,18 @@
 				<div class="rounded-lg bg-gray-50 p-4">
 					<h3 class="mb-2 font-semibold text-gray-800">ℹ️ About This Translator</h3>
 					<ul class="space-y-1 text-sm text-gray-600">
-						<li><strong>Privacy-first:</strong> All translation happens locally in your browser</li>
 						<li>
-							<strong>Offline capable:</strong> Works without internet after initial model download
+							<strong><T>Privacy-first:</T></strong> All translation happens locally in your browser
 						</li>
-						<li><strong>Auto-detection:</strong> Automatically detects the source language</li>
-						<li><strong>High accuracy:</strong> Powered by Chrome's built-in AI models</li>
 						<li>
-							<strong>Text-to-speech:</strong> Click the play buttons to hear text in the appropriate
+							<strong><T>Offline capable:</T></strong> Works without internet after initial model download
+						</li>
+						<li>
+							<strong><T>Auto-detection:</T></strong> Automatically detects the source language
+						</li>
+						<li><strong><T>High accuracy:</T></strong> Powered by Chrome's built-in AI models</li>
+						<li>
+							<strong><T>Text-to-speech:</T></strong> Click the play buttons to hear text in the appropriate
 							language
 						</li>
 					</ul>

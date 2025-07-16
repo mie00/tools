@@ -13,6 +13,7 @@
 	} from './note-taking/StorageManager';
 	import { MediaHandler, type MediaData } from './note-taking/MediaHandler';
 	import { NoteOperations, type Note } from './note-taking/NoteOperations';
+	import T from './T.svelte';
 
 	// Component state
 	let notes: Note[] = $state([]);
@@ -379,7 +380,7 @@
 					></path>
 				</svg>
 				<p class="mb-2 text-lg">No notes in {selectedTopic}</p>
-				<p class="text-sm">Start by adding your first note above</p>
+				<p class="text-sm"><T>Start by adding your first note above</T></p>
 			</div>
 		{/if}
 	</div>

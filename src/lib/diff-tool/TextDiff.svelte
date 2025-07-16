@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import * as diffLib from 'diff';
+	import T from '../T.svelte';
 
 	let {
 		leftInput = $bindable(''),
@@ -244,7 +245,7 @@
 					</svg>
 				</div>
 				<div class="ml-3">
-					<h3 class="text-sm font-medium text-yellow-800">Large Input Detected</h3>
+					<h3 class="text-sm font-medium text-yellow-800"><T>Large Input Detected</T></h3>
 					<div class="mt-2 text-sm text-yellow-700">
 						<p>
 							You're working with large text inputs ({getInputSizes().totalSize.toLocaleString()} characters).
@@ -270,7 +271,7 @@
 					</svg>
 				</div>
 				<div class="ml-3">
-					<h3 class="text-sm font-medium text-red-800">Input Too Large</h3>
+					<h3 class="text-sm font-medium text-red-800"><T>Input Too Large</T></h3>
 					<div class="mt-2 text-sm text-red-700">
 						<p>
 							Input size ({getInputSizes().totalSize.toLocaleString()} characters) exceeds the maximum
@@ -298,20 +299,20 @@
 				<!-- Diff Algorithm -->
 				<div>
 					<label for="diff-algorithm" class="mb-2 block text-sm font-medium text-gray-700"
-						>Diff Algorithm</label
+						><T>Diff Algorithm</T></label
 					>
 					<select
 						id="diff-algorithm"
 						bind:value={config.diffType}
 						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 					>
-						<option value="lines">Lines</option>
-						<option value="words">Words</option>
+						<option value="lines"><T>Lines</T></option>
+						<option value="words"><T>Words</T></option>
 						<option value="wordsWithSpace">Words (with spaces)</option>
-						<option value="chars">Characters</option>
-						<option value="sentences">Sentences</option>
-						<option value="css">CSS</option>
-						<option value="json">JSON</option>
+						<option value="chars"><T>Characters</T></option>
+						<option value="sentences"><T>Sentences</T></option>
+						<option value="css"><T>CSS</T></option>
+						<option value="json"><T>JSON</T></option>
 					</select>
 				</div>
 
@@ -323,7 +324,7 @@
 							bind:checked={config.ignoreCase}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore Case</span>
+						<span class="text-sm text-gray-700"><T>Ignore Case</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -331,7 +332,7 @@
 							bind:checked={config.ignoreWhitespace}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore Whitespace</span>
+						<span class="text-sm text-gray-700"><T>Ignore Whitespace</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -339,7 +340,7 @@
 							bind:checked={config.ignoreWhitespaceChange}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore Whitespace Changes</span>
+						<span class="text-sm text-gray-700"><T>Ignore Whitespace Changes</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -347,7 +348,7 @@
 							bind:checked={config.ignoreWhitespaceAtEndOfLine}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Ignore EOL Whitespace</span>
+						<span class="text-sm text-gray-700"><T>Ignore EOL Whitespace</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -355,7 +356,7 @@
 							bind:checked={config.newlineIsToken}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Newline as Token</span>
+						<span class="text-sm text-gray-700"><T>Newline as Token</T></span>
 					</label>
 					<label class="flex items-center space-x-2">
 						<input
@@ -363,13 +364,13 @@
 							bind:checked={config.stripTrailingCr}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="text-sm text-gray-700">Strip Trailing CR</span>
+						<span class="text-sm text-gray-700"><T>Strip Trailing CR</T></span>
 					</label>
 				</div>
 
 				<!-- Display Options -->
 				<div class="border-t pt-4">
-					<h4 class="mb-2 text-sm font-medium text-gray-700">Display Options</h4>
+					<h4 class="mb-2 text-sm font-medium text-gray-700"><T>Display Options</T></h4>
 					<div class="grid grid-cols-2 gap-4 md:grid-cols-3">
 						<label class="flex items-center space-x-2">
 							<input
@@ -377,7 +378,7 @@
 								bind:checked={config.showLineNumbers}
 								class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							/>
-							<span class="text-sm text-gray-700">Show Line Numbers</span>
+							<span class="text-sm text-gray-700"><T>Show Line Numbers</T></span>
 						</label>
 						<label class="flex items-center space-x-2">
 							<input
@@ -385,7 +386,7 @@
 								bind:checked={config.showStats}
 								class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							/>
-							<span class="text-sm text-gray-700">Show Statistics</span>
+							<span class="text-sm text-gray-700"><T>Show Statistics</T></span>
 						</label>
 						<label class="flex items-center space-x-2">
 							<input
@@ -393,7 +394,7 @@
 								bind:checked={config.showInlineDiff}
 								class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							/>
-							<span class="text-sm text-gray-700">Inline Diff</span>
+							<span class="text-sm text-gray-700"><T>Inline Diff</T></span>
 						</label>
 					</div>
 				</div>
@@ -467,7 +468,7 @@
 	<!-- Statistics -->
 	{#if config.showStats && diffResult.length > 0}
 		<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-			<h3 class="mb-2 text-sm font-medium text-gray-900">Statistics</h3>
+			<h3 class="mb-2 text-sm font-medium text-gray-900"><T>Statistics</T></h3>
 			<div class="flex gap-4 text-sm">
 				<span class="text-green-600">+{diffStats.additions} additions</span>
 				<span class="text-red-600">-{diffStats.deletions} deletions</span>
@@ -486,7 +487,7 @@
 						<div
 							class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
 						></div>
-						<span class="text-xs text-blue-600">Calculating...</span>
+						<span class="text-xs text-blue-600"><T>Calculating...</T></span>
 					</div>
 				{/if}
 			</h3>
@@ -497,7 +498,7 @@
 					<div
 						class="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
 					></div>
-					<p class="text-gray-500">Calculating differences...</p>
+					<p class="text-gray-500"><T>Calculating differences...</T></p>
 				</div>
 			{:else if getInputSizes().totalSize > MAX_SAFE_SIZE}
 				<p class="py-8 text-center text-red-500">

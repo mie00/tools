@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ChatConfig, ModelLoadingProgress, FileProgress } from './types';
+	import T from '../T.svelte';
 
 	const {
 		config,
@@ -88,7 +89,7 @@
 				updateDefaultModelSource((e.target as HTMLSelectElement).value as 'local' | 'remote')}
 			class="w-full rounded border border-gray-300 p-2"
 		>
-			<option value="local">Local Model</option>
+			<option value="local"><T>Local Model</T></option>
 			<option value="remote">Remote Model (Ollama)</option>
 		</select>
 	</div>
@@ -98,7 +99,7 @@
 		<h4 class="mb-2 font-medium text-gray-700">🌐 Ollama Defaults</h4>
 		<div class="grid grid-cols-1 gap-3">
 			<div>
-				<label for="ollama-endpoint" class="block text-sm text-gray-600">Endpoint</label>
+				<label for="ollama-endpoint" class="block text-sm text-gray-600"><T>Endpoint</T></label>
 				<input
 					id="ollama-endpoint"
 					type="text"
@@ -124,7 +125,7 @@
 				/>
 			</div>
 			<div>
-				<label for="ollama-top-k" class="block text-sm text-gray-600">Default Top K</label>
+				<label for="ollama-top-k" class="block text-sm text-gray-600"><T>Default Top K</T></label>
 				<input
 					id="ollama-top-k"
 					type="number"
@@ -158,7 +159,7 @@
 				/>
 			</div>
 			<div>
-				<label for="local-top-k" class="block text-sm text-gray-600">Default Top K</label>
+				<label for="local-top-k" class="block text-sm text-gray-600"><T>Default Top K</T></label>
 				<input
 					id="local-top-k"
 					type="number"
@@ -170,7 +171,9 @@
 				/>
 			</div>
 			<div>
-				<label for="local-max-tokens" class="block text-sm text-gray-600">Default Max Tokens</label>
+				<label for="local-max-tokens" class="block text-sm text-gray-600"
+					><T>Default Max Tokens</T></label
+				>
 				<input
 					id="local-max-tokens"
 					type="number"

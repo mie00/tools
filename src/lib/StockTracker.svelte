@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	// Import our new components and utilities
 	import ApiKeySetup from './stock-tracker/ApiKeySetup.svelte';
@@ -313,7 +314,7 @@
 					d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"
 				></path>
 			</svg>
-			<span class="text-sm font-medium text-blue-800">Uses External API</span>
+			<span class="text-sm font-medium text-blue-800"><T>Uses External API</T></span>
 		</div>
 		<div class="text-xs text-blue-600">
 			Real-time stock data from Alpha Vantage
@@ -351,7 +352,7 @@
 	{#if view === 'search'}
 		<!-- Stock Search View -->
 		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-bold text-gray-800">Stock Search</h1>
+			<h1 class="text-2xl font-bold text-gray-800"><T>Stock Search</T></h1>
 			<button
 				onclick={goToPortfolio}
 				class="flex items-center space-x-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
@@ -364,7 +365,7 @@
 						d="M10 19l-7-7m0 0l7-7m-7 7h18"
 					></path>
 				</svg>
-				<span>Back to Portfolio</span>
+				<span><T>Back to Portfolio</T></span>
 			</button>
 		</div>
 
@@ -392,7 +393,7 @@
 						d="M10 19l-7-7m0 0l7-7m-7 7h18"
 					></path>
 				</svg>
-				<span>Back to Portfolio</span>
+				<span><T>Back to Portfolio</T></span>
 			</button>
 		</div>
 
@@ -424,7 +425,7 @@
 							Last updated: {selectedStock.lastUpdate}
 						</div>
 					{:else}
-						<div class="text-gray-400">Loading price...</div>
+						<div class="text-gray-400"><T>Loading price...</T></div>
 					{/if}
 				</div>
 			</div>
@@ -444,7 +445,7 @@
 	{:else}
 		<!-- Portfolio View -->
 		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-bold text-gray-800">Stock Tracker</h1>
+			<h1 class="text-2xl font-bold text-gray-800"><T>Stock Tracker</T></h1>
 			<button
 				onclick={goToSearch}
 				class="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
@@ -457,7 +458,7 @@
 						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
 					></path>
 				</svg>
-				<span>Search Stocks</span>
+				<span><T>Search Stocks</T></span>
 			</button>
 		</div>
 

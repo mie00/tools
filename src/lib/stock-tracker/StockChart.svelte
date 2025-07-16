@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ChartPoint, TimeWindow } from './StockApiManager';
+	import T from '../T.svelte';
 
 	let {
 		data,
@@ -116,7 +117,7 @@
 					d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 				></path>
 			</svg>
-			<p class="font-medium text-red-600">Failed to load chart</p>
+			<p class="font-medium text-red-600"><T>Failed to load chart</T></p>
 			<p class="text-sm text-red-500">{error}</p>
 			<button
 				onclick={handleRefresh}
@@ -164,7 +165,7 @@
 			<!-- Chart Summary Stats -->
 			<div class="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 sm:grid-cols-4">
 				<div class="text-center">
-					<div class="text-xs tracking-wide text-gray-500 uppercase">Period Change</div>
+					<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Period Change</T></div>
 					<div
 						class="text-lg font-semibold {periodChange >= 0 ? 'text-green-600' : 'text-red-600'}"
 					>
@@ -175,19 +176,19 @@
 					</div>
 				</div>
 				<div class="text-center">
-					<div class="text-xs tracking-wide text-gray-500 uppercase">Period High</div>
+					<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Period High</T></div>
 					<div class="text-lg font-semibold text-green-600">
 						{formatCurrency(highPrice)}
 					</div>
 				</div>
 				<div class="text-center">
-					<div class="text-xs tracking-wide text-gray-500 uppercase">Period Low</div>
+					<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Period Low</T></div>
 					<div class="text-lg font-semibold text-red-600">
 						{formatCurrency(lowPrice)}
 					</div>
 				</div>
 				<div class="text-center">
-					<div class="text-xs tracking-wide text-gray-500 uppercase">Data Points</div>
+					<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Data Points</T></div>
 					<div class="text-lg font-semibold text-gray-700">
 						{data.length}
 					</div>
@@ -200,7 +201,7 @@
 					<div
 						class="flex items-center justify-between rounded-lg bg-gray-100 p-3 transition-colors hover:bg-gray-200"
 					>
-						<span class="font-medium text-gray-800">View Raw Data</span>
+						<span class="font-medium text-gray-800"><T>View Raw Data</T></span>
 						<svg
 							class="h-5 w-5 text-gray-600 transition-transform group-open:rotate-180"
 							fill="none"
@@ -220,11 +221,11 @@
 					<table class="w-full text-sm">
 						<thead>
 							<tr class="border-b border-gray-200 bg-gray-50">
-								<th class="px-4 py-2 text-left">Date</th>
-								<th class="px-4 py-2 text-right">Close</th>
-								<th class="px-4 py-2 text-right">High</th>
-								<th class="px-4 py-2 text-right">Low</th>
-								<th class="px-4 py-2 text-right">Volume</th>
+								<th class="px-4 py-2 text-left"><T>Date</T></th>
+								<th class="px-4 py-2 text-right"><T>Close</T></th>
+								<th class="px-4 py-2 text-right"><T>High</T></th>
+								<th class="px-4 py-2 text-right"><T>Low</T></th>
+								<th class="px-4 py-2 text-right"><T>Volume</T></th>
 							</tr>
 						</thead>
 						<tbody>
@@ -260,8 +261,8 @@
 					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
 				></path>
 			</svg>
-			<p class="text-lg">No chart data available</p>
-			<p class="text-sm">Select a stock to view its price chart</p>
+			<p class="text-lg"><T>No chart data available</T></p>
+			<p class="text-sm"><T>Select a stock to view its price chart</T></p>
 		</div>
 	{/if}
 </div>

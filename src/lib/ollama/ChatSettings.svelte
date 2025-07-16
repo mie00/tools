@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ChatTopic } from './types';
+	import T from '../T.svelte';
 
 	const { activeTopic, availableModels, onupdateSystemPrompt, onupdateModel, onupdateModelSource } =
 		$props<{
@@ -30,7 +31,7 @@
 		<!-- Model Source Selection -->
 		<div class="mb-4">
 			<fieldset>
-				<legend class="mb-2 block text-sm font-medium text-gray-700">Model Source</legend>
+				<legend class="mb-2 block text-sm font-medium text-gray-700"><T>Model Source</T></legend>
 				<div class="flex space-x-4">
 					<label class="flex items-center">
 						<input
@@ -40,7 +41,7 @@
 							onchange={() => handleUpdateModelSource('local')}
 							class="mr-2"
 						/>
-						<span>Local Model</span>
+						<span><T>Local Model</T></span>
 					</label>
 					<label class="flex items-center">
 						<input
@@ -58,7 +59,7 @@
 
 		<!-- Model Selection -->
 		<div class="mb-4">
-			<label for="model" class="mb-2 block text-sm font-medium text-gray-700">Model</label>
+			<label for="model" class="mb-2 block text-sm font-medium text-gray-700"><T>Model</T></label>
 			{#if activeTopic.modelSource === 'local'}
 				<input
 					id="model"
@@ -80,7 +81,7 @@
 					{#each availableModels as model (model)}
 						<option value={model}>{model}</option>
 					{:else}
-						<option disabled>No models available</option>
+						<option disabled><T>No models available</T></option>
 					{/each}
 				</select>
 				{#if availableModels.length === 0}
@@ -94,7 +95,7 @@
 		<!-- System Prompt -->
 		<div class="mb-4">
 			<label for="system-prompt" class="mb-2 block text-sm font-medium text-gray-700"
-				>System Prompt</label
+				><T>System Prompt</T></label
 			>
 			<textarea
 				id="system-prompt"

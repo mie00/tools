@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { Note } from './NoteOperations';
 	import type { MediaData } from './MediaHandler';
+	import T from '../T.svelte';
 
 	let {
 		note,
@@ -257,7 +258,7 @@
 										d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
 									></path>
 								</svg>
-								<span class="text-sm font-medium text-gray-700">Audio Note</span>
+								<span class="text-sm font-medium text-gray-700"><T>Audio Note</T></span>
 							</div>
 							<audio controls class="mb-2 w-full">
 								<source src={note.media.data} type={note.media.mimeType} />
@@ -284,7 +285,7 @@
 										d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
 									></path>
 								</svg>
-								<span class="text-sm font-medium text-gray-700">Video Note</span>
+								<span class="text-sm font-medium text-gray-700"><T>Video Note</T></span>
 							</div>
 							<video controls class="mb-2 w-full rounded">
 								<source src={note.media.data} type={note.media.mimeType} />
@@ -342,7 +343,7 @@
 			<!-- Move to topic buttons (only visible when focused and multiple topics exist) -->
 			{#if isFocused && topics.length > 1 && !isEditing}
 				<div class="mt-3 border-t pt-3">
-					<p class="mb-2 text-xs text-gray-500">Move to topic:</p>
+					<p class="mb-2 text-xs text-gray-500"><T>Move to topic:</T></p>
 					<div class="flex flex-wrap gap-1">
 						{#each topics.filter((t) => t !== note.topic) as topic (topic)}
 							<button

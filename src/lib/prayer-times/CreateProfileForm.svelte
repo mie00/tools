@@ -5,6 +5,7 @@
 	import { getCountryName } from '../utils/ip-to-country';
 	import type { City, CitySearchResult } from './types';
 	import CitySearch from './CitySearch.svelte';
+	import T from '../T.svelte';
 
 	let {
 		cities = [],
@@ -290,7 +291,7 @@
 					<div
 						class="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
 					></div>
-					<span class="text-blue-700">Getting your current location...</span>
+					<span class="text-blue-700"><T>Getting your current location...</T></span>
 				</div>
 			</div>
 		{/if}
@@ -304,7 +305,7 @@
 		<div class="grid gap-6 md:grid-cols-2">
 			<div>
 				<label for="profile-name" class="mb-2 block text-sm font-medium text-gray-700"
-					>Profile Name</label
+					><T>Profile Name</T></label
 				>
 				<input
 					id="profile-name"
@@ -317,7 +318,7 @@
 
 			<div>
 				<label for="calculation-method" class="mb-2 block text-sm font-medium text-gray-700"
-					>Calculation Method</label
+					><T>Calculation Method</T></label
 				>
 				<select
 					id="calculation-method"
@@ -325,7 +326,7 @@
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
 					{#each Object.entries(calculationMethods) as [key, method] (key)}
-						<option value={key}>{method.name}</option>
+						<option value={key}><T key={method.name} /></option>
 					{/each}
 				</select>
 				{#if calculationMethods[newProfile.calculationMethod]}
@@ -346,7 +347,9 @@
 			</div>
 
 			<div>
-				<label for="latitude" class="mb-2 block text-sm font-medium text-gray-700">Latitude</label>
+				<label for="latitude" class="mb-2 block text-sm font-medium text-gray-700"
+					><T>Latitude</T></label
+				>
 				<input
 					id="latitude"
 					type="number"
@@ -358,7 +361,8 @@
 			</div>
 
 			<div>
-				<label for="longitude" class="mb-2 block text-sm font-medium text-gray-700">Longitude</label
+				<label for="longitude" class="mb-2 block text-sm font-medium text-gray-700"
+					><T>Longitude</T></label
 				>
 				<input
 					id="longitude"
@@ -371,29 +375,31 @@
 			</div>
 
 			<div>
-				<label for="madhab" class="mb-2 block text-sm font-medium text-gray-700">Madhab</label>
+				<label for="madhab" class="mb-2 block text-sm font-medium text-gray-700"
+					><T>Madhab</T></label
+				>
 				<select
 					id="madhab"
 					bind:value={newProfile.madhab}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					<option value="shafi">Shafi/Maliki/Hanbali</option>
-					<option value="hanafi">Hanafi</option>
+					<option value="shafi"><T>Shafi/Maliki/Hanbali</T></option>
+					<option value="hanafi"><T>Hanafi</T></option>
 				</select>
 			</div>
 
 			<div>
 				<label for="high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700"
-					>High Latitude Rule</label
+					><T>High Latitude Rule</T></label
 				>
 				<select
 					id="high-latitude-rule"
 					bind:value={newProfile.highLatitudeRule}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					<option value="middle_of_night">Middle of Night</option>
-					<option value="seventh_of_night">Seventh of Night</option>
-					<option value="twilight_angle">Twilight Angle</option>
+					<option value="middle_of_night"><T>Middle of Night</T></option>
+					<option value="seventh_of_night"><T>Seventh of Night</T></option>
+					<option value="twilight_angle"><T>Twilight Angle</T></option>
 				</select>
 			</div>
 		</div>

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	let selectedColor = $state('#3b82f6');
 	let hexInput = $state('#3b82f6');
@@ -189,8 +190,8 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800">Color Picker</h2>
-		<p class="text-gray-600">Pick colors and convert between different formats</p>
+		<h2 class="mb-2 text-2xl font-bold text-gray-800"><T>Color Picker</T></h2>
+		<p class="text-gray-600"><T>Pick colors and convert between different formats</T></p>
 	</div>
 
 	<!-- Main Color Display -->
@@ -356,7 +357,7 @@
 
 	<!-- Color Palette -->
 	<div class="space-y-2">
-		<span class="block text-sm font-medium text-gray-700">Quick Colors</span>
+		<span class="block text-sm font-medium text-gray-700"><T>Quick Colors</T></span>
 		<div class="grid grid-cols-8 gap-2">
 			{#each colorPalette as color (color)}
 				<button
@@ -374,28 +375,28 @@
 
 	<!-- Color Variants -->
 	<div class="space-y-2">
-		<span class="block text-sm font-medium text-gray-700">Color Variants</span>
+		<span class="block text-sm font-medium text-gray-700"><T>Color Variants</T></span>
 		<div class="grid grid-cols-3 gap-4">
 			<div class="text-center">
 				<div
 					class="mx-auto h-16 w-16 rounded-lg border border-gray-300"
 					style="background-color: {lighterColor};"
 				></div>
-				<p class="mt-1 text-sm">Lighter</p>
+				<p class="mt-1 text-sm"><T>Lighter</T></p>
 			</div>
 			<div class="text-center">
 				<div
 					class="mx-auto h-16 w-16 rounded-lg border border-gray-300"
 					style="background-color: {selectedColor};"
 				></div>
-				<p class="mt-1 text-sm">Original</p>
+				<p class="mt-1 text-sm"><T>Original</T></p>
 			</div>
 			<div class="text-center">
 				<div
 					class="mx-auto h-16 w-16 rounded-lg border border-gray-300"
 					style="background-color: {darkerColor};"
 				></div>
-				<p class="mt-1 text-sm">Darker</p>
+				<p class="mt-1 text-sm"><T>Darker</T></p>
 			</div>
 		</div>
 		<div class="mt-4 text-center">
@@ -403,7 +404,7 @@
 				class="mx-auto h-16 w-16 rounded-lg border border-gray-300"
 				style="background-color: {complementaryColor};"
 			></div>
-			<p class="mt-1 text-sm">Complementary</p>
+			<p class="mt-1 text-sm"><T>Complementary</T></p>
 		</div>
 	</div>
 </div>

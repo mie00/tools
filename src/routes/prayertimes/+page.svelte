@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PrayerTimes } from '$lib';
+	import { PrayerTimes, T } from '$lib';
 </script>
 
 <svelte:head>
@@ -20,7 +20,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">Prayer Times</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>Prayer Times</T></h1>
 		</header>
 
 		<PrayerTimes />

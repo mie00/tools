@@ -12,6 +12,7 @@
 	} from './smart-input/shortcuts';
 	import type { AppSuggestion } from './smart-input/analysis';
 	import AiAssistant from './smart-input/AiAssistant.svelte';
+	import T from './T.svelte';
 
 	let inputText = $state('');
 	let suggestions: AppSuggestion[] = $state([]);
@@ -187,7 +188,7 @@
 
 <div class="space-y-4">
 	<div class="text-center">
-		<h2 class="mb-2 text-xl font-bold text-gray-800">Smart Tool Suggestions</h2>
+		<h2 class="mb-2 text-xl font-bold text-gray-800"><T>Smart Tool Suggestions</T></h2>
 		<p class="text-sm text-gray-600">
 			Type or paste something, and I'll suggest the best tools for the job
 		</p>
@@ -273,8 +274,8 @@
 						<div class="flex items-center space-x-3">
 							<div class="text-2xl">{suggestion.icon}</div>
 							<div>
-								<div class="font-medium text-gray-800">{suggestion.name}</div>
-								<div class="text-sm text-gray-600">{suggestion.reason}</div>
+								<div class="font-medium text-gray-800"><T key={suggestion.name} /></div>
+								<div class="text-sm text-gray-600"><T key={suggestion.reason} /></div>
 							</div>
 						</div>
 						<div class="flex items-center space-x-3">
@@ -311,7 +312,7 @@
 					d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
 				></path>
 			</svg>
-			<p>No specific tools detected for this input</p>
+			<p><T>No specific tools detected for this input</T></p>
 			<p class="text-sm">
 				Try math expressions, unit conversions, colors, translation commands (single or multi-line),
 				URLs, JSON, or stock symbols

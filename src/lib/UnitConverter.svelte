@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	// Type definitions
 	interface UnitInfo {
@@ -339,7 +340,7 @@
 
 <div class="mx-auto max-w-4xl">
 	<div class="mb-6">
-		<h2 class="mb-4 text-2xl font-bold text-gray-800">Unit Converter</h2>
+		<h2 class="mb-4 text-2xl font-bold text-gray-800"><T>Unit Converter</T></h2>
 
 		<!-- Category Selection -->
 		<div class="mb-6 flex flex-wrap gap-2">
@@ -352,7 +353,7 @@
 						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
 				>
 					<span class="text-lg">{category.icon}</span>
-					<span class="font-medium">{category.name}</span>
+					<span class="font-medium"><T key={category.name} /></span>
 				</button>
 			{/each}
 		</div>
@@ -365,7 +366,9 @@
 				<div class="mb-4 grid gap-4 md:grid-cols-2">
 					<!-- From Unit -->
 					<div>
-						<label for="from-unit" class="mb-2 block text-sm font-medium text-gray-700">From</label>
+						<label for="from-unit" class="mb-2 block text-sm font-medium text-gray-700"
+							><T>From</T></label
+						>
 						<select
 							id="from-unit"
 							bind:value={fromUnit}
@@ -409,7 +412,9 @@
 
 					<!-- To Unit -->
 					<div>
-						<label for="to-unit" class="mb-2 block text-sm font-medium text-gray-700">To</label>
+						<label for="to-unit" class="mb-2 block text-sm font-medium text-gray-700"
+							><T>To</T></label
+						>
 						<select
 							id="to-unit"
 							bind:value={toUnit}
@@ -449,7 +454,7 @@
 		<!-- History -->
 		<div class="rounded-xl bg-gray-50 p-6">
 			<div class="mb-4 flex items-center justify-between">
-				<h3 class="font-semibold text-gray-800">History</h3>
+				<h3 class="font-semibold text-gray-800"><T>History</T></h3>
 				{#if history.length > 0}
 					<button onclick={clearHistory} class="text-sm text-red-500 hover:text-red-700">
 						Clear
@@ -458,7 +463,7 @@
 			</div>
 
 			{#if history.length === 0}
-				<p class="text-sm text-gray-500">No conversions yet</p>
+				<p class="text-sm text-gray-500"><T>No conversions yet</T></p>
 			{:else}
 				<div class="max-h-96 space-y-3 overflow-y-auto">
 					{#each history as item, i (i)}

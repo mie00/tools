@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	let inputText = $state('');
 	let outputText = $state('');
@@ -287,7 +288,7 @@
 			<h4 class="mb-1 font-medium">ℹ️ Tips:</h4>
 			<ul class="list-inside list-disc space-y-1">
 				<li>Base64 encoding increases size by approximately 33%</li>
-				<li>Upload text files to encode their content</li>
+				<li><T>Upload text files to encode their content</T></li>
 				<li>Upload binary files (images, documents) to get their Base64 representation</li>
 				<li>Use "Switch & Process" to quickly reverse the operation</li>
 			</ul>

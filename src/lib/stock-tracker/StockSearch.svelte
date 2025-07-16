@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { StockSearchResult } from './StockApiManager';
+	import T from '../T.svelte';
 
 	let {
 		searchQuery = $bindable(),
@@ -67,8 +68,8 @@
 <div class="space-y-4">
 	<!-- Search Header -->
 	<div class="text-center">
-		<h2 class="mb-2 text-xl font-bold text-gray-800">Stock Search</h2>
-		<p class="text-sm text-gray-600">Search for stocks to add to your portfolio</p>
+		<h2 class="mb-2 text-xl font-bold text-gray-800"><T>Stock Search</T></h2>
+		<p class="text-sm text-gray-600"><T>Search for stocks to add to your portfolio</T></p>
 	</div>
 
 	<!-- Search Input -->
@@ -152,7 +153,7 @@
 					></path>
 				</svg>
 				<div class="text-sm text-red-700">
-					<p class="font-medium">Search failed</p>
+					<p class="font-medium"><T>Search failed</T></p>
 					<p>{searchError}</p>
 				</div>
 			</div>
@@ -236,7 +237,7 @@
 	<!-- Search Tips -->
 	{#if !searchQuery.trim()}
 		<div class="rounded-lg bg-gray-50 p-4">
-			<h4 class="mb-2 text-sm font-medium text-gray-800">Search Tips</h4>
+			<h4 class="mb-2 text-sm font-medium text-gray-800"><T>Search Tips</T></h4>
 			<ul class="space-y-1 text-sm text-gray-600">
 				<li>• Enter stock symbols (e.g., AAPL, GOOGL, TSLA)</li>
 				<li>• Search by company name (e.g., Apple, Google, Tesla)</li>

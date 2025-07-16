@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ChatTopic, ChatConfig, ModelLoadingProgress, FileProgress } from './types';
 	import GlobalSettings from './GlobalSettings.svelte';
+	import T from '../T.svelte';
 
 	const {
 		topics = [],
@@ -61,7 +62,7 @@
 
 <div class="flex h-full w-full flex-col border-r border-gray-200 bg-gray-50 p-2">
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold text-gray-700">Chats</h2>
+		<h2 class="text-lg font-semibold text-gray-700"><T>Chats</T></h2>
 		<div class="flex items-center gap-2">
 			<button
 				onclick={() => (showGlobalSettings = !showGlobalSettings)}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Calculator from '$lib/Calculator.svelte';
+	import { T } from '$lib';
 </script>
 
 <svelte:head>
@@ -16,7 +17,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">Calculator</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>Calculator</T></h1>
 		</header>
 
 		<div class="rounded-2xl bg-white p-6 shadow-lg">

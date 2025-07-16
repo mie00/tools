@@ -1,5 +1,6 @@
 <script lang="ts">
 	import OllamaChat from '$lib/ollama/OllamaChat.svelte';
+	import { T } from '$lib';
 </script>
 
 <svelte:head>
@@ -16,7 +17,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">LLM Chat</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>LLM Chat</T></h1>
 			<p class="mt-2 text-gray-600">
 				Chat with AI models - both local (WebGPU) and remote (Ollama)
 			</p>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import T from '../T.svelte';
+
 	let {
 		showModal = $bindable(),
 		apiKeyInput = $bindable(),
@@ -71,7 +73,7 @@
 						rel="noopener noreferrer"
 						class="inline-flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800"
 					>
-						<span>Get your free API key here</span>
+						<span><T>Get your free API key here</T></span>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
@@ -161,12 +163,12 @@
 				<!-- Instructions -->
 				<div class="rounded-md bg-blue-50 p-3">
 					<div class="text-sm text-blue-800">
-						<p class="mb-1 font-medium">Instructions:</p>
+						<p class="mb-1 font-medium"><T>Instructions:</T></p>
 						<ol class="list-inside list-decimal space-y-1 text-xs">
-							<li>Click the link above to get your free API key</li>
-							<li>Sign up or log in to Alpha Vantage</li>
-							<li>Copy your API key and paste it above</li>
-							<li>Your key will be validated and saved locally</li>
+							<li><T>Click the link above to get your free API key</T></li>
+							<li><T>Sign up or log in to Alpha Vantage</T></li>
+							<li><T>Copy your API key and paste it above</T></li>
+							<li><T>Your key will be validated and saved locally</T></li>
 						</ol>
 					</div>
 				</div>

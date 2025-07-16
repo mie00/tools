@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	// Type definitions
 	interface AvailableCity {
@@ -509,7 +510,7 @@
 			<!-- Custom Time Input -->
 			<div class="mb-6 grid gap-4 md:grid-cols-2">
 				<div>
-					<label for="custom-time-input" class="mb-2 block text-sm font-medium">Time</label>
+					<label for="custom-time-input" class="mb-2 block text-sm font-medium"><T>Time</T></label>
 					<input
 						id="custom-time-input"
 						type="time"
@@ -520,7 +521,7 @@
 				</div>
 				<div>
 					<label for="custom-timezone-select" class="mb-2 block text-sm font-medium"
-						>Source Timezone</label
+						><T>Source Timezone</T></label
 					>
 					<select
 						id="custom-timezone-select"
@@ -528,8 +529,8 @@
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
 						onchange={updateUrl}
 					>
-						<option value="Local">Local</option>
-						<option value="UTC">UTC</option>
+						<option value="Local"><T>Local</T></option>
+						<option value="UTC"><T>UTC</T></option>
 						{#each availableCities as city (city.timezone)}
 							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
 						{/each}
@@ -541,7 +542,7 @@
 		<div class="grid gap-6 md:grid-cols-2">
 			<!-- Local Time -->
 			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
-				<h3 class="mb-2 text-lg font-semibold">Local Time</h3>
+				<h3 class="mb-2 text-lg font-semibold"><T>Local Time</T></h3>
 				<div class="mb-2 font-mono text-3xl font-bold">{formatTime(currentTime)}</div>
 				<div class="mb-2 text-sm opacity-90">{formatDate(currentTime)}</div>
 				<div class="text-xs opacity-75">{timezone} ({offsetString})</div>
@@ -549,7 +550,7 @@
 
 			<!-- UTC Time -->
 			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
-				<h3 class="mb-2 text-lg font-semibold">UTC Time</h3>
+				<h3 class="mb-2 text-lg font-semibold"><T>UTC Time</T></h3>
 				<div class="mb-2 font-mono text-3xl font-bold">
 					{formatTime(new Date(currentTime.getTime() + currentTime.getTimezoneOffset() * 60000))}
 				</div>
@@ -563,13 +564,13 @@
 						day: 'numeric'
 					})}
 				</div>
-				<div class="text-xs opacity-75">Coordinated Universal Time</div>
+				<div class="text-xs opacity-75"><T>Coordinated Universal Time</T></div>
 			</div>
 		</div>
 
 		<!-- Current Epoch -->
 		<div class="mt-6 rounded-lg bg-white/10 p-4 backdrop-blur">
-			<div class="mb-1 text-sm opacity-90">Current Epoch Timestamp</div>
+			<div class="mb-1 text-sm opacity-90"><T>Current Epoch Timestamp</T></div>
 			<div class="font-mono text-lg">{Math.floor(currentTime.getTime() / 1000)}</div>
 		</div>
 	</div>
@@ -591,12 +592,12 @@
 			<!-- Add City Selector -->
 			<div class="mb-6">
 				<label class="block">
-					<span class="text-sm font-medium text-gray-700">Add City</span>
+					<span class="text-sm font-medium text-gray-700"><T>Add City</T></span>
 					<select
 						onchange={addCity}
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
 					>
-						<option value="">Select a city to add...</option>
+						<option value=""><T>Select a city to add...</T></option>
 						{#each availableCities.filter((city) => !selectedCities.includes(city.timezone)) as city (city.timezone)}
 							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
 						{/each}
@@ -635,7 +636,7 @@
 
 			{#if selectedCities.length === 0}
 				<div class="py-8 text-center text-gray-500">
-					<p>No cities selected. Add some cities to see their current time.</p>
+					<p><T>No cities selected. Add some cities to see their current time.</T></p>
 				</div>
 			{/if}
 		</div>
@@ -644,19 +645,21 @@
 	<!-- Epoch Converter -->
 	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
 		<div class="border-b border-gray-100 p-6">
-			<h2 class="text-2xl font-bold text-gray-800">Epoch Converter</h2>
-			<p class="mt-2 text-gray-600">Convert between Unix timestamps and human-readable dates</p>
+			<h2 class="text-2xl font-bold text-gray-800"><T>Epoch Converter</T></h2>
+			<p class="mt-2 text-gray-600">
+				<T>Convert between Unix timestamps and human-readable dates</T>
+			</p>
 		</div>
 
 		<div class="p-6">
 			<div class="grid gap-8 lg:grid-cols-2">
 				<!-- Epoch to Human -->
 				<div class="space-y-4">
-					<h3 class="text-lg font-semibold text-gray-800">Epoch to Human Readable</h3>
+					<h3 class="text-lg font-semibold text-gray-800"><T>Epoch to Human Readable</T></h3>
 
 					<div class="space-y-3">
 						<label class="block">
-							<span class="text-sm font-medium text-gray-700">Epoch Timestamp</span>
+							<span class="text-sm font-medium text-gray-700"><T>Epoch Timestamp</T></span>
 							<input
 								type="text"
 								bind:value={epochInput}
@@ -664,7 +667,7 @@
 								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								oninput={convertFromEpoch}
 							/>
-							<span class="text-xs text-gray-500">Enter seconds or milliseconds</span>
+							<span class="text-xs text-gray-500"><T>Enter seconds or milliseconds</T></span>
 						</label>
 
 						<div class="flex gap-2">
@@ -687,7 +690,7 @@
 
 						{#if humanResult}
 							<div class="rounded-md border border-green-200 bg-green-50 p-3">
-								<div class="mb-1 text-sm font-medium text-green-800">Converted Date:</div>
+								<div class="mb-1 text-sm font-medium text-green-800"><T>Converted Date:</T></div>
 								<pre class="text-sm whitespace-pre-wrap text-green-700">{humanResult}</pre>
 							</div>
 						{/if}
@@ -696,7 +699,7 @@
 
 				<!-- Human to Epoch -->
 				<div class="space-y-4">
-					<h3 class="text-lg font-semibold text-gray-800">Human Readable to Epoch</h3>
+					<h3 class="text-lg font-semibold text-gray-800"><T>Human Readable to Epoch</T></h3>
 
 					<div class="space-y-3">
 						<label class="block">
@@ -707,7 +710,7 @@
 								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								oninput={convertToEpoch}
 							/>
-							<span class="text-xs text-gray-500">Or enter any valid date string</span>
+							<span class="text-xs text-gray-500"><T>Or enter any valid date string</T></span>
 						</label>
 
 						<input
@@ -738,7 +741,7 @@
 
 						{#if epochResult}
 							<div class="rounded-md border border-green-200 bg-green-50 p-3">
-								<div class="mb-1 text-sm font-medium text-green-800">Converted Epoch:</div>
+								<div class="mb-1 text-sm font-medium text-green-800"><T>Converted Epoch:</T></div>
 								<pre
 									class="font-mono text-sm whitespace-pre-wrap text-green-700">{epochResult}</pre>
 							</div>
@@ -778,10 +781,10 @@
 
 	<!-- Quick Reference -->
 	<div class="rounded-xl bg-gray-50 p-6">
-		<h3 class="mb-4 text-lg font-semibold text-gray-800">Quick Reference</h3>
+		<h3 class="mb-4 text-lg font-semibold text-gray-800"><T>Quick Reference</T></h3>
 		<div class="grid gap-6 text-sm text-gray-600 md:grid-cols-3">
 			<div>
-				<h4 class="mb-2 font-medium text-gray-800">Epoch Time Info</h4>
+				<h4 class="mb-2 font-medium text-gray-800"><T>Epoch Time Info</T></h4>
 				<ul class="space-y-1">
 					<li>• Epoch time starts from January 1, 1970 00:00:00 UTC</li>
 					<li>• Usually measured in seconds since epoch</li>
@@ -790,7 +793,7 @@
 				</ul>
 			</div>
 			<div>
-				<h4 class="mb-2 font-medium text-gray-800">Supported Date Formats</h4>
+				<h4 class="mb-2 font-medium text-gray-800"><T>Supported Date Formats</T></h4>
 				<ul class="space-y-1">
 					<li>• ISO 8601: 2024-01-01T12:00:00Z</li>
 					<li>• RFC 2822: Mon, 01 Jan 2024 12:00:00 GMT</li>
@@ -799,7 +802,7 @@
 				</ul>
 			</div>
 			<div>
-				<h4 class="mb-2 font-medium text-gray-800">Time Conversion Features</h4>
+				<h4 class="mb-2 font-medium text-gray-800"><T>Time Conversion Features</T></h4>
 				<ul class="space-y-1">
 					<li>• World Clock: View multiple cities at once</li>
 					<li>• Custom Time: Convert specific time across timezones</li>

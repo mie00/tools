@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { StorageInfo } from './StorageManager';
 	import type { Note } from './NoteOperations';
+	import T from '../T.svelte';
 
 	let {
 		storageInfo,
@@ -52,7 +53,7 @@
 				></path>
 			</svg>
 			<div class="flex-1">
-				<h3 class="text-sm font-medium text-orange-800">Storage Warning</h3>
+				<h3 class="text-sm font-medium text-orange-800"><T>Storage Warning</T></h3>
 				<p class="mt-1 text-sm text-orange-700">
 					You're using {usagePercentage.toFixed(1)}% of your available storage ({formatBytes(
 						storageInfo.used
@@ -111,11 +112,11 @@
 		<!-- Storage Stats -->
 		<div class="grid grid-cols-2 gap-4 text-sm">
 			<div>
-				<p class="text-gray-600">Total Notes</p>
+				<p class="text-gray-600"><T>Total Notes</T></p>
 				<p class="font-medium">{notes.length}</p>
 			</div>
 			<div>
-				<p class="text-gray-600">Notes with Media</p>
+				<p class="text-gray-600"><T>Notes with Media</T></p>
 				<p class="font-medium">{mediaNotesCount}</p>
 			</div>
 		</div>
@@ -140,7 +141,7 @@
 
 		<div class="mt-3 text-xs text-gray-500">
 			<p>💡 Media files are stored as Base64 in browser localStorage</p>
-			<p>Consider downloading important files before clearing data</p>
+			<p><T>Consider downloading important files before clearing data</T></p>
 		</div>
 	</div>
 </details>

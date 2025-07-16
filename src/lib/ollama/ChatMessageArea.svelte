@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import type { ChatTopic, Message } from './types';
 	import ChatMessage from './ChatMessage.svelte';
+	import T from '../T.svelte';
 
 	const { activeTopic, oneditMessage, onsaveEdit, oncancelEdit } = $props<{
 		activeTopic: ChatTopic | undefined;
@@ -88,7 +89,9 @@
 				oncancelEdit={handleCancelEdit}
 			/>
 		{:else}
-			<p class="text-center text-gray-500 py-8">No messages yet. Start the conversation below.</p>
+			<p class="text-center text-gray-500 py-8">
+				<T>No messages yet. Start the conversation below.</T>
+			</p>
 		{/each}
 	{/if}
 </div>

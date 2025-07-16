@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	let inputText = $state('');
 	let outputText = $state('');
@@ -138,8 +139,8 @@ Paragraphs: ${stats.paragraphs}`;
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800">Text Tools</h2>
-		<p class="text-gray-600">Transform and analyze your text with various utilities</p>
+		<h2 class="mb-2 text-2xl font-bold text-gray-800"><T>Text Tools</T></h2>
+		<p class="text-gray-600"><T>Transform and analyze your text with various utilities</T></p>
 	</div>
 
 	<!-- Operation Selection -->
@@ -152,8 +153,8 @@ Paragraphs: ${stats.paragraphs}`;
 					? 'border-blue-500 bg-blue-500 text-white shadow-lg'
 					: 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'}"
 			>
-				<div class="font-medium">{operation.name}</div>
-				<div class="text-xs opacity-80">{operation.description}</div>
+				<div class="font-medium"><T key={operation.name} /></div>
+				<div class="text-xs opacity-80"><T key={operation.description} /></div>
 			</button>
 		{/each}
 	</div>

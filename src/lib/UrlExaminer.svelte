@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	// Combined state
 	let inputText = $state('');
@@ -785,7 +786,9 @@
 <div class="space-y-6">
 	<div class="text-center">
 		<h2 class="mb-2 text-2xl font-bold text-gray-800">URL & cURL Examiner</h2>
-		<p class="text-gray-600">Enter a URL or a cURL command to see a breakdown of its components.</p>
+		<p class="text-gray-600">
+			<T>Enter a URL or a cURL command to see a breakdown of its components.</T>
+		</p>
 	</div>
 
 	<!-- Input Section -->
@@ -820,12 +823,12 @@
 		<!-- cURL Components -->
 		{#if parsedCurl}
 			<div class="space-y-4">
-				<h3 class="text-lg font-semibold text-gray-800">cURL Components</h3>
+				<h3 class="text-lg font-semibold text-gray-800"><T>cURL Components</T></h3>
 
 				<!-- Method -->
 				<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
 					<div class="mb-1 flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700">Method</span>
+						<span class="text-sm font-medium text-gray-700"><T>Method</T></span>
 						<div class="flex items-center gap-2">
 							<button
 								onclick={() => copyToClipboard(parsedCurl.method, 'curl-method')}
@@ -840,7 +843,7 @@
 								<button
 									onclick={() => startEditing('curl-method', parsedCurl.method)}
 									class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-									>Edit</button
+									><T>Edit</T></button
 								>
 							{/if}
 						</div>
@@ -853,11 +856,11 @@
 							/>
 							<button
 								onclick={saveCurlMethodChange}
-								class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+								class="rounded bg-green-500 px-2 py-1 text-xs text-white"><T>Save</T></button
 							>
 							<button
 								onclick={cancelEditing}
-								class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+								class="rounded bg-gray-400 px-2 py-1 text-xs text-white"><T>Cancel</T></button
 							>
 						</div>
 					{:else}
@@ -867,7 +870,7 @@
 
 				<!-- Headers -->
 				<div class="space-y-4">
-					<h4 class="text-md font-semibold text-gray-800">Headers</h4>
+					<h4 class="text-md font-semibold text-gray-800"><T>Headers</T></h4>
 					<div class="space-y-3">
 						{#if Object.keys(parsedCurl.headers).length > 0}
 							{#each Object.entries(parsedCurl.headers) as [key, value] (key)}
@@ -875,7 +878,7 @@
 									<div class="grid gap-3 md:grid-cols-2">
 										<div>
 											<div class="mb-2 flex items-center justify-between">
-												<span class="text-sm font-medium text-gray-700">Header Key</span>
+												<span class="text-sm font-medium text-gray-700"><T>Header Key</T></span>
 												<div class="flex items-center gap-2">
 													<button
 														onclick={() => copyToClipboard(key, `curl-header-key-${key}`)}
@@ -890,7 +893,7 @@
 														<button
 															onclick={() => startEditing(`curl-header-key-${key}`, key)}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-															>Edit</button
+															><T>Edit</T></button
 														>
 													{/if}
 													<button
@@ -925,11 +928,13 @@
 													/>
 													<button
 														onclick={() => saveCurlHeaderKeyChange(key)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -940,7 +945,7 @@
 										</div>
 										<div>
 											<div class="mb-2 flex items-center justify-between">
-												<span class="text-sm font-medium text-gray-700">Header Value</span>
+												<span class="text-sm font-medium text-gray-700"><T>Header Value</T></span>
 												<div class="flex items-center gap-2">
 													<button
 														onclick={() =>
@@ -957,7 +962,7 @@
 															onclick={() =>
 																startEditing(`curl-header-value-${key}`, String(value))}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-															>Edit</button
+															><T>Edit</T></button
 														>
 													{/if}
 												</div>
@@ -970,11 +975,13 @@
 													/>
 													<button
 														onclick={() => saveCurlHeaderValueChange(key)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -987,7 +994,7 @@
 								</div>
 							{/each}
 						{:else}
-							<p class="text-sm text-gray-500 italic">No headers present</p>
+							<p class="text-sm text-gray-500 italic"><T>No headers present</T></p>
 						{/if}
 						<button
 							onclick={addNewCurlHeader}
@@ -1000,7 +1007,7 @@
 
 				<!-- Cookies -->
 				<div class="space-y-4">
-					<h4 class="text-md font-semibold text-gray-800">Cookies</h4>
+					<h4 class="text-md font-semibold text-gray-800"><T>Cookies</T></h4>
 					<div class="space-y-3">
 						{#if Object.keys(parsedCurl.cookies).length > 0}
 							{#each Object.entries(parsedCurl.cookies) as [name, value] (name)}
@@ -1008,7 +1015,7 @@
 									<div class="grid gap-3 md:grid-cols-2">
 										<div>
 											<div class="mb-2 flex items-center justify-between">
-												<span class="text-sm font-medium text-gray-700">Cookie Name</span>
+												<span class="text-sm font-medium text-gray-700"><T>Cookie Name</T></span>
 												<div class="flex items-center gap-2">
 													<button
 														onclick={() => copyToClipboard(name, `curl-cookie-name-${name}`)}
@@ -1023,7 +1030,7 @@
 														<button
 															onclick={() => startEditing(`curl-cookie-name-${name}`, name)}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-															>Edit</button
+															><T>Edit</T></button
 														>
 													{/if}
 													<button
@@ -1058,11 +1065,13 @@
 													/>
 													<button
 														onclick={() => saveCurlCookieKeyChange(name)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -1073,7 +1082,7 @@
 										</div>
 										<div>
 											<div class="mb-2 flex items-center justify-between">
-												<span class="text-sm font-medium text-gray-700">Cookie Value</span>
+												<span class="text-sm font-medium text-gray-700"><T>Cookie Value</T></span>
 												<div class="flex items-center gap-2">
 													<button
 														onclick={() =>
@@ -1090,7 +1099,7 @@
 															onclick={() =>
 																startEditing(`curl-cookie-value-${name}`, String(value))}
 															class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-															>Edit</button
+															><T>Edit</T></button
 														>
 													{/if}
 												</div>
@@ -1103,11 +1112,13 @@
 													/>
 													<button
 														onclick={() => saveCurlCookieValueChange(name)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -1120,7 +1131,7 @@
 								</div>
 							{/each}
 						{:else}
-							<p class="text-sm text-gray-500 italic">No cookies present</p>
+							<p class="text-sm text-gray-500 italic"><T>No cookies present</T></p>
 						{/if}
 						<button
 							onclick={addNewCurlCookie}
@@ -1134,10 +1145,10 @@
 				<!-- Body -->
 				{#if parsedCurl.body}
 					<div class="space-y-2">
-						<h4 class="text-md font-semibold text-gray-800">Body</h4>
+						<h4 class="text-md font-semibold text-gray-800"><T>Body</T></h4>
 						<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
 							<div class="mb-1 flex items-center justify-between">
-								<span class="text-sm font-medium text-gray-700">Request Body</span>
+								<span class="text-sm font-medium text-gray-700"><T>Request Body</T></span>
 								<div class="flex items-center gap-2">
 									<button
 										onclick={() =>
@@ -1158,7 +1169,7 @@
 										<button
 											onclick={() => startEditing('curl-body', parsedCurl.body || '')}
 											class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-											>Edit</button
+											><T>Edit</T></button
 										>
 									{/if}
 								</div>
@@ -1196,11 +1207,12 @@
 									<div>
 										<button
 											onclick={saveCurlBodyChange}
-											class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+											class="rounded bg-green-500 px-2 py-1 text-xs text-white"><T>Save</T></button
 										>
 										<button
 											onclick={cancelEditing}
-											class="ml-2 rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+											class="ml-2 rounded bg-gray-400 px-2 py-1 text-xs text-white"
+											><T>Cancel</T></button
 										>
 									</div>
 								</div>
@@ -1244,7 +1256,7 @@
 				'hashDecoded'
 			]}
 			<div class="space-y-4">
-				<h3 class="text-lg font-semibold text-gray-800">URL Components</h3>
+				<h3 class="text-lg font-semibold text-gray-800"><T>URL Components</T></h3>
 				<div class="grid gap-3">
 					{#each Object.entries(urlComponents) as [key, value] (key)}
 						{#if value}
@@ -1267,7 +1279,7 @@
 											<button
 												onclick={() => startEditing(`component-${key}`, String(value))}
 												class="rounded bg-gray-500 px-2 py-1 text-xs text-white transition-colors hover:bg-gray-600"
-												>Edit</button
+												><T>Edit</T></button
 											>
 										{/if}
 									</div>
@@ -1280,11 +1292,11 @@
 										/>
 										<button
 											onclick={() => saveUrlComponentChange(key)}
-											class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+											class="rounded bg-green-500 px-2 py-1 text-xs text-white"><T>Save</T></button
 										>
 										<button
 											onclick={cancelEditing}
-											class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+											class="rounded bg-gray-400 px-2 py-1 text-xs text-white"><T>Cancel</T></button
 										>
 									</div>
 								{:else}
@@ -1299,7 +1311,7 @@
 
 		<!-- Search Parameters -->
 		<div class="space-y-4">
-			<h3 class="text-lg font-semibold text-gray-800">Search Parameters</h3>
+			<h3 class="text-lg font-semibold text-gray-800"><T>Search Parameters</T></h3>
 			<div class="space-y-3">
 				{#if searchParams.length > 0}
 					{#each searchParams as param, i (`${param.key}-${i}`)}
@@ -1308,7 +1320,7 @@
 								<!-- Key -->
 								<div>
 									<div class="mb-2 flex items-center justify-between">
-										<span class="text-sm font-medium text-gray-700">Key</span>
+										<span class="text-sm font-medium text-gray-700"><T>Key</T></span>
 										<div class="flex items-center gap-2">
 											<button
 												onclick={() => copyToClipboard(param.key, `key-${param.key}`)}
@@ -1353,7 +1365,8 @@
 											{#if editingKey !== `param-key-${i}`}
 												<button
 													onclick={() => startEditing(`param-key-${i}`, param.key)}
-													class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
+													class="rounded bg-gray-500 px-2 py-1 text-xs text-white"
+													><T>Edit</T></button
 												>
 											{/if}
 										</div>
@@ -1365,11 +1378,13 @@
 												/>
 												<button
 													onclick={() => saveSearchParamChange(i, 'key', false)}
-													class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+													class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+													><T>Save</T></button
 												>
 												<button
 													onclick={cancelEditing}
-													class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+													class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+													><T>Cancel</T></button
 												>
 											</div>
 										{:else}
@@ -1384,7 +1399,8 @@
 												{#if editingKey !== `param-key-decoded-${i}`}
 													<button
 														onclick={() => startEditing(`param-key-decoded-${i}`, param.keyDecoded)}
-														class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
+														class="rounded bg-gray-500 px-2 py-1 text-xs text-white"
+														><T>Edit</T></button
 													>
 												{/if}
 											</div>
@@ -1396,11 +1412,13 @@
 													/>
 													<button
 														onclick={() => saveSearchParamChange(i, 'key', true)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -1415,7 +1433,7 @@
 								<!-- Value -->
 								<div>
 									<div class="mb-2 flex items-center justify-between">
-										<span class="text-sm font-medium text-gray-700">Value</span>
+										<span class="text-sm font-medium text-gray-700"><T>Value</T></span>
 										<button
 											onclick={() => copyToClipboard(param.value, `value-${param.key}`)}
 											class="rounded px-2 py-1 text-xs {copiedItem === `value-${param.key}`
@@ -1431,7 +1449,8 @@
 											{#if editingKey !== `param-value-${i}`}
 												<button
 													onclick={() => startEditing(`param-value-${i}`, param.value)}
-													class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
+													class="rounded bg-gray-500 px-2 py-1 text-xs text-white"
+													><T>Edit</T></button
 												>
 											{/if}
 										</div>
@@ -1443,11 +1462,13 @@
 												/>
 												<button
 													onclick={() => saveSearchParamChange(i, 'value', false)}
-													class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+													class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+													><T>Save</T></button
 												>
 												<button
 													onclick={cancelEditing}
-													class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+													class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+													><T>Cancel</T></button
 												>
 											</div>
 										{:else}
@@ -1463,7 +1484,8 @@
 													<button
 														onclick={() =>
 															startEditing(`param-value-decoded-${i}`, param.valueDecoded)}
-														class="rounded bg-gray-500 px-2 py-1 text-xs text-white">Edit</button
+														class="rounded bg-gray-500 px-2 py-1 text-xs text-white"
+														><T>Edit</T></button
 													>
 												{/if}
 											</div>
@@ -1475,11 +1497,13 @@
 													/>
 													<button
 														onclick={() => saveSearchParamChange(i, 'value', true)}
-														class="rounded bg-green-500 px-2 py-1 text-xs text-white">Save</button
+														class="rounded bg-green-500 px-2 py-1 text-xs text-white"
+														><T>Save</T></button
 													>
 													<button
 														onclick={cancelEditing}
-														class="rounded bg-gray-400 px-2 py-1 text-xs text-white">Cancel</button
+														class="rounded bg-gray-400 px-2 py-1 text-xs text-white"
+														><T>Cancel</T></button
 													>
 												</div>
 											{:else}
@@ -1494,7 +1518,7 @@
 						</div>
 					{/each}
 				{:else}
-					<p class="text-sm text-gray-500 italic">No search parameters present</p>
+					<p class="text-sm text-gray-500 italic"><T>No search parameters present</T></p>
 				{/if}
 				<button
 					onclick={addNewSearchParam}

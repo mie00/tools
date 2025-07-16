@@ -57,9 +57,9 @@
 		let btn = '';
 		if (!llmMode) {
 			if (language === 'js' || language === 'javascript') {
-				btn = `<button class='exec-btn' data-type='js' data-id='${id}'>Execute</button>`;
+				btn = `<button class='exec-btn' data-type='js' data-id='${id}'><T>Execute</T></button>`;
 			} else if (language === 'html') {
-				btn = `<button class='exec-btn' data-type='html' data-id='${id}'>Render</button>`;
+				btn = `<button class='exec-btn' data-type='html' data-id='${id}'><T>Render</T></button>`;
 			}
 		}
 

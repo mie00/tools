@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ipToCountry, getCountryName } from './utils/ip-to-country';
+	import T from './T.svelte';
 
 	let stunServer = $state('stun:stun.l.google.com:19302');
 	let candidates: { ip: string; type: string; country?: string; countryName?: string }[] = $state(
@@ -103,13 +104,17 @@
 			</svg>
 			<span class="text-sm font-medium text-blue-800">Uses WebRTC & Public STUN Server</span>
 		</div>
-		<div class="text-xs text-blue-600">Runs fully in your browser using a public STUN server</div>
+		<div class="text-xs text-blue-600">
+			<T>Runs fully in your browser using a public STUN server</T>
+		</div>
 	</div>
 
-	<h1 class="mb-4 text-2xl font-bold">STUN IP Finder</h1>
+	<h1 class="mb-4 text-2xl font-bold"><T>STUN IP Finder</T></h1>
 
 	<div class="mb-4">
-		<label for="stun-server" class="block text-sm font-medium text-gray-400">STUN Server URL</label>
+		<label for="stun-server" class="block text-sm font-medium text-gray-400"
+			><T>STUN Server URL</T></label
+		>
 		<input
 			type="text"
 			id="stun-server"
@@ -129,14 +134,14 @@
 
 	{#if error}
 		<div class="mt-4 rounded-md bg-red-900 p-3 text-white">
-			<strong>Error:</strong>
+			<strong><T>Error:</T></strong>
 			{error}
 		</div>
 	{/if}
 
 	{#if candidates.length > 0}
 		<div class="mt-4">
-			<h2 class="text-xl font-semibold">Detected IP Addresses:</h2>
+			<h2 class="text-xl font-semibold"><T>Detected IP Addresses:</T></h2>
 			<div class="mt-2 space-y-2">
 				{#each candidates as candidate (candidate.ip)}
 					<div class="rounded-lg border border-gray-600 bg-gray-800 p-3">
@@ -151,10 +156,10 @@
 										<span class="rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white">
 											{candidate.country}
 										</span>
-										<span class="text-sm text-gray-300">{candidate.countryName}</span>
+										<span class="text-sm text-gray-300"><T key={candidate.countryName} /></span>
 									</div>
 								{:else}
-									<span class="text-xs text-gray-500">Loading country...</span>
+									<span class="text-xs text-gray-500"><T>Loading country...</T></span>
 								{/if}
 							</div>
 						</div>

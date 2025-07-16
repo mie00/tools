@@ -3,6 +3,7 @@
 	import type { Profile, PrayerTimes } from './types';
 	import { calculationMethods } from './constants';
 	import { getNextPrayerForProfile, formatTime } from './utils';
+	import T from '../T.svelte';
 
 	let {
 		profiles = [],
@@ -52,7 +53,7 @@
 
 <div class="rounded-xl bg-white p-6 shadow-lg">
 	<div class="mb-4 flex items-center justify-between">
-		<h3 class="text-xl font-bold text-gray-800">Prayer Profiles</h3>
+		<h3 class="text-xl font-bold text-gray-800"><T>Prayer Profiles</T></h3>
 		<button
 			onclick={handleCreateNew}
 			class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
@@ -79,7 +80,9 @@
 								{profile.name}
 							</h4>
 							{#if profile.isActive}
-								<span class="rounded-full bg-blue-600 px-2 py-1 text-xs text-white">Active</span>
+								<span class="rounded-full bg-blue-600 px-2 py-1 text-xs text-white"
+									><T>Active</T></span
+								>
 							{/if}
 						</div>
 						<p class="text-sm text-gray-600">

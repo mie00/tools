@@ -2,6 +2,7 @@
 	import type { Profile, PrayerTimes } from './types';
 	import { formatTime, getNextPrayerForProfile } from './utils';
 	import { calculationMethods } from './constants';
+	import T from '../T.svelte';
 
 	let {
 		activeProfile,
@@ -32,7 +33,7 @@
 
 <div class="rounded-xl bg-white p-8 shadow-lg">
 	<div class="mb-8 text-center">
-		<h2 class="mb-2 text-3xl font-bold text-gray-800">Prayer Times</h2>
+		<h2 class="mb-2 text-3xl font-bold text-gray-800"><T>Prayer Times</T></h2>
 		<p class="text-lg text-gray-600">{activeProfile.name}</p>
 		<p class="text-sm text-gray-500">
 			{calculationMethods[activeProfile.calculationMethod]?.name || activeProfile.calculationMethod}
@@ -43,8 +44,8 @@
 		<div
 			class="mb-8 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 text-center"
 		>
-			<h3 class="mb-2 text-xl font-semibold text-blue-800">Next Prayer</h3>
-			<div class="mb-1 text-3xl font-bold text-blue-900">{nextPrayer.name}</div>
+			<h3 class="mb-2 text-xl font-semibold text-blue-800"><T>Next Prayer</T></h3>
+			<div class="mb-1 text-3xl font-bold text-blue-900"><T key={nextPrayer.name} /></div>
 			<div class="text-2xl text-blue-700">{formatTime(nextPrayer.time)}</div>
 			{#if nextPrayer.timeRemaining}
 				<div class="mt-2 text-sm text-blue-600">in {nextPrayer.timeRemaining}</div>

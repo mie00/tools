@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import T from './T.svelte';
 
 	// Type definitions
 	interface HistoryItem {
@@ -373,7 +374,7 @@
 	{#if history.length > 0}
 		<div class="history-section">
 			<div class="history-header">
-				<h3>Recent Calculations</h3>
+				<h3><T>Recent Calculations</T></h3>
 				<button
 					class="clear-history-btn"
 					onclick={clearAllHistory}

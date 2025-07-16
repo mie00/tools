@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	let inputJson = $state('');
 	let outputJson = $state('');
@@ -306,7 +307,7 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800">JSON Formatter</h2>
+		<h2 class="mb-2 text-2xl font-bold text-gray-800"><T>JSON Formatter</T></h2>
 		<p class="text-gray-600">Format, validate, and analyze JSON data</p>
 	</div>
 
@@ -353,7 +354,9 @@
 	{#if mode === 'format'}
 		<div class="flex justify-center">
 			<div class="flex items-center gap-2">
-				<label for="indent-size" class="text-sm font-medium text-gray-700">Indent Size:</label>
+				<label for="indent-size" class="text-sm font-medium text-gray-700"
+					><T>Indent Size:</T></label
+				>
 				<select
 					id="indent-size"
 					bind:value={indentSize}
@@ -433,35 +436,35 @@
 			<div class="grid grid-cols-2 gap-4 rounded-lg bg-blue-50 p-4 md:grid-cols-4">
 				<div class="text-center">
 					<div class="text-2xl font-bold text-blue-600">{stats.objects}</div>
-					<div class="text-sm text-gray-600">Objects</div>
+					<div class="text-sm text-gray-600"><T>Objects</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-blue-600">{stats.arrays}</div>
-					<div class="text-sm text-gray-600">Arrays</div>
+					<div class="text-sm text-gray-600"><T>Arrays</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-blue-600">{stats.keys}</div>
-					<div class="text-sm text-gray-600">Keys</div>
+					<div class="text-sm text-gray-600"><T>Keys</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-blue-600">{stats.values}</div>
-					<div class="text-sm text-gray-600">Values</div>
+					<div class="text-sm text-gray-600"><T>Values</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-green-600">{stats.strings}</div>
-					<div class="text-sm text-gray-600">Strings</div>
+					<div class="text-sm text-gray-600"><T>Strings</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-green-600">{stats.numbers}</div>
-					<div class="text-sm text-gray-600">Numbers</div>
+					<div class="text-sm text-gray-600"><T>Numbers</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-green-600">{stats.maxDepth}</div>
-					<div class="text-sm text-gray-600">Max Depth</div>
+					<div class="text-sm text-gray-600"><T>Max Depth</T></div>
 				</div>
 				<div class="text-center">
 					<div class="text-2xl font-bold text-green-600">{stats.size}</div>
-					<div class="text-sm text-gray-600">Size</div>
+					<div class="text-sm text-gray-600"><T>Size</T></div>
 				</div>
 			</div>
 		{/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PortfolioStock } from './PortfolioManager';
+	import T from '../T.svelte';
 
 	let {
 		portfolio = $bindable(),
@@ -96,7 +97,7 @@
 	<!-- Portfolio Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h2 class="text-xl font-bold text-gray-800">Your Portfolio</h2>
+			<h2 class="text-xl font-bold text-gray-800"><T>Your Portfolio</T></h2>
 			<p class="text-sm text-gray-600">
 				{portfolio.length} stock{portfolio.length !== 1 ? 's' : ''} tracked
 			</p>
@@ -120,7 +121,7 @@
 					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
 				></path>
 			</svg>
-			<span>{isRefreshing ? 'Refreshing...' : 'Refresh All'}</span>
+			<span><T key={isRefreshing ? 'Refreshing...' : 'Refresh All'} /></span>
 		</button>
 	</div>
 
@@ -130,13 +131,13 @@
 			class="grid grid-cols-2 gap-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:grid-cols-4"
 		>
 			<div class="text-center">
-				<div class="text-xs tracking-wide text-gray-500 uppercase">Total Value</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Total Value</T></div>
 				<div class="text-lg font-semibold text-gray-900">
 					{formatCurrency(portfolioStats.totalValue)}
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs tracking-wide text-gray-500 uppercase">Total Change</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Total Change</T></div>
 				<div
 					class="text-lg font-semibold {portfolioStats.totalChange >= 0
 						? 'text-green-600'
@@ -146,7 +147,7 @@
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs tracking-wide text-gray-500 uppercase">Avg Change</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Avg Change</T></div>
 				<div
 					class="text-lg font-semibold {portfolioStats.totalChangePercent >= 0
 						? 'text-green-600'
@@ -156,7 +157,7 @@
 				</div>
 			</div>
 			<div class="text-center">
-				<div class="text-xs tracking-wide text-gray-500 uppercase">Gainers/Losers</div>
+				<div class="text-xs tracking-wide text-gray-500 uppercase"><T>Gainers/Losers</T></div>
 				<div class="text-lg font-semibold text-gray-900">
 					<span class="text-green-600">{portfolioStats.totalShares}</span>
 					/
@@ -272,10 +273,12 @@
 					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
 				></path>
 			</svg>
-			<h3 class="mb-2 text-lg font-medium text-gray-900">No stocks in portfolio</h3>
-			<p class="mb-4 text-gray-500">Search for stocks above to start building your portfolio</p>
+			<h3 class="mb-2 text-lg font-medium text-gray-900"><T>No stocks in portfolio</T></h3>
+			<p class="mb-4 text-gray-500">
+				<T>Search for stocks above to start building your portfolio</T>
+			</p>
 			<div class="mx-auto max-w-md rounded-lg bg-blue-50 p-4 text-left">
-				<h4 class="mb-2 text-sm font-medium text-blue-800">Getting Started</h4>
+				<h4 class="mb-2 text-sm font-medium text-blue-800"><T>Getting Started</T></h4>
 				<ul class="space-y-1 text-sm text-blue-700">
 					<li>• Search for stocks using the search box above</li>
 					<li>• Click on search results to add them to your portfolio</li>

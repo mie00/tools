@@ -1,4 +1,6 @@
 <script lang="ts">
+	import T from './T.svelte';
+
 	let { title, children }: { title: string; children: any } = $props();
 </script>
 
@@ -16,7 +18,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">{title}</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T key={title} /></h1>
 		</header>
 
 		<div class="rounded-2xl bg-white p-6 shadow-lg">

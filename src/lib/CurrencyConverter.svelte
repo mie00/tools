@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import T from './T.svelte';
 
 	// Type definitions
 	interface CurrencyInfo {
@@ -231,15 +232,17 @@
 					d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 9v2"
 				></path>
 			</svg>
-			<span class="text-sm font-medium text-blue-800">Uses External API</span>
+			<span class="text-sm font-medium text-blue-800"><T>Uses External API</T></span>
 		</div>
-		<div class="text-xs text-blue-600">Real-time exchange rates from exchangerate-api.com</div>
+		<div class="text-xs text-blue-600">
+			<T>Real-time exchange rates from exchangerate-api.com</T>
+		</div>
 	</div>
 
 	<!-- Recent Conversions -->
 	{#if recentConversions.length > 0}
 		<div class="rounded-lg bg-gray-50 p-4">
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Recent Conversions</h3>
+			<h3 class="mb-2 text-sm font-medium text-gray-700"><T>Recent Conversions</T></h3>
 			<div class="flex flex-wrap gap-2">
 				{#each recentConversions as conversion (conversion)}
 					<button
@@ -259,7 +262,9 @@
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-5">
 			<!-- From Currency -->
 			<div class="space-y-2 md:col-span-2">
-				<label for="from-currency" class="block text-sm font-medium text-gray-700">From</label>
+				<label for="from-currency" class="block text-sm font-medium text-gray-700"
+					><T>From</T></label
+				>
 				<select
 					id="from-currency"
 					bind:value={fromCurrency}
@@ -293,7 +298,7 @@
 
 			<!-- To Currency -->
 			<div class="space-y-2 md:col-span-2">
-				<label for="to-currency" class="block text-sm font-medium text-gray-700">To</label>
+				<label for="to-currency" class="block text-sm font-medium text-gray-700"><T>To</T></label>
 				<select
 					id="to-currency"
 					bind:value={toCurrency}
@@ -309,7 +314,8 @@
 
 		<!-- Amount Input -->
 		<div class="space-y-2">
-			<label for="amount-input" class="block text-sm font-medium text-gray-700">Amount</label>
+			<label for="amount-input" class="block text-sm font-medium text-gray-700"><T>Amount</T></label
+			>
 			<input
 				id="amount-input"
 				type="number"
@@ -335,7 +341,7 @@
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					<span class="text-gray-600">Converting...</span>
+					<span class="text-gray-600"><T>Converting...</T></span>
 				</div>
 			{:else if error}
 				<div class="text-center text-red-600">
@@ -347,7 +353,7 @@
 							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 						></path>
 					</svg>
-					<p class="font-medium">Conversion Error</p>
+					<p class="font-medium"><T>Conversion Error</T></p>
 					<p class="text-sm">{error}</p>
 				</div>
 			{:else if result && exchangeRate}
@@ -383,7 +389,7 @@
 							d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
 						></path>
 					</svg>
-					<p>Enter an amount to convert</p>
+					<p><T>Enter an amount to convert</T></p>
 				</div>
 			{/if}
 		</div>

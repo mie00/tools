@@ -5,6 +5,7 @@
 	import TextDiff from './diff-tool/TextDiff.svelte';
 	import JsonDiff from './diff-tool/JsonDiff.svelte';
 	import YamlDiff from './diff-tool/YamlDiff.svelte';
+	import T from './T.svelte';
 
 	type DiffMode = 'text' | 'json' | 'yaml';
 
@@ -147,7 +148,7 @@ email: john@example.com`;
 	<!-- Header with Mode Selection -->
 	<div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 		<div class="mb-4 flex items-center justify-between">
-			<h1 class="text-2xl font-bold text-gray-900">Diff Tool</h1>
+			<h1 class="text-2xl font-bold text-gray-900"><T>Diff Tool</T></h1>
 			<div class="flex gap-2">
 				<button
 					onclick={clearInputs}

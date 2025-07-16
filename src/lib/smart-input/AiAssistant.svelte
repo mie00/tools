@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { llmState, persistentLlmState, persistentConfig } from '../ollama/store';
 	import MarkdownRenderer from '../MarkdownRenderer.svelte';
+	import T from '../T.svelte';
 
 	const { inputText = '', suggestions = [] } = $props<{
 		inputText?: string;
@@ -486,7 +487,7 @@
 					d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
 				></path>
 			</svg>
-			<span>Ask AI Assistant</span>
+			<span><T>Ask AI Assistant</T></span>
 		</button>
 	</div>
 {/if}
@@ -494,21 +495,21 @@
 <!-- LLM Answer Preview -->
 {#if llmModelInitializing || llmLoading || llmStreaming || llmAnswer}
 	<div class="space-y-2">
-		<h3 class="font-medium text-gray-700">Local AI Assistant:</h3>
+		<h3 class="font-medium text-gray-700"><T>Local AI Assistant:</T></h3>
 		<div class="rounded-lg border border-purple-200 bg-purple-50 p-4">
 			{#if llmModelInitializing}
 				<div class="flex items-center space-x-2">
 					<div
 						class="flex h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"
 					></div>
-					<div class="text-sm text-purple-600">Loading AI model...</div>
+					<div class="text-sm text-purple-600"><T>Loading AI model...</T></div>
 				</div>
 			{:else if llmLoading}
 				<div class="flex items-center space-x-2">
 					<div
 						class="flex h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"
 					></div>
-					<div class="text-sm text-purple-600">Generating response...</div>
+					<div class="text-sm text-purple-600"><T>Generating response...</T></div>
 				</div>
 			{:else if llmStreaming || llmAnswer}
 				<div class="space-y-3">
@@ -576,7 +577,7 @@
 									<div
 										class="flex h-3 w-3 animate-spin rounded-full border border-purple-500 border-t-transparent"
 									></div>
-									<span class="text-xs">Thinking...</span>
+									<span class="text-xs"><T>Thinking...</T></span>
 								</div>
 							{/if}
 							<div class="line-clamp-3">
@@ -604,7 +605,7 @@
 						</button>
 					{:else if llmExpanded}
 						<div class="space-y-2">
-							<div class="text-sm text-gray-600">Ask a follow-up question:</div>
+							<div class="text-sm text-gray-600"><T>Ask a follow-up question:</T></div>
 							<div class="flex space-x-2">
 								<input
 									type="text"

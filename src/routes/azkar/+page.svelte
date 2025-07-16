@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Azkar from '$lib/Azkar.svelte';
+	import { T } from '$lib';
 </script>
 
 <svelte:head>
@@ -16,7 +17,7 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">Azkar</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>Azkar</T></h1>
 		</header>
 
 		<div class="rounded-2xl bg-white p-6 shadow-lg">

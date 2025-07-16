@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { Profile } from './types';
 	import { calculationMethods } from './constants';
+	import T from '../T.svelte';
 
 	let {
 		profile
@@ -38,7 +39,7 @@
 		<div class="space-y-4">
 			<div>
 				<label for="edit-profile-name" class="mb-2 block text-sm font-medium text-gray-700"
-					>Profile Name</label
+					><T>Profile Name</T></label
 				>
 				<input
 					id="edit-profile-name"
@@ -51,7 +52,7 @@
 
 			<div>
 				<label for="edit-calculation-method" class="mb-2 block text-sm font-medium text-gray-700"
-					>Calculation Method</label
+					><T>Calculation Method</T></label
 				>
 				<select
 					id="edit-calculation-method"
@@ -59,35 +60,37 @@
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
 					{#each Object.entries(calculationMethods) as [key, method] (key)}
-						<option value={key}>{method.name}</option>
+						<option value={key}><T key={method.name} /></option>
 					{/each}
 				</select>
 			</div>
 
 			<div>
-				<label for="edit-madhab" class="mb-2 block text-sm font-medium text-gray-700">Madhab</label>
+				<label for="edit-madhab" class="mb-2 block text-sm font-medium text-gray-700"
+					><T>Madhab</T></label
+				>
 				<select
 					id="edit-madhab"
 					bind:value={editingProfile.madhab}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					<option value="shafi">Shafi/Maliki/Hanbali</option>
-					<option value="hanafi">Hanafi</option>
+					<option value="shafi"><T>Shafi/Maliki/Hanbali</T></option>
+					<option value="hanafi"><T>Hanafi</T></option>
 				</select>
 			</div>
 
 			<div>
 				<label for="edit-high-latitude-rule" class="mb-2 block text-sm font-medium text-gray-700"
-					>High Latitude Rule</label
+					><T>High Latitude Rule</T></label
 				>
 				<select
 					id="edit-high-latitude-rule"
 					bind:value={editingProfile.highLatitudeRule}
 					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
 				>
-					<option value="middle_of_night">Middle of Night</option>
-					<option value="seventh_of_night">Seventh of Night</option>
-					<option value="twilight_angle">Twilight Angle</option>
+					<option value="middle_of_night"><T>Middle of Night</T></option>
+					<option value="seventh_of_night"><T>Seventh of Night</T></option>
+					<option value="twilight_angle"><T>Twilight Angle</T></option>
 				</select>
 			</div>
 
@@ -96,7 +99,9 @@
 				<h4 class="mb-2 text-lg font-semibold">Time Adjustments (in minutes)</h4>
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label for="adj-fajr" class="mb-1 block text-sm font-medium text-gray-700">Fajr</label>
+						<label for="adj-fajr" class="mb-1 block text-sm font-medium text-gray-700"
+							><T>Fajr</T></label
+						>
 						<input
 							id="adj-fajr"
 							type="number"
@@ -106,7 +111,7 @@
 					</div>
 					<div>
 						<label for="adj-sunrise" class="mb-1 block text-sm font-medium text-gray-700"
-							>Sunrise</label
+							><T>Sunrise</T></label
 						>
 						<input
 							id="adj-sunrise"
@@ -116,7 +121,8 @@
 						/>
 					</div>
 					<div>
-						<label for="adj-dhuhr" class="mb-1 block text-sm font-medium text-gray-700">Dhuhr</label
+						<label for="adj-dhuhr" class="mb-1 block text-sm font-medium text-gray-700"
+							><T>Dhuhr</T></label
 						>
 						<input
 							id="adj-dhuhr"
@@ -126,7 +132,9 @@
 						/>
 					</div>
 					<div>
-						<label for="adj-asr" class="mb-1 block text-sm font-medium text-gray-700">Asr</label>
+						<label for="adj-asr" class="mb-1 block text-sm font-medium text-gray-700"
+							><T>Asr</T></label
+						>
 						<input
 							id="adj-asr"
 							type="number"
@@ -136,7 +144,7 @@
 					</div>
 					<div>
 						<label for="adj-maghrib" class="mb-1 block text-sm font-medium text-gray-700"
-							>Maghrib</label
+							><T>Maghrib</T></label
 						>
 						<input
 							id="adj-maghrib"
@@ -146,7 +154,9 @@
 						/>
 					</div>
 					<div>
-						<label for="adj-isha" class="mb-1 block text-sm font-medium text-gray-700">Isha</label>
+						<label for="adj-isha" class="mb-1 block text-sm font-medium text-gray-700"
+							><T>Isha</T></label
+						>
 						<input
 							id="adj-isha"
 							type="number"

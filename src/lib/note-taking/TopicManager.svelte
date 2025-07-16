@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import T from '../T.svelte';
 
 	let {
 		topics = ['Main'],
@@ -125,7 +126,7 @@
 {#if topics.length > 1}
 	<div class="mb-4">
 		<details class="text-sm text-gray-600">
-			<summary class="cursor-pointer hover:text-gray-800">Move notes between topics</summary>
+			<summary class="cursor-pointer hover:text-gray-800"><T>Move notes between topics</T></summary>
 			<div class="mt-2 text-xs">
 				To move a note to a different topic, drag and drop it, or use the move button when editing a
 				note.

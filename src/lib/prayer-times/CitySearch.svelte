@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CitySearchResult } from './types';
+	import T from '../T.svelte';
 
 	type SearchResult = CitySearchResult;
 
@@ -134,7 +135,7 @@
 
 <div class="city-search-container relative">
 	<label for="city-search-input" class="mb-2 block text-sm font-medium text-gray-700"
-		>Search City</label
+		><T>Search City</T></label
 	>
 	<input
 		id="city-search-input"
@@ -165,6 +166,6 @@
 	{/if}
 
 	{#if loading}
-		<p class="mt-1 text-sm text-gray-500">Loading cities...</p>
+		<p class="mt-1 text-sm text-gray-500"><T>Loading cities...</T></p>
 	{/if}
 </div>

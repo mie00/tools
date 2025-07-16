@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
+	import { T } from '$lib';
 
 	let pyodide: any;
 	let canvas: HTMLCanvasElement;
@@ -1149,7 +1150,7 @@ evaluate_function()
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800">Function Drawer</h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>Function Drawer</T></h1>
 			<p class="mt-2 text-gray-600">
 				Draw mathematical functions using Python expressions. Drag to pan, scroll to zoom.
 			</p>
@@ -1160,7 +1161,8 @@ evaluate_function()
 			<!-- Expression Input -->
 			<div class="mb-6">
 				<div class="mb-2 flex items-baseline gap-4">
-					<label for="expression" class="text-sm font-medium text-gray-700">Expression</label>
+					<label for="expression" class="text-sm font-medium text-gray-700"><T>Expression</T></label
+					>
 					<div class="text-xs text-gray-500">
 						Presets:
 						{#each presetFunctions.slice(0, 4) as preset, i (preset.name)}
@@ -1196,7 +1198,7 @@ evaluate_function()
 			<!-- Presets Panel -->
 			{#if showPresets}
 				<div class="mb-6 rounded-lg bg-gray-50 p-4">
-					<h3 class="mb-3 text-lg font-medium text-gray-800">Function Presets</h3>
+					<h3 class="mb-3 text-lg font-medium text-gray-800"><T>Function Presets</T></h3>
 					<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 						{#each presetFunctions as preset (preset.name)}
 							<button
@@ -1262,7 +1264,7 @@ evaluate_function()
 					</div>
 					<div class="mt-3 rounded-lg bg-green-50 p-3">
 						<p class="text-sm text-green-800">
-							<strong>Auto-animating:</strong> t cycles from {tmin} to {tmax} over {(
+							<strong><T>Auto-animating:</T></strong> t cycles from {tmin} to {tmax} over {(
 								1 / speed
 							).toFixed(1)} seconds
 						</p>
@@ -1273,7 +1275,7 @@ evaluate_function()
 			<!-- History Controls -->
 			<div class="mb-6">
 				<div class="mb-3 flex items-center justify-between">
-					<h3 class="text-lg font-medium text-gray-800">History</h3>
+					<h3 class="text-lg font-medium text-gray-800"><T>History</T></h3>
 					<div class="flex items-center gap-2">
 						<button
 							onclick={checkpointCurrent}
@@ -1388,7 +1390,7 @@ evaluate_function()
 		<div class="container mx-auto px-4 py-4">
 			<div class="rounded-lg bg-white p-4 shadow-lg">
 				<div class="mb-3 flex items-center justify-between">
-					<h3 class="text-lg font-medium text-gray-800">Variables</h3>
+					<h3 class="text-lg font-medium text-gray-800"><T>Variables</T></h3>
 					<div class="text-xs text-gray-500">
 						Left drag: linear | Right drag: exponential | Double-tap on mobile for exponential
 					</div>
@@ -1468,7 +1470,7 @@ evaluate_function()
 				<div
 					class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"
 				></div>
-				<p class="mt-2 text-blue-600">Loading Python environment...</p>
+				<p class="mt-2 text-blue-600"><T>Loading Python environment...</T></p>
 			</div>
 		{:else if error}
 			<div class="mx-4 mb-4 border border-red-200 bg-red-50 p-4">
@@ -1577,7 +1579,7 @@ evaluate_function()
 					</p>
 					<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 						<div>
-							<p class="font-medium text-gray-800">Examples:</p>
+							<p class="font-medium text-gray-800"><T>Examples:</T></p>
 							<ul class="space-y-1 text-gray-600">
 								<li><code class="rounded bg-gray-100 px-1">sin(x + t)</code> - Traveling wave</li>
 								<li>
@@ -1590,12 +1592,12 @@ evaluate_function()
 							</ul>
 						</div>
 						<div>
-							<p class="font-medium text-gray-800">Animation Controls:</p>
+							<p class="font-medium text-gray-800"><T>Animation Controls:</T></p>
 							<ul class="space-y-1 text-gray-600">
-								<li><strong>t min/max:</strong> Range of t values</li>
-								<li><strong>Speed:</strong> Cycles per second</li>
-								<li><strong>Auto-start:</strong> Begins when t is detected</li>
-								<li>Animation loops continuously from min to max</li>
+								<li><strong><T>t min/max:</T></strong> Range of t values</li>
+								<li><strong><T>Speed:</T></strong> Cycles per second</li>
+								<li><strong><T>Auto-start:</T></strong> Begins when t is detected</li>
+								<li><T>Animation loops continuously from min to max</T></li>
 							</ul>
 						</div>
 					</div>
@@ -1609,21 +1611,21 @@ evaluate_function()
 					</p>
 					<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 						<div>
-							<p class="font-medium text-gray-800">Drag Modes:</p>
+							<p class="font-medium text-gray-800"><T>Drag Modes:</T></p>
 							<ul class="space-y-1 text-gray-600">
 								<li><strong>Left Click + Drag:</strong> Linear change</li>
 								<li><strong>Right Click + Drag:</strong> Exponential change</li>
-								<li><strong>Mobile:</strong> Tap and drag (linear)</li>
-								<li><strong>Mobile:</strong> Double-tap and drag (exponential)</li>
+								<li><strong><T>Mobile:</T></strong> Tap and drag (linear)</li>
+								<li><strong><T>Mobile:</T></strong> Double-tap and drag (exponential)</li>
 							</ul>
 						</div>
 						<div>
-							<p class="font-medium text-gray-800">How it works:</p>
+							<p class="font-medium text-gray-800"><T>How it works:</T></p>
 							<ul class="space-y-1 text-gray-600">
-								<li>Linear: Increments scale with current value</li>
-								<li>Exponential: Multiply/divide by factor</li>
-								<li>Real-time: Function updates as you drag</li>
-								<li>Precise: Use input fields for exact values</li>
+								<li><T>Linear: Increments scale with current value</T></li>
+								<li><T>Exponential: Multiply/divide by factor</T></li>
+								<li><T>Real-time: Function updates as you drag</T></li>
+								<li><T>Precise: Use input fields for exact values</T></li>
 							</ul>
 						</div>
 					</div>
@@ -1638,25 +1640,25 @@ evaluate_function()
 					</p>
 					<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 						<div>
-							<p class="font-medium text-gray-800">Smart History:</p>
+							<p class="font-medium text-gray-800"><T>Smart History:</T></p>
 							<ul class="space-y-1 text-gray-600">
-								<li><strong>Auto-save:</strong> Only valid formulas are tracked</li>
-								<li><strong>Smart updates:</strong> Same formula = update variables</li>
-								<li><strong>New entries:</strong> Different formula = new entry</li>
-								<li><strong>Auto-trim:</strong> Spaces are automatically trimmed</li>
-								<li><strong>Checkpoint:</strong> Manually save current state</li>
-								<li><strong>Names:</strong> Click rename to give entries custom names</li>
+								<li><strong><T>Auto-save:</T></strong> Only valid formulas are tracked</li>
+								<li><strong><T>Smart updates:</T></strong> Same formula = update variables</li>
+								<li><strong><T>New entries:</T></strong> Different formula = new entry</li>
+								<li><strong><T>Auto-trim:</T></strong> Spaces are automatically trimmed</li>
+								<li><strong><T>Checkpoint:</T></strong> Manually save current state</li>
+								<li><strong><T>Names:</T></strong> Click rename to give entries custom names</li>
 							</ul>
 						</div>
 						<div>
-							<p class="font-medium text-gray-800">History Management:</p>
+							<p class="font-medium text-gray-800"><T>History Management:</T></p>
 							<ul class="space-y-1 text-gray-600">
-								<li><strong>Auto-resume:</strong> Loads your last function on startup</li>
-								<li><strong>Click entry:</strong> Load function and variables</li>
+								<li><strong><T>Auto-resume:</T></strong> Loads your last function on startup</li>
+								<li><strong><T>Click entry:</T></strong> Load function and variables</li>
 								<li><strong>Rename (✏️):</strong> Give entries meaningful names</li>
 								<li><strong>Remove (🗑️):</strong> Delete unwanted entries</li>
-								<li><strong>Limit:</strong> Keeps last 50 entries automatically</li>
-								<li><strong>Current:</strong> Blue highlight shows active entry</li>
+								<li><strong><T>Limit:</T></strong> Keeps last 50 entries automatically</li>
+								<li><strong><T>Current:</T></strong> Blue highlight shows active entry</li>
 							</ul>
 						</div>
 					</div>
@@ -1667,25 +1669,25 @@ evaluate_function()
 					</h4>
 					<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 						<div>
-							<p class="font-medium text-gray-800">Mouse Controls:</p>
+							<p class="font-medium text-gray-800"><T>Mouse Controls:</T></p>
 							<ul class="space-y-1 text-gray-600">
 								<li><strong>Left Click + Drag:</strong> Pan/move the view</li>
 								<li><strong>Double Click + Drag:</strong> Zoom X/Y separately</li>
 								<li><strong>Right Click + Drag:</strong> Zoom X/Y separately</li>
-								<li><strong>Mouse Wheel:</strong> Zoom at cursor position</li>
-								<li><strong>Drag left/right:</strong> Zoom X-axis in/out</li>
-								<li><strong>Drag up/down:</strong> Zoom Y-axis out/in</li>
+								<li><strong><T>Mouse Wheel:</T></strong> Zoom at cursor position</li>
+								<li><strong><T>Drag left/right:</T></strong> Zoom X-axis in/out</li>
+								<li><strong><T>Drag up/down:</T></strong> Zoom Y-axis out/in</li>
 							</ul>
 						</div>
 						<div>
-							<p class="font-medium text-gray-800">Touch Controls:</p>
+							<p class="font-medium text-gray-800"><T>Touch Controls:</T></p>
 							<ul class="space-y-1 text-gray-600">
 								<li><strong>Single Tap + Drag:</strong> Pan/move the view</li>
 								<li><strong>Double Tap + Drag:</strong> Zoom X/Y separately</li>
-								<li><strong>Pinch Gesture:</strong> Zoom at touch center</li>
-								<li><strong>Drag left/right:</strong> Zoom X-axis in/out</li>
-								<li><strong>Drag up/down:</strong> Zoom Y-axis out/in</li>
-								<li>Zoom centers around your touch/click point</li>
+								<li><strong><T>Pinch Gesture:</T></strong> Zoom at touch center</li>
+								<li><strong><T>Drag left/right:</T></strong> Zoom X-axis in/out</li>
+								<li><strong><T>Drag up/down:</T></strong> Zoom Y-axis out/in</li>
+								<li><T>Zoom centers around your touch/click point</T></li>
 							</ul>
 						</div>
 					</div>

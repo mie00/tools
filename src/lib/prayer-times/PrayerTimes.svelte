@@ -8,6 +8,7 @@
 	import CreateProfileForm from './CreateProfileForm.svelte';
 	import EditProfileForm from './EditProfileForm.svelte';
 	import PrayerTimesDisplay from './PrayerTimesDisplay.svelte';
+	import T from '../T.svelte';
 
 	let profiles: Profile[] | undefined = $state();
 	let showCreateForm = $state(false);
@@ -610,7 +611,7 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center">
 					<span class="mr-2 text-green-600">✓</span>
-					<p class="font-medium text-green-800">{duplicateFoundMessage}</p>
+					<p class="font-medium text-green-800"><T key={duplicateFoundMessage} /></p>
 				</div>
 				<button
 					onclick={() => (showDuplicateMessage = false)}
@@ -628,8 +629,12 @@
 		<div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
 			<div class="flex items-start justify-between">
 				<div class="flex-1">
-					<h3 class="text-lg font-semibold text-blue-800">Shared Prayer Times Configuration</h3>
-					<p class="mt-1 text-blue-700">Someone shared this prayer times configuration with you:</p>
+					<h3 class="text-lg font-semibold text-blue-800">
+						<T>Shared Prayer Times Configuration</T>
+					</h3>
+					<p class="mt-1 text-blue-700">
+						<T>Someone shared this prayer times configuration with you:</T>
+					</p>
 					<div class="mt-2 text-sm text-blue-600">
 						<strong>{sharedConfig.name}</strong> • {sharedConfig.latitude.toFixed(4)}, {sharedConfig.longitude.toFixed(
 							4
