@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { calculationMethods } from './constants';
 	import { enrichLocationData, getSuggestedCalculationMethod, parseMawaqitConfig } from './utils';
+	import { getCountryName } from '../utils/ip-to-country';
 	import type { City, CitySearchResult } from './types';
 	import CitySearch from './CitySearch.svelte';
 
@@ -14,7 +15,7 @@
 	}: {
 		cities: City[];
 		loadingCities: boolean;
-		hasExistingProfiles: boolean;
+		hasExistingProfiles: boolean | undefined;
 		hasSharedConfig: boolean;
 		isAutoRedirect: boolean;
 	} = $props();
@@ -105,14 +106,15 @@
 			);
 
 			if (locationData.closestCity) {
-				// Set default profile name using closest city
+				// Set default profile name using closest city with full country name
 				if (!newProfile.name) {
 					let name = locationData.closestCity.name;
 					if (locationData.closestCity.altnames && locationData.closestCity.languages) {
 						name =
 							locationData.closestCity.altnames[locationData.closestCity.languages[0]]?.[0] || name;
 					}
-					newProfile.name = `${name}, ${locationData.closestCity.country}`;
+					const countryName = getCountryName(locationData.closestCity.country);
+					newProfile.name = `${name}, ${countryName}`;
 				}
 
 				// Suggest calculation method based on country
@@ -125,7 +127,8 @@
 			} else if (locationData.country) {
 				// Fallback if no city found but country available
 				if (!newProfile.name) {
-					newProfile.name = locationData.country;
+					const countryName = getCountryName(locationData.country);
+					newProfile.name = countryName;
 				}
 
 				const suggestedMethod = getSuggestedCalculationMethod(locationData.country);
@@ -142,7 +145,8 @@
 		newProfile.longitude = city.lng;
 		// Use the matched name if available, otherwise fall back to the default name
 		const displayName = city.matchedName || city.name;
-		newProfile.name = `${displayName}, ${city.country}`;
+		const countryName = getCountryName(city.country);
+		newProfile.name = `${displayName}, ${countryName}`;
 
 		// Try to get more detailed location info and set calculation method
 		enrichCityLocation(city);
@@ -178,7 +182,7 @@
 			highLatitudeRule: newProfile.highLatitudeRule,
 			adjustments: { ...newProfile.adjustments },
 			profileType: 'calculated',
-			isActive: !hasExistingProfiles // First profile is active by default
+			isActive: hasExistingProfiles === false // First profile is active by default
 		};
 
 		dispatch('create', profile);
@@ -216,7 +220,7 @@
 				madhab: '', // Not applicable for mawaqit
 				highLatitudeRule: '', // Not applicable for mawaqit
 				adjustments: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
-				isActive: !hasExistingProfiles,
+				isActive: hasExistingProfiles === false,
 				profileType: 'mawaqit',
 				mawaqitConfig: mawaqitConfig
 			};
@@ -233,7 +237,7 @@
 	$effect(() => {
 		if (
 			createMode === 'manual' &&
-			!hasExistingProfiles &&
+			hasExistingProfiles === false &&
 			!hasSharedConfig &&
 			isAutoRedirect &&
 			!autoLocationAttempted &&

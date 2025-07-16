@@ -9,7 +9,7 @@
 	import EditProfileForm from './EditProfileForm.svelte';
 	import PrayerTimesDisplay from './PrayerTimesDisplay.svelte';
 
-	let profiles: Profile[] = $state([]);
+	let profiles: Profile[] | undefined = $state();
 	let showCreateForm = $state(false);
 	let editingProfile: Profile | null = $state(null);
 	let cities: City[] = $state([]);
@@ -22,7 +22,7 @@
 	let duplicateFoundMessage = $state('');
 	let showDuplicateMessage = $state(false);
 
-	let activeProfile = $derived(profiles.find((p) => p.isActive) || null);
+	let activeProfile = $derived(profiles?.find((p) => p.isActive) || null);
 	let activePrayerTimes = $derived(activeProfile ? profilePrayerTimes.get(activeProfile.id) : null);
 
 	// URL parameter sync functions
@@ -33,7 +33,7 @@
 	// Check if a profile with similar configuration already exists
 	function findDuplicateProfile(configToCheck: Profile): Profile | null {
 		return (
-			profiles.find((profile) => {
+			profiles?.find((profile) => {
 				console.log('findDuplicateProfile', profile, configToCheck);
 				// Check basic location and method match
 				const locationMatch =
@@ -349,7 +349,7 @@
 						if (existingProfile) {
 							console.log('Found duplicate profile:', existingProfile.name);
 							// Switch to existing profile instead of showing save dialog
-							profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
+							profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 							saveProfiles();
 
 							// Show message about switching to existing profile
@@ -376,7 +376,7 @@
 						// Check for duplicates even for fallback
 						const existingProfile = findDuplicateProfile(tempConfig);
 						if (existingProfile) {
-							profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
+							profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 							saveProfiles();
 
 							duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}" (Mawaqit data couldn't be loaded)`;
@@ -403,7 +403,7 @@
 					if (existingProfile) {
 						console.log('Found duplicate calculated profile:', existingProfile.name);
 						// Switch to existing profile instead of showing save dialog
-						profiles = profiles.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
+						profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
 						saveProfiles();
 
 						duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}"`;
@@ -452,15 +452,15 @@
 				...sharedConfig,
 				id: Date.now().toString(),
 				name: suggestedName,
-				isActive: profiles.length === 0 // Make active if it's the first profile
+				isActive: profiles?.length === 0 // Make active if it's the first profile
 			};
 
 			// If there are existing profiles, deactivate them
-			if (profiles.length > 0) {
-				profiles = profiles.map((p) => ({ ...p, isActive: false }));
+			if (profiles && profiles.length > 0) {
+				profiles = profiles?.map((p) => ({ ...p, isActive: false }));
 			}
 
-			profiles = [...profiles, newProfile];
+			profiles = [...(profiles || []), newProfile];
 			saveProfiles();
 			calculateAllPrayerTimes();
 
@@ -511,6 +511,8 @@
 					}
 				}
 				profiles = loadedProfiles;
+			} else {
+				profiles = [];
 			}
 		} catch (error) {
 			console.error('Error loading profiles:', error);
@@ -528,7 +530,7 @@
 	function calculateAllPrayerTimes() {
 		// Rebuild the map each time to ensure reactivity
 		const newMap = new Map<string, PrayerTimes>();
-		for (const profile of profiles) {
+		for (const profile of profiles || []) {
 			try {
 				const times = calculateTimesForProfile(profile);
 				newMap.set(profile.id, times);
@@ -541,7 +543,7 @@
 
 	function handleCreateProfile(event: CustomEvent) {
 		const newProfile = event.detail;
-		profiles = [...profiles, newProfile];
+		profiles = [...(profiles || []), newProfile];
 		saveProfiles();
 		calculateAllPrayerTimes();
 		showCreateForm = false;
@@ -549,7 +551,7 @@
 
 	function handleActivateProfile(event: CustomEvent<Profile>) {
 		const profile = event.detail;
-		profiles = profiles.map((p) => ({ ...p, isActive: p.id === profile.id }));
+		profiles = profiles?.map((p) => ({ ...p, isActive: p.id === profile.id }));
 		saveProfiles();
 	}
 
@@ -559,7 +561,7 @@
 
 	function handleSaveEditedProfile(event: CustomEvent<Profile>) {
 		const updatedProfile = event.detail;
-		profiles = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
+		profiles = profiles?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
 		saveProfiles();
 		calculateAllPrayerTimes();
 		editingProfile = null;
@@ -567,12 +569,12 @@
 
 	function handleDeleteProfile(event: CustomEvent<string>) {
 		const profileId = event.detail;
-		const wasActive = profiles.find((p) => p.id === profileId)?.isActive;
+		const wasActive = profiles?.find((p) => p.id === profileId)?.isActive;
 
-		profiles = profiles.filter((p) => p.id !== profileId);
+		profiles = profiles?.filter((p) => p.id !== profileId);
 
 		// If we deleted the active profile, make the first remaining profile active
-		if (wasActive && profiles.length > 0) {
+		if (wasActive && profiles && profiles.length > 0) {
 			profiles[0].isActive = true;
 		}
 
@@ -597,7 +599,7 @@
 		editingProfile = null;
 	}
 
-	let hasProfiles = $derived(profiles.length > 0);
+	let hasProfiles = $derived(profiles && profiles.length > 0);
 	let shouldShowMainView = $derived(hasProfiles && !showCreateForm && !editingProfile);
 </script>
 
@@ -670,7 +672,7 @@
 			on:save={handleSaveEditedProfile}
 			on:cancel={handleCancelEdit}
 		/>
-	{:else if showCreateForm || !hasProfiles}
+	{:else if showCreateForm || hasProfiles === false}
 		<CreateProfileForm
 			{cities}
 			{loadingCities}
@@ -683,7 +685,7 @@
 	{:else if shouldShowMainView}
 		<!-- Profile List -->
 		<ProfileList
-			{profiles}
+			profiles={profiles || []}
 			{profilePrayerTimes}
 			{sharingInProgress}
 			on:activate={handleActivateProfile}
