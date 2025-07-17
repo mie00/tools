@@ -11,6 +11,7 @@
 	let detectedLanguage = $state('');
 	let sourceLanguage = $state('auto');
 	let targetLanguage = $state('en');
+	let actualSourceLanguage = $state('');
 	let isLoading = $state(false);
 	let error = $state('');
 	let downloadProgress = $state(0);
@@ -200,7 +201,7 @@
 
 		try {
 			// Determine actual source language
-			let actualSourceLanguage = sourceLanguage;
+			actualSourceLanguage = sourceLanguage;
 
 			if (sourceLanguage === 'auto' && detector) {
 				const results = await detector.detect(inputText);
@@ -333,10 +334,15 @@
 	}
 
 	function flipLanguages() {
-		if (sourceLanguage === 'auto') return; // Can't flip from auto
+		if ((sourceLanguage === 'auto' && !actualSourceLanguage) || isLoading) return; // Can't flip if auto and not detected, or loading
 
 		// Swap languages
-		const tempLang = sourceLanguage;
+		let tempLang;
+		if (sourceLanguage === 'auto') {
+			tempLang = actualSourceLanguage;
+		} else {
+			tempLang = sourceLanguage;
+		}
 		sourceLanguage = targetLanguage;
 		targetLanguage = tempLang;
 
@@ -347,6 +353,7 @@
 
 		// Clear detected language since we're now manual
 		detectedLanguage = '';
+		actualSourceLanguage = '';
 
 		// Retranslate
 		handleLanguageChange();
@@ -607,7 +614,7 @@
 					>
 						<button
 							onclick={flipLanguages}
-							disabled={sourceLanguage === 'auto' || isLoading}
+							disabled={(sourceLanguage === 'auto' && !actualSourceLanguage) || isLoading}
 							class="transform rounded-full border-2 border-blue-500 bg-white p-2 text-blue-600 shadow-md transition-all duration-200 hover:scale-105 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
 							title="Flip languages and text"
 							aria-label="Flip languages and text"
