@@ -16,18 +16,19 @@
 		offset: string;
 	}
 
+	type TimeMode = 'current' | 'custom' | 'epoch';
+
 	let currentTime: Date = $state(new Date());
 	let timeInterval: ReturnType<typeof setInterval> | undefined;
 	let epochInput: string = $state('');
-	let humanInput: string = $state('');
-	let epochResult: string = $state('');
-	let humanResult: string = $state('');
-	let errorMessage: string = $state('');
 
 	// Custom time input variables
 	let customTimeInput: string = $state('');
+	let customDateInput: string = $state('');
 	let customTimezone: string = $state('Local');
-	let useCustomTime: boolean = $state(false);
+
+	// Mode state - replaces useCustomTime and showEpochConverter
+	let timeMode: TimeMode = $state('current');
 
 	// Selected cities for display - with persistence
 	let selectedCities: string[] = $state([]);
@@ -65,11 +66,24 @@
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams($page.url.searchParams);
 
+			// Mode
+			if (timeMode !== 'current') {
+				params.set('mode', timeMode);
+			} else {
+				params.delete('mode');
+			}
+
 			// Custom time params
 			if (customTimeInput) {
 				params.set('time', customTimeInput);
 			} else {
 				params.delete('time');
+			}
+
+			if (customDateInput) {
+				params.set('date', customDateInput);
+			} else {
+				params.delete('date');
 			}
 
 			if (customTimezone !== 'Local') {
@@ -85,24 +99,28 @@
 				params.delete('epoch');
 			}
 
-			if (humanInput) {
-				params.set('human', humanInput);
-			} else {
-				params.delete('human');
-			}
-
 			goto(`?${params.toString()}`, { replaceState: true, noScroll: true, keepFocus: true });
 		}
 	}
 
 	function loadFromUrl() {
+		// Load mode
+		const mode = $page.url.searchParams.get('mode') as TimeMode;
+		if (mode && ['current', 'custom', 'epoch'].includes(mode)) {
+			timeMode = mode;
+		}
+
 		// Load custom time params
 		const time = $page.url.searchParams.get('time');
+		const date = $page.url.searchParams.get('date');
 		const customTz = $page.url.searchParams.get('custom_tz');
 
 		if (time) {
 			customTimeInput = time;
-			useCustomTime = true;
+			timeMode = 'custom';
+		}
+		if (date) {
+			customDateInput = date;
 		}
 		if (customTz) {
 			customTimezone = customTz;
@@ -110,15 +128,10 @@
 
 		// Load epoch converter params
 		const epoch = $page.url.searchParams.get('epoch');
-		const human = $page.url.searchParams.get('human');
 
 		if (epoch) {
 			epochInput = epoch;
-			convertFromEpoch();
-		}
-		if (human) {
-			humanInput = human;
-			convertToEpoch();
+			timeMode = 'epoch';
 		}
 	}
 
@@ -192,101 +205,47 @@
 	}
 
 	function getCustomTimeInTimezone(timezone: string, referenceTime: Date): TimeInfo {
-		if (!useCustomTime || !customTimeInput) {
-			return getTimeInTimezone(timezone, referenceTime);
-		}
-
-		try {
-			// Get today's date for the time conversion
-			const today = new Date();
-			const [hours, minutes] = customTimeInput.split(':');
-
-			if (!hours || !minutes) {
-				throw new Error('Invalid time format');
-			}
-
-			let sourceTimezoneName = customTimezone;
-			// Handle Local timezone
-			if (customTimezone === 'Local') {
-				sourceTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
-			}
-
-			// Create a date string that represents the input time in the source timezone
-			const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${hours}:${minutes}:00`;
-
-			// Create a date assuming it's in the source timezone
-			// We'll use a trick: create the date as if it were UTC, then adjust for source timezone
-			const baseDate = new Date(dateString);
-
-			// Get the timezone offset difference between source and target
-			const sourceOffset = getTimezoneOffsetMinutes(sourceTimezoneName, baseDate);
-			const targetOffset = getTimezoneOffsetMinutes(timezone, baseDate);
-
-			// Calculate the time difference in minutes
-			const offsetDiff = targetOffset - sourceOffset;
-
-			// Apply the offset to get the correct time in target timezone
-			const resultDate = new Date(baseDate.getTime() + offsetDiff * 60000);
-
-			// Format the result in the target timezone
-			const timeFormatter = new Intl.DateTimeFormat('en-US', {
-				timeZone: timezone,
-				hour12: true,
-				hour: '2-digit',
-				minute: '2-digit',
-				second: '2-digit'
-			});
-
-			const dateFormatter = new Intl.DateTimeFormat('en-US', {
-				timeZone: timezone,
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			});
-
-			// Get timezone offset
-			const offsetFormatter = new Intl.DateTimeFormat('en', {
-				timeZone: timezone,
-				timeZoneName: 'shortOffset'
-			});
-			const offset =
-				offsetFormatter.formatToParts(resultDate).find((part) => part.type === 'timeZoneName')
-					?.value || '';
-
-			return {
-				time: timeFormatter.format(resultDate),
-				date: dateFormatter.format(resultDate),
-				offset: offset
-			};
-		} catch (error) {
-			// Fallback to current time if conversion fails
-			console.warn('Time conversion failed:', error);
-			return getTimeInTimezone(timezone, referenceTime);
-		}
+		// Use the display time (which handles current, custom, and epoch modes)
+		return getTimeInTimezone(timezone, displayTime());
 	}
 
-	function getTimezoneOffsetMinutes(timezone: string, date: Date): number {
-		// Get the timezone offset in minutes for a given timezone and date
-		const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+	function createDateInTimezone(
+		hours: number,
+		minutes: number,
+		timezone: string,
+		baseDate: Date
+	): Date {
+		// Simple and reliable approach using the inverse of what we want to achieve
+		// We'll create a date and iteratively find the UTC time that produces our desired local time
 
-		// Create a date formatter for the target timezone
-		const formatter = new Intl.DateTimeFormat('sv-SE', {
+		const year = baseDate.getFullYear();
+		const month = baseDate.getMonth();
+		const day = baseDate.getDate();
+
+		// Start with a rough estimate: create date with desired time in local timezone
+		let testDate = new Date(year, month, day, hours, minutes, 0, 0);
+
+		// Now check what time this shows up as in our target timezone
+		const formatter = new Intl.DateTimeFormat('en-CA', {
 			timeZone: timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
 			hour: '2-digit',
 			minute: '2-digit',
-			second: '2-digit'
+			hour12: false
 		});
 
-		// Get the local time in the target timezone
-		const localTimeString = formatter.format(utcDate);
-		const localTime = new Date(localTimeString);
+		// Get the current time as it appears in the target timezone
+		const targetTimeString = formatter.format(testDate);
+		const [targetHours, targetMinutes] = targetTimeString.split(':').map(Number);
 
-		// Calculate the offset
-		return (localTime.getTime() - utcDate.getTime()) / 60000;
+		// Calculate the difference between what we got and what we wanted
+		const wantedMinutes = hours * 60 + minutes;
+		const gotMinutes = targetHours * 60 + targetMinutes;
+		const diffMinutes = wantedMinutes - gotMinutes;
+
+		// Adjust the date by the difference
+		testDate = new Date(testDate.getTime() + diffMinutes * 60000);
+
+		return testDate;
 	}
 
 	function getTimeInTimezone(timezone: string, referenceTime: Date = new Date()): TimeInfo {
@@ -378,100 +337,95 @@
 		return abbreviation ? `${city.name} (${abbreviation})` : city.name;
 	}
 
-	function toggleCustomTime() {
-		useCustomTime = !useCustomTime;
-		if (!useCustomTime) {
+	function setMode(mode: TimeMode) {
+		timeMode = mode;
+
+		if (mode === 'custom' && !customTimeInput) {
+			const now = new Date();
+			customTimeInput = now.toTimeString().slice(0, 5); // HH:MM format
+			customDateInput = now.toISOString().slice(0, 10); // YYYY-MM-DD format
+		}
+
+		updateUrl();
+	}
+
+	function clearCurrentMode() {
+		if (timeMode === 'custom') {
 			customTimeInput = '';
+			customDateInput = '';
 			customTimezone = 'Local';
+		} else if (timeMode === 'epoch') {
+			epochInput = '';
 		}
+
+		timeMode = 'current';
 		updateUrl();
-	}
-
-	function setCurrentTime() {
-		const now = new Date();
-		customTimeInput = now.toTimeString().slice(0, 5); // HH:MM format
-		useCustomTime = true;
-		updateUrl();
-	}
-
-	function clearCustomTime() {
-		customTimeInput = '';
-		customTimezone = 'Local';
-		useCustomTime = false;
-		updateUrl();
-	}
-
-	function convertFromEpoch() {
-		errorMessage = '';
-		try {
-			const timestamp = parseInt(epochInput);
-			if (isNaN(timestamp)) {
-				throw new Error('Invalid epoch timestamp');
-			}
-
-			// Handle both seconds and milliseconds
-			const date = epochInput.length >= 13 ? new Date(timestamp) : new Date(timestamp * 1000);
-
-			if (isNaN(date.getTime())) {
-				throw new Error('Invalid epoch timestamp');
-			}
-
-			humanResult = `Local: ${formatDate(date)} at ${formatTime(date)}\nUTC: ${date.toUTCString()}\nISO: ${formatISO(date)}`;
-		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Conversion failed';
-			humanResult = '';
-		}
-		updateUrl();
-	}
-
-	function convertToEpoch() {
-		if (!humanInput) {
-			epochResult = '';
-			errorMessage = '';
-			return;
-		}
-		try {
-			const date = new Date(humanInput);
-			if (isNaN(date.getTime())) {
-				throw new Error('Invalid date format');
-			}
-			epochResult = String(Math.floor(date.getTime() / 1000));
-			errorMessage = '';
-		} catch (error) {
-			epochResult = '';
-			errorMessage = error instanceof Error ? error.message : 'An error occurred';
-		}
-		updateUrl();
-	}
-
-	function getCurrentEpoch() {
-		const now = new Date();
-		epochInput = Math.floor(now.getTime() / 1000).toString();
-		convertFromEpoch();
-	}
-
-	function getCurrentDateTime() {
-		const now = new Date();
-		humanInput = now.toISOString().slice(0, 16); // Format for datetime-local input
-		convertToEpoch();
-	}
-
-	function clearResults() {
-		epochInput = '';
-		humanInput = '';
-		epochResult = '';
-		humanResult = '';
-		errorMessage = '';
 	}
 
 	// Get timezone info
 	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	const timezoneOffset = $derived(currentTime.getTimezoneOffset());
-	const offsetHours = $derived(Math.abs(Math.floor(timezoneOffset / 60)));
-	const offsetMinutes = $derived(Math.abs(timezoneOffset % 60));
-	const offsetSign = $derived(timezoneOffset <= 0 ? '+' : '-');
-	const offsetString = $derived(
-		`UTC${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`
+
+	// Derived value for display time - current time, custom time, or epoch time
+	const displayTime = $derived(() => {
+		if (timeMode === 'epoch' && epochInput) {
+			try {
+				const timestamp = parseInt(epochInput);
+				if (isNaN(timestamp)) {
+					return currentTime;
+				}
+				// Handle both seconds and milliseconds
+				const date = epochInput.length >= 13 ? new Date(timestamp) : new Date(timestamp * 1000);
+				if (isNaN(date.getTime())) {
+					return currentTime;
+				}
+				return date;
+			} catch (error) {
+				console.warn('Epoch time conversion failed:', error);
+				return currentTime;
+			}
+		}
+
+		if (timeMode === 'custom' && customTimeInput) {
+			try {
+				const [hours, minutes] = customTimeInput.split(':');
+				if (!hours || !minutes) {
+					return currentTime;
+				}
+
+				let sourceTimezoneName = customTimezone;
+				// Handle Local timezone
+				if (customTimezone === 'Local') {
+					sourceTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				}
+
+				// Use custom date if provided, otherwise use today's date
+				const baseDate = customDateInput ? new Date(customDateInput + 'T00:00:00') : new Date();
+
+				// Create a date representing the input time in the source timezone
+				const sourceDate = createDateInTimezone(
+					parseInt(hours),
+					parseInt(minutes),
+					sourceTimezoneName,
+					baseDate
+				);
+
+				return sourceDate;
+			} catch (error) {
+				console.warn('Custom time conversion failed:', error);
+				return currentTime;
+			}
+		}
+
+		return currentTime;
+	});
+
+	// Update timezone info to use display time
+	const displayTimezoneOffset = $derived(displayTime().getTimezoneOffset());
+	const displayOffsetHours = $derived(Math.abs(Math.floor(displayTimezoneOffset / 60)));
+	const displayOffsetMinutes = $derived(Math.abs(displayTimezoneOffset % 60));
+	const displayOffsetSign = $derived(displayTimezoneOffset <= 0 ? '+' : '-');
+	const displayOffsetString = $derived(
+		`UTC${displayOffsetSign}${displayOffsetHours.toString().padStart(2, '0')}:${displayOffsetMinutes.toString().padStart(2, '0')}`
 	);
 </script>
 
@@ -479,26 +433,46 @@
 	<!-- Time Display with Custom Time Input -->
 	<div class="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-white">
 		<h2 class="mb-6 text-2xl font-bold">
-			{useCustomTime && customTimeInput ? 'Custom Time Conversion' : 'Current Date & Time'}
+			{timeMode === 'custom' && customTimeInput
+				? 'Custom Time Conversion'
+				: timeMode === 'epoch' && epochInput
+					? 'Epoch Time Conversion'
+					: timeMode === 'epoch'
+						? 'Epoch Converter'
+						: 'Current Date & Time'}
 		</h2>
 
-		<!-- Custom Time Input Toggle -->
+		<!-- Mode Selection -->
 		<div class="mb-6 flex flex-wrap gap-2">
 			<button
-				onclick={toggleCustomTime}
-				class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
+				onclick={() => setMode('current')}
+				class="rounded-md px-4 py-2 text-white backdrop-blur transition-colors {timeMode ===
+				'current'
+					? 'bg-white/30'
+					: 'bg-white/20 hover:bg-white/30'}"
 			>
-				{useCustomTime ? 'Show Current Time' : 'Convert Custom Time'}
+				Current Time
 			</button>
-			{#if useCustomTime}
+			<button
+				onclick={() => setMode('custom')}
+				class="rounded-md px-4 py-2 text-white backdrop-blur transition-colors {timeMode ===
+				'custom'
+					? 'bg-white/30'
+					: 'bg-white/20 hover:bg-white/30'}"
+			>
+				Custom Time
+			</button>
+			<button
+				onclick={() => setMode('epoch')}
+				class="rounded-md px-4 py-2 text-white backdrop-blur transition-colors {timeMode === 'epoch'
+					? 'bg-white/30'
+					: 'bg-white/20 hover:bg-white/30'}"
+			>
+				Epoch Converter
+			</button>
+			{#if timeMode !== 'current'}
 				<button
-					onclick={setCurrentTime}
-					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
-				>
-					Use Current Time
-				</button>
-				<button
-					onclick={clearCustomTime}
+					onclick={clearCurrentMode}
 					class="rounded-md bg-white/20 px-4 py-2 text-white backdrop-blur transition-colors hover:bg-white/30"
 				>
 					Clear
@@ -506,15 +480,25 @@
 			{/if}
 		</div>
 
-		{#if useCustomTime}
+		{#if timeMode === 'custom'}
 			<!-- Custom Time Input -->
-			<div class="mb-6 grid gap-4 md:grid-cols-2">
+			<div class="mb-6 grid gap-4 md:grid-cols-3">
 				<div>
 					<label for="custom-time-input" class="mb-2 block text-sm font-medium"><T>Time</T></label>
 					<input
 						id="custom-time-input"
 						type="time"
 						bind:value={customTimeInput}
+						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
+						oninput={updateUrl}
+					/>
+				</div>
+				<div>
+					<label for="custom-date-input" class="mb-2 block text-sm font-medium"><T>Date</T></label>
+					<input
+						id="custom-date-input"
+						type="date"
+						bind:value={customDateInput}
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
 						oninput={updateUrl}
 					/>
@@ -537,26 +521,58 @@
 					</select>
 				</div>
 			</div>
+		{:else if timeMode === 'epoch'}
+			<!-- Epoch Converter Input -->
+			<div class="mb-6">
+				<div>
+					<label for="epoch-input" class="mb-2 block text-sm font-medium"
+						><T>Epoch Timestamp</T></label
+					>
+					<input
+						id="epoch-input"
+						type="text"
+						bind:value={epochInput}
+						placeholder="1640995200 or 1640995200000"
+						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/70 backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
+						oninput={updateUrl}
+					/>
+					<span class="text-xs text-white/70"><T>Enter seconds or milliseconds since epoch</T></span
+					>
+				</div>
+				<div class="mt-3 flex gap-2">
+					<button
+						onclick={() => {
+							epochInput = Math.floor(Date.now() / 1000).toString();
+							updateUrl();
+						}}
+						class="rounded-md bg-white/20 px-3 py-1 text-sm text-white backdrop-blur transition-colors hover:bg-white/30"
+					>
+						Use Current Time
+					</button>
+				</div>
+			</div>
 		{/if}
 
 		<div class="grid gap-6 md:grid-cols-2">
 			<!-- Local Time -->
 			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
 				<h3 class="mb-2 text-lg font-semibold"><T>Local Time</T></h3>
-				<div class="mb-2 font-mono text-3xl font-bold">{formatTime(currentTime)}</div>
-				<div class="mb-2 text-sm opacity-90">{formatDate(currentTime)}</div>
-				<div class="text-xs opacity-75">{timezone} ({offsetString})</div>
+				<div class="mb-2 font-mono text-3xl font-bold">{formatTime(displayTime())}</div>
+				<div class="mb-2 text-sm opacity-90">{formatDate(displayTime())}</div>
+				<div class="text-xs opacity-75">{timezone} ({displayOffsetString})</div>
 			</div>
 
 			<!-- UTC Time -->
 			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
 				<h3 class="mb-2 text-lg font-semibold"><T>UTC Time</T></h3>
 				<div class="mb-2 font-mono text-3xl font-bold">
-					{formatTime(new Date(currentTime.getTime() + currentTime.getTimezoneOffset() * 60000))}
+					{formatTime(
+						new Date(displayTime().getTime() + displayTime().getTimezoneOffset() * 60000)
+					)}
 				</div>
 				<div class="mb-2 text-sm opacity-90">
 					{new Date(
-						currentTime.getTime() + currentTime.getTimezoneOffset() * 60000
+						displayTime().getTime() + displayTime().getTimezoneOffset() * 60000
 					).toLocaleDateString('en-US', {
 						weekday: 'long',
 						year: 'numeric',
@@ -568,10 +584,10 @@
 			</div>
 		</div>
 
-		<!-- Current Epoch -->
+		<!-- Epoch Timestamp -->
 		<div class="mt-6 rounded-lg bg-white/10 p-4 backdrop-blur">
-			<div class="mb-1 text-sm opacity-90"><T>Current Epoch Timestamp</T></div>
-			<div class="font-mono text-lg">{Math.floor(currentTime.getTime() / 1000)}</div>
+			<div class="mb-1 text-sm opacity-90"><T>Epoch Timestamp</T></div>
+			<div class="font-mono text-lg">{Math.floor(displayTime().getTime() / 1000)}</div>
 		</div>
 	</div>
 
@@ -579,12 +595,17 @@
 	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
 		<div class="border-b border-gray-100 p-6">
 			<h2 class="text-2xl font-bold text-gray-800">
-				{useCustomTime && customTimeInput ? 'Time Conversion Results' : 'World Clock'}
+				{(timeMode === 'custom' && customTimeInput) ||
+				((timeMode as TimeMode) === 'epoch' && epochInput)
+					? 'Time Conversion Results'
+					: 'World Clock'}
 			</h2>
 			<p class="mt-2 text-gray-600">
-				{useCustomTime && customTimeInput
+				{timeMode === 'custom' && customTimeInput
 					? `Showing ${customTimeInput} from ${getCityName(customTimezone)} converted to different cities`
-					: 'View current time in different cities around the world'}
+					: (timeMode as TimeMode) === 'epoch' && epochInput
+						? `Showing epoch timestamp ${epochInput} converted to different cities`
+						: 'View current time in different cities around the world'}
 			</p>
 		</div>
 
@@ -639,143 +660,6 @@
 					<p><T>No cities selected. Add some cities to see their current time.</T></p>
 				</div>
 			{/if}
-		</div>
-	</div>
-
-	<!-- Epoch Converter -->
-	<div class="rounded-xl border border-gray-100 bg-white shadow-lg">
-		<div class="border-b border-gray-100 p-6">
-			<h2 class="text-2xl font-bold text-gray-800"><T>Epoch Converter</T></h2>
-			<p class="mt-2 text-gray-600">
-				<T>Convert between Unix timestamps and human-readable dates</T>
-			</p>
-		</div>
-
-		<div class="p-6">
-			<div class="grid gap-8 lg:grid-cols-2">
-				<!-- Epoch to Human -->
-				<div class="space-y-4">
-					<h3 class="text-lg font-semibold text-gray-800"><T>Epoch to Human Readable</T></h3>
-
-					<div class="space-y-3">
-						<label class="block">
-							<span class="text-sm font-medium text-gray-700"><T>Epoch Timestamp</T></span>
-							<input
-								type="text"
-								bind:value={epochInput}
-								placeholder="1640995200 or 1640995200000"
-								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								oninput={convertFromEpoch}
-							/>
-							<span class="text-xs text-gray-500"><T>Enter seconds or milliseconds</T></span>
-						</label>
-
-						<div class="flex gap-2">
-							<button
-								onclick={getCurrentEpoch}
-								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-							>
-								Use Current Time
-							</button>
-							<button
-								onclick={() => {
-									epochInput = '';
-									humanResult = '';
-								}}
-								class="rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400"
-							>
-								Clear
-							</button>
-						</div>
-
-						{#if humanResult}
-							<div class="rounded-md border border-green-200 bg-green-50 p-3">
-								<div class="mb-1 text-sm font-medium text-green-800"><T>Converted Date:</T></div>
-								<pre class="text-sm whitespace-pre-wrap text-green-700">{humanResult}</pre>
-							</div>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Human to Epoch -->
-				<div class="space-y-4">
-					<h3 class="text-lg font-semibold text-gray-800"><T>Human Readable to Epoch</T></h3>
-
-					<div class="space-y-3">
-						<label class="block">
-							<span class="text-sm font-medium text-gray-700">Date & Time</span>
-							<input
-								type="datetime-local"
-								bind:value={humanInput}
-								class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-								oninput={convertToEpoch}
-							/>
-							<span class="text-xs text-gray-500"><T>Or enter any valid date string</T></span>
-						</label>
-
-						<input
-							type="text"
-							bind:value={humanInput}
-							placeholder="2024-01-01 12:00:00 or Dec 25, 2024"
-							class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-							oninput={convertToEpoch}
-						/>
-
-						<div class="flex gap-2">
-							<button
-								onclick={getCurrentDateTime}
-								class="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-							>
-								Use Current Time
-							</button>
-							<button
-								onclick={() => {
-									humanInput = '';
-									epochResult = '';
-								}}
-								class="rounded-md bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400"
-							>
-								Clear
-							</button>
-						</div>
-
-						{#if epochResult}
-							<div class="rounded-md border border-green-200 bg-green-50 p-3">
-								<div class="mb-1 text-sm font-medium text-green-800"><T>Converted Epoch:</T></div>
-								<pre
-									class="font-mono text-sm whitespace-pre-wrap text-green-700">{epochResult}</pre>
-							</div>
-						{/if}
-					</div>
-				</div>
-			</div>
-
-			<!-- Error Message -->
-			{#if errorMessage}
-				<div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
-					<div class="text-sm text-red-800">
-						<svg class="mr-1 inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							></path>
-						</svg>
-						{errorMessage}
-					</div>
-				</div>
-			{/if}
-
-			<!-- Clear All Button -->
-			<div class="mt-6 text-center">
-				<button
-					onclick={clearResults}
-					class="rounded-md bg-gray-500 px-6 py-2 text-white transition-colors hover:bg-gray-600"
-				>
-					Clear All
-				</button>
-			</div>
 		</div>
 	</div>
 
