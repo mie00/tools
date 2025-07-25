@@ -81,9 +81,9 @@
 		},
 		{
 			id: 'qrcode',
-			name: 'QR Code Reader',
+			name: 'QR Code Generator & Scanner',
 			icon: '📱',
-			description: 'Scan and read QR codes'
+			description: 'Generate and scan QR codes'
 		},
 		{
 			id: 'notetaking',
