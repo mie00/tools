@@ -60,7 +60,9 @@
 		"marked": "^16.0.0",
 		"marked-highlight": "^2.2.2",
 		"onnxruntime-web": "^1.22.0",
+		"pako": "^2.1.0",
 		"pyodide": "^0.28.0",
+		"qrcode": "^1.5.4",
 		"sharp": "^0.34.2"
 	}
 }

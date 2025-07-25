@@ -1,10 +1,10 @@
 <script lang="ts">
-	import QRCodeReader from '$lib/QRCodeReader.svelte';
+	import QRCode from '$lib/QRCode.svelte';
 	import { T } from '$lib';
 </script>
 
 <svelte:head>
-	<title>QR Code Reader - Tools App</title>
+	<title>QR Code Generator & Scanner - Tools App</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -17,11 +17,11 @@
 				</svg>
 				Back to Tools
 			</a>
-			<h1 class="text-3xl font-bold text-gray-800"><T>QR Code Reader</T></h1>
+			<h1 class="text-3xl font-bold text-gray-800"><T>QR Code Generator & Scanner</T></h1>
 		</header>
 
 		<div class="rounded-2xl bg-white p-6 shadow-lg">
-			<QRCodeReader />
+			<QRCode />
 		</div>
 	</div>
 </div>
