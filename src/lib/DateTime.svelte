@@ -200,11 +200,7 @@
 		});
 	}
 
-	function formatISO(date: Date) {
-		return date.toISOString();
-	}
-
-	function getCustomTimeInTimezone(timezone: string, referenceTime: Date): TimeInfo {
+	function getCustomTimeInTimezone(timezone: string, _referenceTime: Date): TimeInfo {
 		// Use the display time (which handles current, custom, and epoch modes)
 		return getTimeInTimezone(timezone, displayTime());
 	}
