@@ -76,7 +76,9 @@ export class NoteOperations {
 	}
 
 	static filterNotesByTopic(notes: Note[], selectedTopic: string): Note[] {
-		return notes.filter((note) => note.topic === selectedTopic).sort((a, b) => a.order - b.order);
+		return notes
+			.filter((note) => note.topic === selectedTopic)
+			.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 	}
 
 	static deleteNotesInTopic(notes: Note[], topicToDelete: string): Note[] {

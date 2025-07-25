@@ -106,7 +106,138 @@
 	function formatTimestamp(timestamp: string): string {
 		return new Date(timestamp).toLocaleString();
 	}
+
+	// Function to safely parse text and convert URLs to clickable links and code blocks to formatted blocks
+	function parseTextContent(text: string): string {
+		// First, escape all HTML to prevent XSS
+		const escapeHtml = (unsafe: string): string => {
+			return unsafe
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#039;');
+		};
+
+		// Split text by code blocks first (to preserve them)
+		const codeBlockRegex = /```([\s\S]*?)```/g;
+		const parts: Array<{ type: 'text' | 'code'; content: string }> = [];
+		let lastIndex = 0;
+		let match;
+
+		while ((match = codeBlockRegex.exec(text)) !== null) {
+			// Add text before code block
+			if (match.index > lastIndex) {
+				parts.push({
+					type: 'text',
+					content: text.slice(lastIndex, match.index)
+				});
+			}
+
+			// Add code block
+			parts.push({
+				type: 'code',
+				content: match[1] || ''
+			});
+
+			lastIndex = match.index + match[0].length;
+		}
+
+		// Add remaining text
+		if (lastIndex < text.length) {
+			parts.push({
+				type: 'text',
+				content: text.slice(lastIndex)
+			});
+		}
+
+		// If no code blocks found, treat entire text as one text part
+		if (parts.length === 0) {
+			parts.push({ type: 'text', content: text });
+		}
+
+		// Process each part
+		return parts
+			.map((part, index) => {
+				if (part.type === 'code') {
+					// For code blocks, escape HTML and create formatted block
+					const escapedCode = escapeHtml(part.content);
+					const codeId = `code-${note.id}-${index}`;
+
+					return `<div class="code-block-container my-1 rounded border border-gray-300 bg-gray-50"><div class="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-2 py-1"><span class="text-xs text-gray-600">Code</span><button onclick="copyCodeBlock('${codeId}', this)" class="copy-button flex items-center space-x-1 rounded px-1 py-0.5 text-xs text-gray-600 hover:bg-gray-200 focus:outline-none" title="Copy code"><svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg><span>Copy</span></button></div><pre id="${codeId}" class="code-content overflow-x-auto p-1 m-0"><code class="text-xs font-mono text-gray-800">${escapedCode}</code></pre></div>`;
+				} else {
+					// For regular text, escape HTML and then process URLs
+					const escapedText = escapeHtml(part.content);
+
+					// Regex pattern to match URLs
+					const urlRegex =
+						/(https?:\/\/[^\s&<>"']+|www\.[^\s&<>"']+|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.(?:[a-zA-Z]{2,}|[a-zA-Z]{2,}\.[a-zA-Z]{2,})(?:\/[^\s&<>"']*)?)/gi;
+
+					return escapedText.replace(urlRegex, (url) => {
+						// Ensure URL has protocol
+						let href = url;
+						if (!url.match(/^https?:\/\//)) {
+							href = 'http://' + url;
+						}
+
+						// Escape the href attribute value to prevent attribute injection
+						const escapeAttr = (attr: string): string => {
+							return attr.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+						};
+
+						// Create clickable link
+						return `<a href="${escapeAttr(href)}" class="text-blue-600 underline hover:text-blue-800">${url}</a>`;
+					});
+				}
+			})
+			.join('');
+	}
 </script>
+
+<!-- Global script for copy functionality -->
+<svelte:head>
+	<script>
+		// Global function to handle copying code blocks
+		window.copyCodeBlock = async function (codeId, buttonElement) {
+			const codeElement = document.getElementById(codeId);
+			if (!codeElement) return;
+
+			const text = codeElement.textContent || '';
+
+			try {
+				await navigator.clipboard.writeText(text);
+
+				// Show visual feedback
+				const originalHTML = buttonElement.innerHTML;
+				buttonElement.innerHTML = `
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+					</svg>
+					<span>Copied!</span>
+				`;
+				buttonElement.classList.add('text-green-600');
+
+				setTimeout(() => {
+					buttonElement.innerHTML = originalHTML;
+					buttonElement.classList.remove('text-green-600');
+				}, 2000);
+			} catch (err) {
+				console.error('Failed to copy text: ', err);
+				// Fallback for older browsers
+				const textArea = document.createElement('textarea');
+				textArea.value = text;
+				document.body.appendChild(textArea);
+				textArea.select();
+				try {
+					document.execCommand('copy');
+				} catch (fallbackErr) {
+					console.error('Fallback copy failed: ', fallbackErr);
+				}
+				document.body.removeChild(textArea);
+			}
+		};
+	</script>
+</svelte:head>
 
 <div
 	class="group cursor-move rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
@@ -215,7 +346,8 @@
 			{#if note.text}
 				<div class="prose prose-sm max-w-none">
 					<p class="whitespace-pre-wrap text-gray-800">
-						{note.text}
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html parseTextContent(note.text)}
 					</p>
 				</div>
 			{/if}
@@ -362,3 +494,51 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	:global(.code-block-container) {
+		font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
+	}
+
+	:global(.code-content) {
+		line-height: 1.4;
+		font-size: 0.75rem;
+		margin: 0;
+	}
+
+	:global(.code-content code) {
+		background: transparent !important;
+		color: inherit !important;
+		white-space: pre;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		display: block;
+	}
+
+	:global(.copy-button) {
+		transition: all 0.1s ease;
+	}
+
+	:global(.copy-button:hover) {
+		transform: scale(1.05);
+	}
+
+	/* Compact scrollbar for code blocks */
+	:global(.code-content::-webkit-scrollbar) {
+		height: 4px;
+	}
+
+	:global(.code-content::-webkit-scrollbar-track) {
+		background: #f1f1f1;
+		border-radius: 2px;
+	}
+
+	:global(.code-content::-webkit-scrollbar-thumb) {
+		background: #c1c1c1;
+		border-radius: 2px;
+	}
+
+	:global(.code-content::-webkit-scrollbar-thumb:hover) {
+		background: #a8a8a8;
+	}
+</style>
