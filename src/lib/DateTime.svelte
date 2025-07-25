@@ -553,7 +553,7 @@
 			</div>
 		{/if}
 
-		<div class="grid gap-6 md:grid-cols-2">
+		<div class="grid gap-6 md:grid-cols-3">
 			<!-- Local Time -->
 			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
 				<h3 class="mb-2 text-lg font-semibold"><T>Local Time</T></h3>
@@ -582,12 +582,15 @@
 				</div>
 				<div class="text-xs opacity-75"><T>Coordinated Universal Time</T></div>
 			</div>
-		</div>
 
-		<!-- Epoch Timestamp -->
-		<div class="mt-6 rounded-lg bg-white/10 p-4 backdrop-blur">
-			<div class="mb-1 text-sm opacity-90"><T>Epoch Timestamp</T></div>
-			<div class="font-mono text-lg">{Math.floor(displayTime().getTime() / 1000)}</div>
+			<!-- Epoch Timestamp -->
+			<div class="rounded-lg bg-white/10 p-6 backdrop-blur">
+				<h3 class="mb-2 text-lg font-semibold"><T>Epoch Timestamp</T></h3>
+				<div class="mb-2 font-mono text-3xl font-bold">
+					{Math.floor(displayTime().getTime() / 1000)}
+				</div>
+				<div class="text-xs opacity-75"><T>Seconds since Unix epoch</T></div>
+			</div>
 		</div>
 	</div>
 
