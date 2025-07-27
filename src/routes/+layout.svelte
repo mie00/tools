@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { translationStore } from '$lib/translation';
+	import GlobalPlaylist from '$lib/GlobalPlaylist.svelte';
 	// import { page } from '$app/stores';
 
 	let { children } = $props();
@@ -67,6 +68,9 @@
 </script>
 
 {@render children()}
+
+<!-- Global playlist component available on all pages -->
+<GlobalPlaylist />
 
 <style>
 	/* Global RTL support - applied to html element via JavaScript */

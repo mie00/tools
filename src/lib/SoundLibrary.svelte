@@ -1,21 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import T from './T.svelte';
-
-	interface AudioFile {
-		id: string;
-		name: string;
-		file: File;
-		url: string;
-		tags: string[];
-		folderId: string;
-		metadata: {
-			duration: number;
-			size: number;
-			type: string;
-			lastModified: number;
-		};
-	}
+	import { globalPlaylistStore, type AudioFile } from './stores/globalPlaylist';
 
 	interface Folder {
 		id: string;
@@ -24,18 +10,11 @@
 		children: string[];
 	}
 
-	// State
+	// State - keeping only Sound Library specific state
 	let files: AudioFile[] = $state([]);
 	let folders: Folder[] = $state([{ id: 'root', name: 'Library', parentId: null, children: [] }]);
 	let currentFolderId = $state('root');
 	let selectedTags: string[] = $state([]);
-	let currentAudio: HTMLAudioElement | null = $state(null);
-	let currentFileId: string | null = $state(null);
-	let isPlaying = $state(false);
-	let currentTime = $state(0);
-	let duration = $state(0);
-	let volume = $state(1);
-	let repeatMode: 'none' | 'one' | 'all' = $state('none');
 	let showUploadModal = $state(false);
 	let showNewFolderModal = $state(false);
 	let showMetadataModal = $state(false);
@@ -46,7 +25,6 @@
 	let draggedFile: AudioFile | null = $state(null);
 	let draggedFolder: Folder | null = $state(null);
 	let dragOverFolderId: string | null = $state(null);
-	let dragOverPlaylist = $state(false);
 	let searchQuery = $state('');
 	let recursiveTagFilter = $state(false);
 
@@ -55,14 +33,11 @@
 	let selectedFolderForRename: Folder | null = $state(null);
 	let renameFolderName = $state('');
 
-	// Add new state variables for playback state persistence
-	let playbackStateLoaded = $state(false);
+	// Drag and drop for playlist (now handled by global component)
 
-	// Playlist management state
-	let currentPlaylist: AudioFile[] = $state([]);
-	let currentIndex = $state(-1);
-	let showPlaylistPanel = $state(true);
-	let playlistCollapsed = $state(false);
+	// Get playback state from global store
+	let playlistState: any = $state(null); // TODO: Import proper type from store
+	let unsubscribePlaylist: (() => void) | null = null;
 
 	// Computed properties using $state for proper reactivity
 	let allTags: string[] = $state([]);
@@ -84,11 +59,17 @@
 		return result;
 	}
 
-	// Helper function to get all files from a folder recursively
-	function getFilesFromFolder(folderId: string): AudioFile[] {
-		const descendantFolderIds = getDescendantFolderIds(folderId);
-		return files.filter((file) => descendantFolderIds.includes(file.folderId));
-	}
+	// getFilesFromFolder removed - drag and drop to playlist now handled by global component
+
+	// Subscribe to global playlist store
+	$effect(() => {
+		if (unsubscribePlaylist) {
+			unsubscribePlaylist();
+		}
+		unsubscribePlaylist = globalPlaylistStore.subscribe((state) => {
+			playlistState = state;
+		});
+	});
 
 	// Update computed values reactively
 	$effect(() => {
@@ -98,7 +79,6 @@
 			(selectedTags || !selectedTags) &&
 			(searchQuery || !searchQuery) &&
 			(currentFolderId || !currentFolderId) &&
-			(currentFileId || !currentFileId) &&
 			(recursiveTagFilter || !recursiveTagFilter)
 		) {
 			// track these variables
@@ -149,243 +129,24 @@
 				return true;
 			});
 			filteredFiles = result;
-
-			// Update currentIndex when playlist or currentFile changes
-			currentIndex = currentPlaylist.findIndex((f) => f.id === currentFileId);
 		});
 	});
 
-	// Playlist management functions
-	function replacePlaylist(newFiles: AudioFile[], startIndex: number = 0) {
-		currentPlaylist = [...newFiles];
-		if (newFiles.length > 0 && startIndex < newFiles.length) {
-			loadAudio(newFiles[startIndex]);
-		}
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function addToPlaylist(newFiles: AudioFile[]) {
-		// Avoid duplicates
-		const existingIds = new Set(currentPlaylist.map((f) => f.id));
-		const uniqueNewFiles = newFiles.filter((f) => !existingIds.has(f.id));
-		currentPlaylist = [...currentPlaylist, ...uniqueNewFiles];
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function removeFromPlaylist(fileId: string) {
-		const indexToRemove = currentPlaylist.findIndex((f) => f.id === fileId);
-		if (indexToRemove === -1) return;
-
-		currentPlaylist = currentPlaylist.filter((f) => f.id !== fileId);
-
-		// If we're removing the currently playing file
-		if (currentFileId === fileId) {
-			if (currentPlaylist.length > 0) {
-				// Play the next song, or previous if we were at the end
-				const newIndex =
-					indexToRemove < currentPlaylist.length ? indexToRemove : currentPlaylist.length - 1;
-				if (newIndex >= 0) {
-					loadAudio(currentPlaylist[newIndex]);
-					if (isPlaying) currentAudio?.play();
-				} else {
-					// No more songs
-					currentFileId = null;
-					currentAudio?.pause();
-					currentAudio = null;
-					isPlaying = false;
-				}
-			} else {
-				// Playlist is empty
-				currentFileId = null;
-				currentAudio?.pause();
-				currentAudio = null;
-				isPlaying = false;
-			}
-		}
-
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function clearPlaylist() {
-		currentPlaylist = [];
-		currentFileId = null;
-		currentAudio?.pause();
-		currentAudio = null;
-		isPlaying = false;
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
+	// Playlist management functions - now using global store
 	function playFile(file: AudioFile) {
-		replacePlaylist([file], 0);
-		currentAudio?.play();
-		isPlaying = true;
+		globalPlaylistStore.playFile(file);
 	}
 
 	function playAllFiltered() {
-		replacePlaylist(filteredFiles, 0);
-		if (currentAudio) {
-			currentAudio.play();
-			isPlaying = true;
-		}
+		globalPlaylistStore.replacePlaylist(filteredFiles, 0);
 	}
 
 	function addAllFilteredToPlaylist() {
-		addToPlaylist(filteredFiles);
+		globalPlaylistStore.addToPlaylist(filteredFiles);
 	}
 
-	// Audio functions
-	function loadAudio(file: AudioFile) {
-		if (currentAudio) {
-			currentAudio.pause();
-			currentAudio.removeEventListener('timeupdate', updateTime);
-			currentAudio.removeEventListener('loadedmetadata', updateDuration);
-			currentAudio.removeEventListener('ended', handleAudioEnded);
-		}
-
-		currentFileId = file.id;
-		currentAudio = new Audio(file.url);
-		currentAudio.volume = volume;
-
-		currentAudio.addEventListener('timeupdate', updateTime);
-		currentAudio.addEventListener('loadedmetadata', updateDuration);
-		currentAudio.addEventListener('ended', handleAudioEnded);
-
-		// Save playback state when a new file is loaded
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function togglePlayPause() {
-		if (!currentAudio) return;
-
-		if (isPlaying) {
-			currentAudio.pause();
-			isPlaying = false;
-		} else {
-			currentAudio.play();
-			isPlaying = true;
-		}
-
-		// Save playback state when play/pause changes
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function playNext() {
-		const playlist = currentPlaylist;
-		const index = currentIndex;
-		if (index < playlist.length - 1) {
-			loadAudio(playlist[index + 1]);
-			if (isPlaying) currentAudio?.play();
-		} else if (repeatMode === 'all' && playlist.length > 0) {
-			loadAudio(playlist[0]);
-			if (isPlaying) currentAudio?.play();
-		}
-
-		// Save playback state when switching tracks
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function playPrevious() {
-		const playlist = currentPlaylist;
-		const index = currentIndex;
-		if (index > 0) {
-			loadAudio(playlist[index - 1]);
-			if (isPlaying) currentAudio?.play();
-		} else if (repeatMode === 'all' && playlist.length > 0) {
-			loadAudio(playlist[playlist.length - 1]);
-			if (isPlaying) currentAudio?.play();
-		}
-
-		// Save playback state when switching tracks
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function handleAudioEnded() {
-		if (repeatMode === 'one') {
-			currentAudio?.play();
-		} else if (repeatMode === 'all' || currentIndex < currentPlaylist.length - 1) {
-			playNext();
-		} else {
-			isPlaying = false;
-		}
-	}
-
-	function updateTime() {
-		if (currentAudio) {
-			currentTime = currentAudio.currentTime;
-			// Save playback state periodically while playing
-			if (isPlaying && playbackStateLoaded) {
-				savePlaybackState();
-			}
-		}
-	}
-
-	function updateDuration() {
-		if (currentAudio) {
-			duration = currentAudio.duration;
-		}
-	}
-
-	function seekTo(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const seekTime = parseFloat(target.value);
-		if (currentAudio) {
-			currentAudio.currentTime = seekTime;
-			currentTime = seekTime;
-		}
-
-		// Save playback state when seeking
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function changeVolume(event: Event) {
-		const target = event.target as HTMLInputElement;
-		volume = parseFloat(target.value);
-		if (currentAudio) {
-			currentAudio.volume = volume;
-		}
-
-		// Save playback state when volume changes
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
-
-	function cycleRepeatMode() {
-		switch (repeatMode) {
-			case 'none':
-				repeatMode = 'one';
-				break;
-			case 'one':
-				repeatMode = 'all';
-				break;
-			case 'all':
-				repeatMode = 'none';
-				break;
-		}
-
-		// Save playback state when repeat mode changes
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
-	}
+	// Audio functions - now handled by global store
+	// All audio playback is now managed by the globalPlaylistStore
 
 	// File processing helper function
 	async function processFiles(fileList: FileList | File[]) {
@@ -441,16 +202,9 @@
 			URL.revokeObjectURL(file.url);
 			files = files.filter((f) => f.id !== fileId);
 
-			// Remove from playlist if it exists there
-			// The removeFromPlaylist function will handle switching to next song if this was currently playing
-			if (currentPlaylist.some((f) => f.id === fileId)) {
-				removeFromPlaylist(fileId);
-			} else if (currentFileId === fileId) {
-				// If it's not in playlist but is currently playing, stop playback
-				currentFileId = null;
-				currentAudio?.pause();
-				currentAudio = null;
-				isPlaying = false;
+			// Remove from global playlist if it exists there
+			if (playlistState?.currentPlaylist.some((f: AudioFile) => f.id === fileId)) {
+				globalPlaylistStore.removeFromPlaylist(fileId);
 			}
 
 			await saveToStorage();
@@ -487,11 +241,6 @@
 			selectedTags = selectedTags.filter((t) => t !== tag);
 		} else {
 			selectedTags = [...selectedTags, tag];
-		}
-
-		// Save playback state when filters change
-		if (playbackStateLoaded) {
-			savePlaybackState();
 		}
 	}
 
@@ -654,11 +403,6 @@
 		currentFolderId = folderId;
 		selectedTags = [];
 		recursiveTagFilter = false;
-
-		// Save playback state when navigating folders
-		if (playbackStateLoaded) {
-			savePlaybackState();
-		}
 	}
 
 	async function moveFileToFolder(fileId: string, folderId: string) {
@@ -723,7 +467,6 @@
 		draggedFile = null;
 		draggedFolder = null;
 		dragOverFolderId = null;
-		dragOverPlaylist = false;
 	}
 
 	async function handleFolderDrop(event: DragEvent, folderId: string) {
@@ -751,172 +494,9 @@
 		}
 	}
 
-	// Simplified playlist drag handlers
-	function handlePlaylistDragOver(event: DragEvent) {
-		event.preventDefault();
-		if (event.dataTransfer) {
-			event.dataTransfer.dropEffect = 'copy';
-		}
-		if (draggedFile || draggedFolder) {
-			dragOverPlaylist = true;
-		}
-	}
+	// Playlist drag handlers are now handled by the global GlobalPlaylist component
 
-	function handlePlaylistDragLeave(_event: DragEvent) {
-		dragOverPlaylist = false;
-	}
-
-	function handlePlaylistDrop(event: DragEvent) {
-		event.preventDefault();
-
-		// Store references before they get cleared
-		const currentDraggedFile = draggedFile;
-		const currentDraggedFolder = draggedFolder;
-
-		if (currentDraggedFile) {
-			addToPlaylist([currentDraggedFile]);
-		} else if (currentDraggedFolder) {
-			const folderFiles = getFilesFromFolder(currentDraggedFolder.id);
-			if (folderFiles.length > 0) {
-				addToPlaylist(folderFiles);
-			}
-		}
-
-		// Reset drag state
-		dragOverPlaylist = false;
-		draggedFile = null;
-		draggedFolder = null;
-	}
-
-	// Playback state management
-	async function savePlaybackState() {
-		const playbackState = {
-			currentFileId,
-			currentTime: currentAudio ? currentAudio.currentTime : 0,
-			isPlaying,
-			volume,
-			repeatMode,
-			selectedTags,
-			currentFolderId,
-			searchQuery,
-			recursiveTagFilter,
-			currentPlaylist: currentPlaylist.map((f) => ({
-				id: f.id,
-				name: f.name,
-				folderId: f.folderId
-			})), // Save minimal playlist info
-			currentIndex,
-			showPlaylistPanel,
-			playlistCollapsed
-		};
-
-		try {
-			// Save to localStorage (always available)
-			localStorage.setItem('soundLibrary_playbackState', JSON.stringify(playbackState));
-
-			// Try to save to OPFS if available
-			if (navigator.storage?.getDirectory) {
-				try {
-					const opfsRoot = await navigator.storage.getDirectory();
-					const soundLibraryDir = await opfsRoot.getDirectoryHandle('soundLibrary', {
-						create: true
-					});
-					const stateHandle = await soundLibraryDir.getFileHandle('playbackState.json', {
-						create: true
-					});
-					const stateWritable = await stateHandle.createWritable();
-					await stateWritable.write(JSON.stringify(playbackState));
-					await stateWritable.close();
-				} catch (opfsError) {
-					console.warn('Failed to save playback state to OPFS:', opfsError);
-				}
-			}
-		} catch (error) {
-			console.error('Failed to save playback state:', error);
-		}
-	}
-
-	async function loadPlaybackState() {
-		try {
-			let playbackState = null;
-
-			// Try to load from OPFS first
-			if (navigator.storage?.getDirectory) {
-				try {
-					const opfsRoot = await navigator.storage.getDirectory();
-					const soundLibraryDir = await opfsRoot.getDirectoryHandle('soundLibrary');
-					const stateHandle = await soundLibraryDir.getFileHandle('playbackState.json');
-					const stateFile = await stateHandle.getFile();
-					const stateText = await stateFile.text();
-					playbackState = JSON.parse(stateText);
-				} catch (opfsError) {
-					console.warn('Failed to load playback state from OPFS:', opfsError);
-				}
-			}
-
-			// Fallback to localStorage
-			if (!playbackState) {
-				const savedState = localStorage.getItem('soundLibrary_playbackState');
-				if (savedState) {
-					playbackState = JSON.parse(savedState);
-				}
-			}
-
-			if (playbackState) {
-				// Restore state variables
-				volume = playbackState.volume ?? 1;
-				repeatMode = playbackState.repeatMode ?? 'none';
-				selectedTags = playbackState.selectedTags ?? [];
-				currentFolderId = playbackState.currentFolderId ?? 'root';
-				searchQuery = playbackState.searchQuery ?? '';
-				recursiveTagFilter = playbackState.recursiveTagFilter ?? false;
-				showPlaylistPanel = playbackState.showPlaylistPanel ?? true;
-				playlistCollapsed = playbackState.playlistCollapsed ?? false;
-
-				// Restore playlist by finding the actual file objects
-				if (playbackState.currentPlaylist && Array.isArray(playbackState.currentPlaylist)) {
-					const restoredPlaylist: AudioFile[] = [];
-					for (const savedFile of playbackState.currentPlaylist) {
-						const actualFile = files.find((f) => f.id === savedFile.id);
-						if (actualFile) {
-							restoredPlaylist.push(actualFile);
-						}
-					}
-					currentPlaylist = restoredPlaylist;
-				} else {
-					currentPlaylist = [];
-				}
-
-				currentIndex = playbackState.currentIndex ?? -1;
-
-				// Restore currently playing file and position
-				if (playbackState.currentFileId && files.length > 0) {
-					const file = files.find((f) => f.id === playbackState.currentFileId);
-					if (file) {
-						loadAudio(file);
-						if (currentAudio) {
-							currentAudio.addEventListener('loadedmetadata', () => {
-								if (currentAudio && playbackState.currentTime) {
-									currentAudio.currentTime = playbackState.currentTime;
-									currentTime = playbackState.currentTime;
-
-									// Resume playing if it was playing before
-									if (playbackState.isPlaying) {
-										currentAudio.play();
-										isPlaying = true;
-									}
-								}
-							});
-						}
-					}
-				}
-			}
-		} catch (error) {
-			console.error('Failed to load playback state:', error);
-		} finally {
-			playbackStateLoaded = true;
-		}
-	}
+	// Playback state management is now handled by the global store
 
 	// Storage
 	async function saveToStorage() {
@@ -1099,21 +679,14 @@
 
 	onMount(() => {
 		loadFromStorage().then(() => {
-			// Load playback state after files are loaded
-			loadPlaybackState();
+			// Load files into global playlist store after they are loaded
+			globalPlaylistStore.loadPlaybackState(files);
 		});
 
 		return () => {
-			// Save final playback state before unmounting
-			if (playbackStateLoaded) {
-				savePlaybackState();
-			}
-
-			if (currentAudio) {
-				currentAudio.pause();
-				currentAudio.removeEventListener('timeupdate', updateTime);
-				currentAudio.removeEventListener('loadedmetadata', updateDuration);
-				currentAudio.removeEventListener('ended', handleAudioEnded);
+			// Clean up playlist store subscription
+			if (unsubscribePlaylist) {
+				unsubscribePlaylist();
 			}
 
 			// Clean up object URLs
@@ -1125,34 +698,7 @@
 		};
 	});
 
-	// Add effect to save playback state when search query changes
-	$effect(() => {
-		if (playbackStateLoaded && searchQuery !== undefined) {
-			// Debounce saving to avoid too frequent saves while typing
-			const timeoutId = setTimeout(() => {
-				savePlaybackState();
-			}, 500);
-
-			return () => clearTimeout(timeoutId);
-		}
-	});
-
-	// Add effect to save playback state when recursive filter changes
-	$effect(() => {
-		if (playbackStateLoaded && recursiveTagFilter !== undefined) {
-			savePlaybackState();
-		}
-	});
-
-	// Add effect to save playback state when playlist panel state changes
-	$effect(() => {
-		if (
-			playbackStateLoaded &&
-			(showPlaylistPanel !== undefined || playlistCollapsed !== undefined)
-		) {
-			savePlaybackState();
-		}
-	});
+	// Old playback state effects removed - now handled by global store
 
 	// External drag and drop handlers
 	function handleExternalDragOver(event: DragEvent) {
@@ -1503,15 +1049,15 @@
 								draggable="true"
 								ondragstart={(e) => handleDragStart(e, file)}
 								ondragend={handleDragEnd}
-								class:bg-blue-50={currentFileId === file.id}
+								class:bg-blue-50={playlistState?.currentFileId === file.id}
 							>
 								<!-- Play controls -->
 								<div class="flex items-center space-x-2">
 									<!-- Main play/pause button -->
 									<button
 										onclick={() => {
-											if (currentFileId === file.id) {
-												togglePlayPause();
+											if (playlistState?.currentFileId === file.id) {
+												globalPlaylistStore.togglePlayPause();
 											} else {
 												playFile(file);
 											}
@@ -1519,7 +1065,7 @@
 										class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
 										title="Play now (replaces playlist)"
 									>
-										{#if currentFileId === file.id && isPlaying}
+										{#if playlistState?.currentFileId === file.id && playlistState?.isPlaying}
 											<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
 												<path
 													d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zM11 8a1 1 0 012 0v4a1 1 0 11-2 0V8z"
@@ -1536,11 +1082,13 @@
 
 									<!-- Add to playlist button -->
 									<button
-										onclick={() => addToPlaylist([file])}
+										onclick={() => globalPlaylistStore.addToPlaylist([file])}
 										class="flex h-8 w-8 items-center justify-center rounded bg-purple-100 text-purple-700 hover:bg-purple-200"
 										title="Add to playlist"
 										aria-label="Add to playlist"
-										class:bg-purple-200={currentPlaylist.some((p) => p.id === file.id)}
+										class:bg-purple-200={playlistState?.currentPlaylist.some(
+											(p: AudioFile) => p.id === file.id
+										)}
 									>
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -1661,343 +1209,7 @@
 		</div>
 	</div>
 
-	<!-- Collapsible Playlist Panel -->
-	{#if showPlaylistPanel}
-		<div
-			class="fixed top-0 right-0 z-40 h-full bg-white shadow-lg transition-transform duration-300 ease-in-out"
-			class:translate-x-0={!playlistCollapsed}
-			class:translate-x-full={playlistCollapsed}
-			class:bg-blue-50={dragOverPlaylist}
-			class:border-l-4={dragOverPlaylist}
-			class:border-blue-500={dragOverPlaylist}
-			style="width: 320px;"
-		>
-			<div class="flex h-full flex-col">
-				<!-- Playlist header -->
-				<div class="border-b border-gray-200 p-4">
-					<div class="flex items-center justify-between">
-						<h3 class="font-medium text-gray-800">
-							<T>Current Playlist</T> ({currentPlaylist.length})
-						</h3>
-						<div class="flex items-center space-x-2">
-							<!-- Collapse button -->
-							<button
-								onclick={() => (playlistCollapsed = true)}
-								class="text-gray-400 hover:text-gray-600"
-								title="Collapse playlist"
-								aria-label="Collapse playlist"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-									></path>
-								</svg>
-							</button>
-							<!-- Close button -->
-							<button
-								onclick={() => (showPlaylistPanel = false)}
-								class="text-gray-400 hover:text-gray-600"
-								title="Close playlist"
-								aria-label="Close playlist"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M6 18L18 6M6 6l12 12"
-									></path>
-								</svg>
-							</button>
-						</div>
-					</div>
-					{#if currentPlaylist.length > 0}
-						<div class="mt-2 flex justify-end">
-							<button
-								onclick={clearPlaylist}
-								class="text-sm text-red-600 hover:text-red-800"
-								title="Clear playlist"
-							>
-								<T>Clear</T>
-							</button>
-						</div>
-					{/if}
-				</div>
-
-				<!-- Playlist content - SIMPLIFIED DROP ZONE -->
-				<div
-					role="list"
-					class="flex-1 overflow-hidden"
-					class:bg-blue-50={dragOverPlaylist}
-					class:border-2={dragOverPlaylist}
-					class:border-dashed={dragOverPlaylist}
-					class:border-blue-400={dragOverPlaylist}
-					ondragover={handlePlaylistDragOver}
-					ondrop={handlePlaylistDrop}
-					ondragleave={handlePlaylistDragLeave}
-				>
-					{#if currentPlaylist.length === 0}
-						<div class="p-4 text-center text-gray-500">
-							<p class="text-sm"><T>No songs in playlist</T></p>
-							<p class="mt-1 text-xs"><T>Add songs to start building your playlist</T></p>
-						</div>
-					{:else}
-						<div
-							class="h-full overflow-y-auto"
-							style="padding-bottom: {currentFileId && currentAudio ? '200px' : '0'};"
-						>
-							{#each currentPlaylist as file, index (file.id)}
-								<div
-									class="flex items-center space-x-3 border-b border-gray-100 p-3 hover:bg-gray-50"
-									class:bg-blue-50={currentFileId === file.id}
-								>
-									<!-- Track number and play indicator -->
-									<div class="flex h-6 w-6 items-center justify-center text-xs">
-										{#if currentFileId === file.id && isPlaying}
-											<svg class="h-3 w-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-												<path
-													d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zM11 8a1 1 0 012 0v4a1 1 0 11-2 0V8z"
-												></path>
-											</svg>
-										{:else if currentFileId === file.id}
-											<svg class="h-3 w-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-												<path
-													d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-												></path>
-											</svg>
-										{:else}
-											<span class="text-gray-400">{index + 1}</span>
-										{/if}
-									</div>
-
-									<!-- File info -->
-									<button
-										onclick={() => {
-											if (currentFileId === file.id) {
-												togglePlayPause();
-											} else {
-												loadAudio(file);
-												currentAudio?.play();
-												isPlaying = true;
-											}
-										}}
-										class="flex-1 text-left"
-									>
-										<div class="truncate text-sm font-medium text-gray-900">
-											{file.name}
-										</div>
-										<div class="text-xs text-gray-500">
-											{formatDuration(file.metadata.duration)}
-										</div>
-									</button>
-
-									<!-- Remove from playlist -->
-									<button
-										onclick={() => removeFromPlaylist(file.id)}
-										class="text-gray-400 hover:text-red-600"
-										title="Remove from playlist"
-										aria-label="Remove from playlist"
-									>
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 18L18 6M6 6l12 12"
-											></path>
-										</svg>
-									</button>
-								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
-
-				<!-- Audio player integrated at bottom of playlist -->
-				{#if currentFileId && currentAudio}
-					<div
-						class="absolute right-0 bottom-0 left-0 border-t border-gray-200 bg-white p-4 shadow-lg"
-					>
-						<!-- Current track info -->
-						<div class="mb-3 flex items-center space-x-3">
-							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-								<svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"
-									></path>
-								</svg>
-							</div>
-							<div class="min-w-0 flex-1">
-								<h4 class="truncate text-sm font-medium text-gray-900">
-									{files.find((f) => f.id === currentFileId)?.name || 'Unknown'}
-								</h4>
-								<p class="text-xs text-gray-500">
-									{formatDuration(currentTime)} / {formatDuration(duration)}
-								</p>
-							</div>
-						</div>
-
-						<!-- Progress bar -->
-						<div class="mb-3">
-							<input
-								type="range"
-								min="0"
-								max={duration || 0}
-								value={currentTime}
-								oninput={seekTo}
-								class="w-full"
-							/>
-						</div>
-
-						<!-- Playback controls -->
-						<div class="mb-3 flex items-center justify-center space-x-3">
-							<button
-								onclick={playPrevious}
-								class="text-gray-600 hover:text-gray-800"
-								disabled={currentIndex <= 0 && repeatMode !== 'all'}
-								aria-label="Previous track"
-							>
-								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"
-									></path>
-								</svg>
-							</button>
-
-							<button
-								onclick={togglePlayPause}
-								class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
-							>
-								{#if isPlaying}
-									<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zM11 8a1 1 0 012 0v4a1 1 0 11-2 0V8z"
-										></path>
-									</svg>
-								{:else}
-									<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-										></path>
-									</svg>
-								{/if}
-							</button>
-
-							<button
-								onclick={playNext}
-								class="text-gray-600 hover:text-gray-800"
-								disabled={currentIndex >= currentPlaylist.length - 1 && repeatMode !== 'all'}
-								aria-label="Next track"
-							>
-								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"
-									></path>
-								</svg>
-							</button>
-						</div>
-
-						<!-- Volume and repeat controls -->
-						<div class="flex items-center justify-between">
-							<!-- Volume -->
-							<div class="flex items-center space-x-2">
-								<svg class="h-4 w-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.784L4.5 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.5l3.883-3.784z"
-									></path>
-									<path d="M12 8a1 1 0 012 0v4a1 1 0 11-2 0V8zM14 6a1 1 0 012 0v8a1 1 0 11-2 0V6z"
-									></path>
-								</svg>
-								<input
-									type="range"
-									min="0"
-									max="1"
-									step="0.1"
-									value={volume}
-									oninput={changeVolume}
-									class="w-16"
-								/>
-							</div>
-
-							<!-- Repeat mode -->
-							<button
-								onclick={cycleRepeatMode}
-								class="text-gray-600 hover:text-gray-800"
-								class:text-blue-600={repeatMode !== 'none'}
-								title="Repeat mode: {repeatMode}"
-							>
-								{#if repeatMode === 'none'}
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-										></path>
-									</svg>
-								{:else if repeatMode === 'one'}
-									<div class="relative">
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-											></path>
-										</svg>
-										<span class="absolute -top-1 -right-1 text-xs font-bold">1</span>
-									</div>
-								{:else}
-									<div class="relative">
-										<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-											<path
-												d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-											></path>
-										</svg>
-									</div>
-								{/if}
-							</button>
-						</div>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Expand handle when collapsed -->
-		{#if playlistCollapsed}
-			<button
-				onclick={() => (playlistCollapsed = false)}
-				class="fixed top-1/2 right-0 z-50 flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-l-lg bg-gray-800 text-white shadow-lg transition-colors hover:bg-gray-700"
-				title="Expand playlist"
-				aria-label="Expand playlist"
-			>
-				<svg class="h-4 w-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-					></path>
-				</svg>
-			</button>
-		{/if}
-
-		<!-- Overlay when expanded (for mobile) -->
-		{#if !playlistCollapsed}
-			<div
-				class="bg-opacity-25 fixed inset-0 z-30 bg-black md:hidden"
-				role="button"
-				tabindex="0"
-				onclick={() => (playlistCollapsed = true)}
-				onkeydown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
-						playlistCollapsed = true;
-					}
-				}}
-				aria-label="Close playlist panel"
-			></div>
-		{/if}
-	{/if}
+	<!-- Playlist panel is now handled by the global GlobalPlaylist component -->
 </div>
 
 <!-- Upload Modal -->
