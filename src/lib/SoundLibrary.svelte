@@ -70,6 +70,8 @@
 	let currentFolder: Folder | null = $state(null);
 	let breadcrumbs: Folder[] = $state([]);
 
+	let dragOverExternal = $state(false);
+
 	// Helper function to get all descendant folder IDs recursively
 	function getDescendantFolderIds(folderId: string): string[] {
 		const result = [folderId];
@@ -385,14 +387,11 @@
 		}
 	}
 
-	// File management functions
-	async function handleFileUpload(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const uploadedFiles = target.files;
+	// File processing helper function
+	async function processFiles(fileList: FileList | File[]) {
+		const filesToProcess = Array.from(fileList);
 
-		if (!uploadedFiles) return;
-
-		for (const file of uploadedFiles) {
+		for (const file of filesToProcess) {
 			if (file.type.startsWith('audio/')) {
 				const audioFile: AudioFile = {
 					id: crypto.randomUUID(),
@@ -422,6 +421,16 @@
 		}
 
 		await saveToStorage();
+	}
+
+	// File management functions
+	async function handleFileUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const uploadedFiles = target.files;
+
+		if (!uploadedFiles) return;
+
+		await processFiles(uploadedFiles);
 		showUploadModal = false;
 		target.value = '';
 	}
@@ -432,7 +441,12 @@
 			URL.revokeObjectURL(file.url);
 			files = files.filter((f) => f.id !== fileId);
 
-			if (currentFileId === fileId) {
+			// Remove from playlist if it exists there
+			// The removeFromPlaylist function will handle switching to next song if this was currently playing
+			if (currentPlaylist.some((f) => f.id === fileId)) {
+				removeFromPlaylist(fileId);
+			} else if (currentFileId === fileId) {
+				// If it's not in playlist but is currently playing, stop playback
 				currentFileId = null;
 				currentAudio?.pause();
 				currentAudio = null;
@@ -1139,9 +1153,93 @@
 			savePlaybackState();
 		}
 	});
+
+	// External drag and drop handlers
+	function handleExternalDragOver(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		// Only handle external files, not internal drag operations
+		if (!draggedFile && !draggedFolder && event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'copy';
+			dragOverExternal = true;
+		}
+	}
+
+	function handleExternalDragLeave(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		// Only clear external drag if we're leaving the main container
+		const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+		const isInside =
+			event.clientX >= rect.left &&
+			event.clientX <= rect.right &&
+			event.clientY >= rect.top &&
+			event.clientY <= rect.bottom;
+
+		if (!isInside) {
+			dragOverExternal = false;
+		}
+	}
+
+	async function handleExternalDrop(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		dragOverExternal = false;
+
+		// Only handle external files, not internal drag operations
+		if (!draggedFile && !draggedFolder && event.dataTransfer?.files) {
+			const droppedFiles = event.dataTransfer.files;
+			if (droppedFiles.length > 0) {
+				await processFiles(droppedFiles);
+			}
+		}
+	}
 </script>
 
-<div class="mx-auto max-w-7xl space-y-6">
+<div
+	class="relative mx-auto max-w-7xl space-y-6"
+	class:bg-blue-50={dragOverExternal}
+	class:border-2={dragOverExternal}
+	class:border-dashed={dragOverExternal}
+	class:border-blue-400={dragOverExternal}
+	ondragover={handleExternalDragOver}
+	ondragleave={handleExternalDragLeave}
+	ondrop={handleExternalDrop}
+	role="application"
+	aria-label="Sound Library with file drop zone"
+>
+	<!-- External file drop overlay -->
+	{#if dragOverExternal}
+		<div
+			class="bg-opacity-90 absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-blue-50"
+		>
+			<div class="text-center">
+				<svg
+					class="mx-auto mb-4 h-16 w-16 text-blue-500"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+					></path>
+				</svg>
+				<h3 class="mb-2 text-xl font-semibold text-blue-700">
+					<T>Drop audio files here</T>
+				</h3>
+				<p class="text-blue-600">
+					<T>Release to add files to your sound library</T>
+				</p>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Header with controls -->
 	<div class="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
 		<div class="flex items-center space-x-4">
