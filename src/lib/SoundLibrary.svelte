@@ -424,6 +424,8 @@
 			// Some browsers (e.g. Firefox) ignore drag operations unless data is set.
 			// Using the file id as arbitrary data enables cross-browser compatibility.
 			event.dataTransfer.setData('text/plain', file.id);
+			// Also set file data for playlist drop handling
+			event.dataTransfer.setData('text/json', JSON.stringify(file));
 		}
 	}
 
@@ -683,6 +685,18 @@
 			globalPlaylistStore.loadPlaybackState(files);
 		});
 
+		// Listen for playlist drop requests
+		const handlePlaylistDropRequest = (event: Event) => {
+			const customEvent = event as CustomEvent;
+			const { fileId } = customEvent.detail;
+			const file = files.find((f) => f.id === fileId);
+			if (file) {
+				globalPlaylistStore.addToPlaylist([file]);
+			}
+		};
+
+		window.addEventListener('playlist-drop-request', handlePlaylistDropRequest);
+
 		return () => {
 			// Clean up playlist store subscription
 			if (unsubscribePlaylist) {
@@ -695,6 +709,9 @@
 					URL.revokeObjectURL(file.url);
 				}
 			});
+
+			// Clean up event listener
+			window.removeEventListener('playlist-drop-request', handlePlaylistDropRequest);
 		};
 	});
 
