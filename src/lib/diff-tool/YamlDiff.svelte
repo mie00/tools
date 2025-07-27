@@ -3,10 +3,12 @@
 
 	let {
 		leftInput = $bindable(''),
-		rightInput = $bindable('')
+		rightInput = $bindable(''),
+		wrapLines = true
 	}: {
 		leftInput: string;
 		rightInput: string;
+		wrapLines?: boolean;
 	} = $props();
 
 	interface DiffItem {
@@ -537,7 +539,9 @@ value: 123
 items:
   - first
   - second"
-					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none {wrapLines
+						? 'whitespace-pre-wrap'
+						: 'whitespace-pre'}"
 				></textarea>
 			</div>
 		</div>
@@ -555,7 +559,9 @@ value: 456
 items:
   - first
   - third"
-					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none {wrapLines
+						? 'whitespace-pre-wrap'
+						: 'whitespace-pre'}"
 				></textarea>
 			</div>
 		</div>
@@ -598,7 +604,7 @@ items:
 							: 'Enter YAML in both fields to see differences'}
 					</p>
 				{:else}
-					<div class="max-h-96 space-y-2 overflow-y-auto">
+					<div class="max-h-96 space-y-2 overflow-y-auto {wrapLines ? '' : 'overflow-x-auto'}">
 						{#each diffResult as item, index (index)}
 							{@const bgClass =
 								item.type === 'added'
@@ -627,7 +633,11 @@ items:
 												: '='}
 								</span>
 								<div class="min-w-0 flex-1">
-									<div class="font-mono font-medium break-all text-gray-900">
+									<div
+										class="font-mono font-medium {wrapLines
+											? 'break-all'
+											: 'whitespace-nowrap'} text-gray-900"
+									>
 										{item.path || '(root)'}
 									</div>
 									{#if config.showValueTypes}
@@ -637,20 +647,28 @@ items:
 									{/if}
 									<div class="mt-1 space-y-1">
 										{#if item.type === 'removed' || item.type === 'changed'}
-											<div class="rounded bg-red-100 p-1 font-mono text-xs break-all text-red-700">
+											<div
+												class="rounded bg-red-100 p-1 font-mono text-xs {wrapLines
+													? 'break-all'
+													: 'whitespace-nowrap'} text-red-700"
+											>
 												- {formatValue(item.leftValue)}
 											</div>
 										{/if}
 										{#if item.type === 'added' || item.type === 'changed'}
 											<div
-												class="rounded bg-green-100 p-1 font-mono text-xs break-all text-green-700"
+												class="rounded bg-green-100 p-1 font-mono text-xs {wrapLines
+													? 'break-all'
+													: 'whitespace-nowrap'} text-green-700"
 											>
 												+ {formatValue(item.rightValue)}
 											</div>
 										{/if}
 										{#if item.type === 'unchanged'}
 											<div
-												class="rounded bg-gray-100 p-1 font-mono text-xs break-all text-gray-700"
+												class="rounded bg-gray-100 p-1 font-mono text-xs {wrapLines
+													? 'break-all'
+													: 'whitespace-nowrap'} text-gray-700"
 											>
 												{formatValue(item.leftValue)}
 											</div>

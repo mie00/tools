@@ -5,10 +5,12 @@
 
 	let {
 		leftInput = $bindable(''),
-		rightInput = $bindable('')
+		rightInput = $bindable(''),
+		wrapLines = true
 	}: {
 		leftInput: string;
 		rightInput: string;
+		wrapLines?: boolean;
 	} = $props();
 
 	// Configuration options
@@ -437,7 +439,9 @@
 				<textarea
 					bind:value={leftInput}
 					placeholder="Enter original text..."
-					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none {wrapLines
+						? 'whitespace-pre-wrap'
+						: 'whitespace-pre'}"
 				></textarea>
 			</div>
 		</div>
@@ -458,7 +462,9 @@
 				<textarea
 					bind:value={rightInput}
 					placeholder="Enter modified text..."
-					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					class="h-64 w-full resize-none rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none {wrapLines
+						? 'whitespace-pre-wrap'
+						: 'whitespace-pre'}"
 				></textarea>
 			</div>
 		</div>
@@ -492,7 +498,7 @@
 				{/if}
 			</h3>
 		</div>
-		<div class="p-4">
+		<div class="p-4 {wrapLines ? 'overflow-hidden' : ''}">
 			{#if isCalculating}
 				<div class="py-8 text-center">
 					<div
@@ -512,7 +518,9 @@
 				</p>
 			{:else}
 				<pre
-					class="overflow-x-auto font-mono text-sm whitespace-pre-wrap">{#each diffResult as part, index (index)}<span
+					class="font-mono text-sm {wrapLines
+						? 'w-full min-w-0 break-all whitespace-pre-wrap'
+						: 'overflow-x-auto whitespace-pre'}">{#each diffResult as part, index (index)}<span
 							class="{part.added
 								? 'bg-green-100 text-green-800'
 								: part.removed

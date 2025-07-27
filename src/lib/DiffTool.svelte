@@ -12,6 +12,7 @@
 	let mode: DiffMode = $state('text');
 	let leftInput = $state('');
 	let rightInput = $state('');
+	let wrapLines = $state(true);
 
 	// URL parameter sync
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
@@ -26,6 +27,7 @@
 			if (mode !== 'text') params.set('mode', mode);
 			if (leftInput.trim()) params.set('left', encodeURIComponent(leftInput));
 			if (rightInput.trim()) params.set('right', encodeURIComponent(rightInput));
+			if (!wrapLines) params.set('wrap', 'false');
 
 			const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
 			goto(newUrl, { replaceState: true, noScroll: true });
@@ -39,6 +41,7 @@
 		const urlMode = urlParams.get('mode') as DiffMode;
 		const urlLeft = urlParams.get('left');
 		const urlRight = urlParams.get('right');
+		const urlWrap = urlParams.get('wrap');
 
 		if (urlMode && ['text', 'json', 'yaml'].includes(urlMode)) {
 			mode = urlMode;
@@ -50,6 +53,10 @@
 
 		if (urlRight) {
 			rightInput = decodeURIComponent(urlRight);
+		}
+
+		if (urlWrap !== null) {
+			wrapLines = urlWrap !== 'false';
 		}
 	}
 
@@ -151,6 +158,15 @@ email: john@example.com`;
 			<h1 class="text-2xl font-bold text-gray-900"><T>Diff Tool</T></h1>
 			<div class="flex gap-2">
 				<button
+					onclick={() => (wrapLines = !wrapLines)}
+					class="rounded-md px-3 py-2 text-sm transition-colors {wrapLines
+						? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+					title="Toggle line wrapping"
+				>
+					{wrapLines ? '📝' : '📄'} Wrap
+				</button>
+				<button
 					onclick={clearInputs}
 					class="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200"
 					title="Clear both inputs"
@@ -205,10 +221,10 @@ email: john@example.com`;
 
 	<!-- Mode-specific Diff Component -->
 	{#if mode === 'text'}
-		<TextDiff bind:leftInput bind:rightInput />
+		<TextDiff bind:leftInput bind:rightInput {wrapLines} />
 	{:else if mode === 'json'}
-		<JsonDiff bind:leftInput bind:rightInput />
+		<JsonDiff bind:leftInput bind:rightInput {wrapLines} />
 	{:else if mode === 'yaml'}
-		<YamlDiff bind:leftInput bind:rightInput />
+		<YamlDiff bind:leftInput bind:rightInput {wrapLines} />
 	{/if}
 </div>
