@@ -140,6 +140,12 @@
 			icon: '🌐',
 			description: 'Find your public and local IP addresses using STUN',
 			usesAPI: true
+		},
+		{
+			id: 'soundlibrary',
+			name: 'Sound Library',
+			icon: '🎵',
+			description: 'Upload, organize, and play audio files with tags and folders'
 		}
 	]);
 
