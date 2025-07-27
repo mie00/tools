@@ -444,8 +444,7 @@
 		/>
 	{:else}
 		<!-- Portfolio View -->
-		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-bold text-gray-800"><T>Stock Tracker</T></h1>
+		<div class="mb-6 flex items-center justify-end">
 			<button
 				onclick={goToSearch}
 				class="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"

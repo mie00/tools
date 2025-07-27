@@ -785,7 +785,6 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800">URL & cURL Examiner</h2>
 		<p class="text-gray-600">
 			<T>Enter a URL or a cURL command to see a breakdown of its components.</T>
 		</p>

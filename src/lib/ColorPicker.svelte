@@ -190,7 +190,6 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800"><T>Color Picker</T></h2>
 		<p class="text-gray-600"><T>Pick colors and convert between different formats</T></p>
 	</div>
 

@@ -484,25 +484,7 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-	<div class="container mx-auto px-4 py-8">
-		<header class="mb-8">
-			<a href="/" class="mb-4 inline-flex items-center text-blue-600 hover:text-blue-800">
-				<svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"
-					></path>
-				</svg>
-				Back to Tools
-			</a>
-			<h1 class="text-3xl font-bold text-gray-800"><T>Language Translator</T></h1>
-		</header>
-
-		<div class="rounded-2xl bg-white p-6 shadow-lg">
-			<div class="mb-4">
-				<p class="text-gray-600">
-					Translate text using Chrome's built-in AI - works offline and protects your privacy
-				</p>
-			</div>
+<div class="space-y-6">
 
 			{#if error}
 				<div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -743,6 +725,4 @@
 					</ul>
 				</div>
 			{/if}
-		</div>
-	</div>
 </div>

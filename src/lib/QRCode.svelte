@@ -381,7 +381,7 @@
 <div class="mx-auto max-w-4xl space-y-8">
 	<!-- QR Code Generation Section -->
 	<div class="rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-		<h2 class="mb-6 flex items-center text-2xl font-bold text-gray-800">🎯 Generate QR Code</h2>
+		<h2 class="mb-6 flex items-center text-2xl font-bold text-gray-800">🎯 Generate</h2>
 
 		<div class="grid gap-6 lg:grid-cols-2">
 			<!-- Input Section -->
@@ -494,7 +494,7 @@
 
 	<!-- QR Code Reading Section -->
 	<div class="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-6">
-		<h2 class="mb-6 flex items-center text-2xl font-bold text-gray-800">🔍 Scan QR Code</h2>
+		<h2 class="mb-6 flex items-center text-2xl font-bold text-gray-800">🔍 Scan</h2>
 
 		<div class="grid gap-6 lg:grid-cols-2">
 			<!-- Camera Section -->

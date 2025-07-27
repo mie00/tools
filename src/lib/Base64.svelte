@@ -161,7 +161,6 @@
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800">Base64 Encoder/Decoder</h2>
 		<p class="text-gray-600">Encode and decode Base64 strings with support for files</p>
 	</div>
 

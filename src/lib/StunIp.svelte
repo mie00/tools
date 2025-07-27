@@ -109,8 +109,6 @@
 		</div>
 	</div>
 
-	<h1 class="mb-4 text-2xl font-bold"><T>STUN IP Finder</T></h1>
-
 	<div class="mb-4">
 		<label for="stun-server" class="block text-sm font-medium text-gray-400"
 			><T>STUN Server URL</T></label

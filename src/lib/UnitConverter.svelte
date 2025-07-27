@@ -340,7 +340,6 @@
 
 <div class="mx-auto max-w-4xl">
 	<div class="mb-6">
-		<h2 class="mb-4 text-2xl font-bold text-gray-800"><T>Unit Converter</T></h2>
 
 		<!-- Category Selection -->
 		<div class="mb-6 flex flex-wrap gap-2">

@@ -139,7 +139,6 @@ Paragraphs: ${stats.paragraphs}`;
 
 <div class="space-y-6">
 	<div class="text-center">
-		<h2 class="mb-2 text-2xl font-bold text-gray-800"><T>Text Tools</T></h2>
 		<p class="text-gray-600"><T>Transform and analyze your text with various utilities</T></p>
 	</div>
 

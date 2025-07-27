@@ -1,13 +1,11 @@
 <script lang="ts">
 	import Translator from '$lib/Translator.svelte';
+	import ToolLayout from '$lib/ToolLayout.svelte';
 </script>
 
-<svelte:head>
-	<title>Language Translator - Tools App</title>
-	<meta
-		name="description"
-		content="Translate text using Chrome's built-in AI translation capabilities"
-	/>
-</svelte:head>
-
-<Translator />
+<ToolLayout title="Language Translator">
+	<p class="mb-4 text-gray-600">
+		Translate text using Chrome's built-in AI translation capabilities
+	</p>
+	<Translator />
+</ToolLayout>
