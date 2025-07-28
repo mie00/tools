@@ -202,7 +202,7 @@
 			const codeElement = document.getElementById(codeId);
 			if (!codeElement) return;
 
-			const text = codeElement.textContent || '';
+			const text = (codeElement.textContent || '').trim();
 
 			try {
 				await navigator.clipboard.writeText(text);

@@ -143,22 +143,6 @@
 						{/if}
 					</div>
 					<div class="flex items-center space-x-2">
-						<!-- Collapse button -->
-						<button
-							onclick={() => globalPlaylistStore.setPlaylistCollapsed(true)}
-							class="text-gray-400 hover:text-gray-600"
-							title="Collapse playlist"
-							aria-label="Collapse playlist"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								></path>
-							</svg>
-						</button>
 						<!-- Close button -->
 						<button
 							onclick={() => globalPlaylistStore.togglePlaylistPanel()}
@@ -397,16 +381,12 @@
 								: 'Play/Pause (controlled from active audio tab)'}
 						>
 							{#if playlistState.isPlaying}
-								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zM11 8a1 1 0 012 0v4a1 1 0 11-2 0V8z"
-									></path>
+								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
 								</svg>
 							{:else}
-								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-									<path
-										d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-									></path>
+								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M8 5v14l11-7z"></path>
 								</svg>
 							{/if}
 						</button>
@@ -503,20 +483,6 @@
 		</div>
 	</div>
 
-	<!-- Expand handle when collapsed -->
-	{#if playlistState.playlistCollapsed}
-		<button
-			onclick={() => globalPlaylistStore.setPlaylistCollapsed(false)}
-			class="fixed top-1/2 right-0 z-50 flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-l-lg bg-gray-800 text-white shadow-lg transition-colors hover:bg-gray-700"
-			title="Expand playlist"
-			aria-label="Expand playlist"
-		>
-			<svg class="h-4 w-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"
-				></path>
-			</svg>
-		</button>
-	{/if}
 
 	<!-- Overlay when expanded (for mobile) -->
 	{#if !playlistState.playlistCollapsed}
@@ -524,11 +490,11 @@
 			class="bg-opacity-25 fixed inset-0 z-30 bg-black md:hidden"
 			role="button"
 			tabindex="0"
-			onclick={() => globalPlaylistStore.setPlaylistCollapsed(true)}
+			onclick={() => globalPlaylistStore.togglePlaylistPanel()}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
 					e.preventDefault();
-					globalPlaylistStore.setPlaylistCollapsed(true);
+					globalPlaylistStore.togglePlaylistPanel();
 				}
 			}}
 			aria-label="Close playlist panel"

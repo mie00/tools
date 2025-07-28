@@ -6,7 +6,8 @@
 
 	// Type definitions
 	interface HistoryItem {
-		id: string;
+		id: number;
+		name: string;
 		expression: string;
 		result: number;
 	}
@@ -14,6 +15,7 @@
 	let expression: string = $state('');
 	let result: string = $state('');
 	let history: HistoryItem[] = $state([]);
+	let nextHistoryId: number = $state(1);
 	let inputElement: HTMLInputElement | undefined = $state();
 	let isError: boolean = $state(false);
 	let isMobile: boolean = $state(false);
@@ -48,7 +50,7 @@
 		const urlExpression = $page.url.searchParams.get('expression');
 		if (urlExpression) {
 			expression = urlExpression;
-			evaluateExpression();
+			evaluateExpressionForDisplay();
 		}
 	}
 
@@ -57,12 +59,33 @@
 		if (typeof window !== 'undefined') {
 			try {
 				const storedHistory = localStorage.getItem('calculator-history');
+				const storedNextId = localStorage.getItem('calculator-next-id');
 				if (storedHistory) {
 					history = JSON.parse(storedHistory);
+					// Migrate old history items that don't have id field
+					history = history.map((item, index) => {
+						if (!item.id) {
+							return { ...item, id: index + 1 };
+						}
+						return item;
+					});
+				}
+				if (storedNextId) {
+					const parsedId = parseInt(storedNextId);
+					nextHistoryId = isNaN(parsedId) ? 1 : parsedId;
+				} else {
+					// Calculate next ID from existing history
+					if (history.length > 0) {
+						const maxId = Math.max(...history.map(h => h.id || 0));
+						nextHistoryId = isNaN(maxId) ? 1 : maxId + 1;
+					} else {
+						nextHistoryId = 1;
+					}
 				}
 			} catch (error) {
 				console.warn('Failed to load history from localStorage:', error);
 				history = [];
+				nextHistoryId = 1;
 			}
 			historyLoaded = true;
 		}
@@ -72,6 +95,7 @@
 		if (typeof window !== 'undefined') {
 			try {
 				localStorage.setItem('calculator-history', JSON.stringify(history));
+				localStorage.setItem('calculator-next-id', nextHistoryId.toString());
 			} catch (error) {
 				console.warn('Failed to save history to localStorage:', error);
 			}
@@ -80,7 +104,7 @@
 
 	// Watch for history changes and save to localStorage
 	$effect(() => {
-		if (typeof window !== 'undefined' && history && historyLoaded) {
+		if (typeof window !== 'undefined' && history && historyLoaded && nextHistoryId) {
 			saveHistoryToStorage();
 		}
 	});
@@ -97,7 +121,7 @@
 	});
 
 	// Evaluate mathematical expressions with proper operator precedence
-	function evaluateExpression() {
+	function evaluateExpressionForDisplay() {
 		if (!expression.trim()) {
 			result = '';
 			isError = false;
@@ -110,7 +134,55 @@
 				.replace(/×/g, '*')
 				.replace(/÷/g, '/')
 				.replace(/−/g, '-')
-				.replace(/[^\d+\-*/().\s]/g, ''); // Remove any non-mathematical characters
+				.replace(/\^/g, '**');
+
+			// Check for references to saved calculations (o1, o2, etc) BEFORE filtering
+			cleanExpression = replaceReferences(cleanExpression);
+
+			// Now remove any remaining non-mathematical characters (after reference replacement)
+			cleanExpression = cleanExpression.replace(/[^\d+\-*/().\s]/g, '');
+
+			// Basic security check - only allow numbers, operators, and parentheses
+			if (!/^[\d+\-*/().\s]+$/.test(cleanExpression)) {
+				throw new Error('Invalid characters in expression');
+			}
+
+			// Evaluate the expression safely
+			const evaluated = Function(`"use strict"; return (${cleanExpression})`)();
+
+			if (isNaN(evaluated) || !isFinite(evaluated)) {
+				throw new Error('Invalid calculation');
+			}
+
+			result = formatResult(evaluated);
+			isError = false;
+		} catch (_error) {
+			result = 'Error';
+			isError = true;
+		}
+	}
+
+	// Evaluate and save to history
+	function evaluateAndSave() {
+		if (!expression.trim()) {
+			result = '';
+			isError = false;
+			return;
+		}
+
+		try {
+			// Replace common symbols with JS-friendly operators
+			let cleanExpression = expression
+				.replace(/×/g, '*')
+				.replace(/÷/g, '/')
+				.replace(/−/g, '-')
+				.replace(/\^/g, '**');
+
+			// Check for references to saved calculations (o1, o2, etc) BEFORE filtering
+			cleanExpression = replaceReferences(cleanExpression);
+
+			// Now remove any remaining non-mathematical characters (after reference replacement)
+			cleanExpression = cleanExpression.replace(/[^\d+\-*/().\s]/g, '');
 
 			// Basic security check - only allow numbers, operators, and parentheses
 			if (!/^[\d+\-*/().\s]+$/.test(cleanExpression)) {
@@ -129,8 +201,14 @@
 
 			// Add to history if it's a complete calculation
 			if (cleanExpression && !isError) {
+				// Ensure nextHistoryId is valid
+				if (isNaN(nextHistoryId) || nextHistoryId < 1) {
+					nextHistoryId = history.length + 1;
+				}
+				
 				const historyItem: HistoryItem = {
-					id: crypto.randomUUID(),
+					id: nextHistoryId,
+					name: `o${nextHistoryId}`,
 					expression: expression.trim(),
 					result: evaluated
 				};
@@ -138,9 +216,10 @@
 				// Avoid duplicates
 				if (history.length === 0 || history[history.length - 1].expression !== expression.trim()) {
 					history = [...history, historyItem];
-					// Keep only last 20 items
-					if (history.length > 20) {
-						history = history.slice(-20);
+					nextHistoryId++;
+					// Keep only last 10,000 items
+					if (history.length > 10000) {
+						history = history.slice(-10000);
 					}
 				}
 			}
@@ -165,15 +244,28 @@
 	}
 
 	function handleInput() {
-		evaluateExpression();
+		// Only evaluate for display, don't save to history
+		evaluateExpressionForDisplay();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
-			evaluateExpression();
+			evaluateAndSave();
 		} else if (event.key === 'Escape') {
 			clearAll();
 		}
+	}
+
+	// Replace references to saved calculations (o1, o2, etc) with their values
+	function replaceReferences(expr: string): string {
+		return expr.replace(/o(\d+)/g, (match, num) => {
+			const targetId = parseInt(num);
+			const item = history.find(h => h.id === targetId);
+			if (item) {
+				return item.result.toString();
+			}
+			return match; // Return original if reference not found
+		});
 	}
 
 	function insertText(text: string) {
@@ -185,7 +277,7 @@
 				inputElement.setSelectionRange(cursorPos + text.length, cursorPos + text.length);
 			}
 		}, 0);
-		evaluateExpression();
+		evaluateExpressionForDisplay();
 	}
 
 	function insertNumber(num: string) {
@@ -202,7 +294,7 @@
 						inputElement.setSelectionRange(cursorPos - 1, cursorPos - 1);
 					}
 				}, 0);
-				evaluateExpression();
+				evaluateExpressionForDisplay();
 			}
 		}
 	}
@@ -219,25 +311,40 @@
 
 	function useHistoryItem(item: HistoryItem) {
 		expression = item.expression;
-		evaluateExpression();
+		evaluateExpressionForDisplay();
 		// Only focus if input is visible and user clicked on history
 		if (inputElement && !isMobile) {
 			inputElement.focus();
 		}
 	}
 
-	function deleteHistoryItem(id: string) {
-		history = history.filter((item) => item.id !== id);
+	function deleteHistoryItem(name: string) {
+		history = history.filter((item) => item.name !== name);
 		saveHistoryToStorage();
 	}
 
 	function clearAllHistory() {
 		history = [];
+		nextHistoryId = 1;
 		saveHistoryToStorage();
 	}
 </script>
 
 <div class="calculator">
+	<!-- Hints -->
+	<div class="my-4 flex flex-col gap-2">
+		<div class="flex items-center gap-2 bg-white/8 rounded-lg px-3 py-2.5 border border-white/12 backdrop-blur-sm">
+			<span class="text-sm opacity-80">💡</span>
+			<span class="text-xs text-white/80 leading-relaxed">Press <strong class="text-white/95 font-semibold">Enter</strong> or <strong class="text-white/95 font-semibold">=</strong> to save calculations as o1, o2, o3...</span>
+		</div>
+		{#if history.length > 0}
+			<div class="flex items-center gap-2 bg-white/8 rounded-lg px-3 py-2.5 border border-white/12 backdrop-blur-sm">
+				<span class="text-sm opacity-80">🔗</span>
+				<span class="text-xs text-white/80 leading-relaxed">Reference saved values: <strong class="text-white/95 font-semibold">o1 + o2 * 5</strong></span>
+			</div>
+		{/if}
+	</div>
+
 	<!-- Main Input and Display -->
 	<div class="input-section">
 		<div class="input-container">
@@ -246,7 +353,7 @@
 				bind:value={expression}
 				oninput={handleInput}
 				onkeydown={handleKeydown}
-				placeholder="Enter expression like: 1 + 2 * 5 - 2"
+				placeholder="Enter expression like: 2^3 + o1 * 5 (Press Enter or = to save)"
 				class="expression-input"
 				type="text"
 				autocomplete="off"
@@ -278,6 +385,7 @@
 				<span class="result">{result}</span>
 			</div>
 		{/if}
+
 	</div>
 
 	<!-- Desktop: Quick Action Buttons Only -->
@@ -301,40 +409,79 @@
 			<button class="action-btn" onclick={() => insertText(')')} title="Close parenthesis">
 				<span>)</span>
 			</button>
-			<button class="action-btn" onclick={() => insertText('**')} title="Power">
+			<button class="action-btn" onclick={() => insertText('^')} title="Power">
 				<span>^</span>
 			</button>
 			<button class="action-btn" onclick={() => insertText('.')} title="Decimal">
 				<span>.</span>
+			</button>
+			<button class="action-btn bg-green-500/30 border-green-500/50 font-bold text-xl hover:bg-green-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0" onclick={evaluateAndSave} title="Calculate and save (Enter)">
+				<span>=</span>
 			</button>
 		</div>
 	{/if}
 
 	<!-- Mobile: Full Number Pad -->
 	{#if isMobile}
-		<div class="number-pad">
-			<div class="number-row">
+		<div class="p-4 bg-white/10 rounded-2xl mb-5 backdrop-blur-md border border-white/20">
+			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
 				<button class="number-btn" onclick={() => insertNumber('7')}>7</button>
 				<button class="number-btn" onclick={() => insertNumber('8')}>8</button>
 				<button class="number-btn" onclick={() => insertNumber('9')}>9</button>
 				<button class="number-btn operator" onclick={() => insertText('/')}>÷</button>
 			</div>
-			<div class="number-row">
+			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
 				<button class="number-btn" onclick={() => insertNumber('4')}>4</button>
 				<button class="number-btn" onclick={() => insertNumber('5')}>5</button>
 				<button class="number-btn" onclick={() => insertNumber('6')}>6</button>
 				<button class="number-btn operator" onclick={() => insertText('*')}>×</button>
 			</div>
-			<div class="number-row">
+			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
 				<button class="number-btn" onclick={() => insertNumber('1')}>1</button>
 				<button class="number-btn" onclick={() => insertNumber('2')}>2</button>
 				<button class="number-btn" onclick={() => insertNumber('3')}>3</button>
 				<button class="number-btn operator" onclick={() => insertText('-')}>−</button>
 			</div>
-			<div class="number-row">
-				<button class="number-btn wide" onclick={() => insertNumber('0')}>0</button>
+			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
+				<button class="number-btn col-span-2" onclick={() => insertNumber('0')}>0</button>
 				<button class="number-btn" onclick={() => insertText('.')}>.</button>
 				<button class="number-btn operator" onclick={() => insertText('+')}>+</button>
+			</div>
+			<div class="grid grid-cols-4 gap-2.5">
+				<button
+					class="number-btn function"
+					onclick={() => insertText('(')}
+					title="Open parenthesis"
+				>
+					<span>(</span>
+				</button>
+				<button
+					class="number-btn function"
+					onclick={() => insertText(')')}
+					title="Close parenthesis"
+				>
+					<span>)</span>
+				</button>
+				<button class="number-btn function" onclick={backspace} aria-label="Backspace">
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path d="M9 9l6 6m0-6l-6 6M21 12H3" />
+					</svg>
+				</button>
+				<button class="number-btn function" onclick={() => insertText('^')} title="Power">
+					<span>^</span>
+				</button>
+			</div>
+			<div class="grid grid-cols-1 gap-2.5 mt-2.5">
+				<button class="number-btn bg-green-500/30 border-green-500/50 font-bold text-xl hover:bg-green-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0" onclick={evaluateAndSave} title="Calculate and save (Enter)">
+					<span>=</span>
+				</button>
 			</div>
 			<div class="number-row">
 				<button
@@ -363,7 +510,7 @@
 						<path d="M9 9l6 6m0-6l-6 6M21 12H3" />
 					</svg>
 				</button>
-				<button class="number-btn function" onclick={() => insertText('**')} title="Power">
+				<button class="number-btn function" onclick={() => insertText('^')} title="Power">
 					<span>^</span>
 				</button>
 			</div>
@@ -396,15 +543,16 @@
 				</button>
 			</div>
 			<div class="history-items">
-				{#each history.slice(-5).reverse() as item (item.id)}
+				{#each history.slice(-5).reverse() as item (item.name)}
 					<div class="history-item">
+						<div class="history-name">{item.name}</div>
 						<button class="history-content" onclick={() => useHistoryItem(item)}>
 							<span class="history-expression">{item.expression}</span>
 							<span class="history-result">= {formatResult(item.result)}</span>
 						</button>
 						<button
 							class="delete-history-btn"
-							onclick={() => deleteHistoryItem(item.id)}
+							onclick={() => deleteHistoryItem(item.name)}
 							title="Delete this calculation"
 							aria-label="Delete this calculation"
 						>
@@ -532,7 +680,7 @@
 
 	.actions {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(5, 1fr);
 		gap: 10px;
 		margin-bottom: 20px;
 	}
@@ -571,12 +719,6 @@
 		border: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.number-row {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 10px;
-		margin-bottom: 10px;
-	}
 
 	.number-row:last-child {
 		margin-bottom: 0;
@@ -610,9 +752,6 @@
 		transform: translateY(0);
 	}
 
-	.number-btn.wide {
-		grid-column: span 2;
-	}
 
 	.number-btn.operator {
 		background: rgba(255, 255, 255, 0.25);
@@ -631,6 +770,7 @@
 	.number-btn.function:hover {
 		background: rgba(255, 255, 255, 0.25);
 	}
+
 
 	.history-section {
 		margin-top: 20px;
@@ -685,6 +825,18 @@
 		backdrop-filter: blur(5px);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		transition: all 0.2s ease;
+	}
+
+	.history-name {
+		font-size: 12px;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.8);
+		background: rgba(255, 255, 255, 0.15);
+		border-radius: 8px;
+		padding: 4px 8px;
+		min-width: 28px;
+		text-align: center;
+		border: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
 	.history-item:hover {
@@ -792,4 +944,4 @@
 			font-size: 11px;
 		}
 	}
-</style>
+\n</style>
