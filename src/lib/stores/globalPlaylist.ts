@@ -206,6 +206,9 @@ function createGlobalPlaylistStore() {
 					}
 					return { ...state, volume: data.volume };
 
+				case 'REQUEST_ACTIVE_TAB_ACK':
+					return state;
+
 				default:
 					return state;
 			}
@@ -418,6 +421,11 @@ function createGlobalPlaylistStore() {
 			}));
 			sendToWorker('FILES_AVAILABLE', { files: serializableFiles });
 			update((state) => ({ ...state, playbackStateLoaded: true }));
+		},
+
+		// Request to become the active audio tab (for user interactions)
+		requestActiveTab: () => {
+			sendToWorker('REQUEST_ACTIVE_TAB');
 		},
 
 		// These are now handled internally by the worker communication

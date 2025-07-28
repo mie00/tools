@@ -116,13 +116,13 @@ class PlaylistWorkerManager {
 		});
 	}
 
-	private selectActiveAudioTab(): string | null {
-		// If there's already an active tab, keep it unless it's been closed
-		if (this.activeAudioTabId && this.tabs.has(this.activeAudioTabId)) {
+	private selectActiveAudioTab(forceReselect: boolean = false): string | null {
+		// If there's already an active tab, keep it unless it's been closed or we're forcing a reselection
+		if (this.activeAudioTabId && this.tabs.has(this.activeAudioTabId) && !forceReselect) {
 			return this.activeAudioTabId;
 		}
 
-		// Otherwise, select the most recently registered tab with audio capability
+		// Select the most recently registered tab with audio capability
 		const audioCapableTabs = Array.from(this.tabs.values()).filter((tab) => tab.canPlayAudio);
 
 		if (audioCapableTabs.length > 0) {
@@ -141,8 +141,8 @@ class PlaylistWorkerManager {
 		return null;
 	}
 
-	private updateActiveAudioTab() {
-		const newActiveTab = this.selectActiveAudioTab();
+	private updateActiveAudioTab(forceReselect: boolean = false) {
+		const newActiveTab = this.selectActiveAudioTab(forceReselect);
 
 		if (this.activeAudioTabId !== newActiveTab) {
 			// Notify old tab to stop audio
@@ -531,6 +531,17 @@ class PlaylistWorkerManager {
 							activeAudioTabId: this.activeAudioTabId
 						}
 					});
+				}
+				break;
+
+			case 'REQUEST_ACTIVE_TAB':
+				// User interaction detected - make this tab the active audio tab
+				if (this.tabs.has(tabId)) {
+					// Update the tab's registration time to make it most recent
+					const tab = this.tabs.get(tabId)!;
+					tab.registrationTime = Date.now();
+					// Force reselection to honor user interaction
+					this.updateActiveAudioTab(true);
 				}
 				break;
 		}

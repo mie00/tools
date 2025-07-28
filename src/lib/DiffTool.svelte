@@ -5,7 +5,6 @@
 	import TextDiff from './diff-tool/TextDiff.svelte';
 	import JsonDiff from './diff-tool/JsonDiff.svelte';
 	import YamlDiff from './diff-tool/YamlDiff.svelte';
-	import T from './T.svelte';
 
 	type DiffMode = 'text' | 'json' | 'yaml';
 

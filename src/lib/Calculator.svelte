@@ -76,7 +76,7 @@
 				} else {
 					// Calculate next ID from existing history
 					if (history.length > 0) {
-						const maxId = Math.max(...history.map(h => h.id || 0));
+						const maxId = Math.max(...history.map((h) => h.id || 0));
 						nextHistoryId = isNaN(maxId) ? 1 : maxId + 1;
 					} else {
 						nextHistoryId = 1;
@@ -205,7 +205,7 @@
 				if (isNaN(nextHistoryId) || nextHistoryId < 1) {
 					nextHistoryId = history.length + 1;
 				}
-				
+
 				const historyItem: HistoryItem = {
 					id: nextHistoryId,
 					name: `o${nextHistoryId}`,
@@ -260,7 +260,7 @@
 	function replaceReferences(expr: string): string {
 		return expr.replace(/o(\d+)/g, (match, num) => {
 			const targetId = parseInt(num);
-			const item = history.find(h => h.id === targetId);
+			const item = history.find((h) => h.id === targetId);
 			if (item) {
 				return item.result.toString();
 			}
@@ -333,14 +333,24 @@
 <div class="calculator">
 	<!-- Hints -->
 	<div class="my-4 flex flex-col gap-2">
-		<div class="flex items-center gap-2 bg-white/8 rounded-lg px-3 py-2.5 border border-white/12 backdrop-blur-sm">
+		<div
+			class="flex items-center gap-2 rounded-lg border border-white/12 bg-white/8 px-3 py-2.5 backdrop-blur-sm"
+		>
 			<span class="text-sm opacity-80">💡</span>
-			<span class="text-xs text-white/80 leading-relaxed">Press <strong class="text-white/95 font-semibold">Enter</strong> or <strong class="text-white/95 font-semibold">=</strong> to save calculations as o1, o2, o3...</span>
+			<span class="text-xs leading-relaxed text-white/80"
+				>Press <strong class="font-semibold text-white/95">Enter</strong> or
+				<strong class="font-semibold text-white/95">=</strong> to save calculations as o1, o2, o3...</span
+			>
 		</div>
 		{#if history.length > 0}
-			<div class="flex items-center gap-2 bg-white/8 rounded-lg px-3 py-2.5 border border-white/12 backdrop-blur-sm">
+			<div
+				class="flex items-center gap-2 rounded-lg border border-white/12 bg-white/8 px-3 py-2.5 backdrop-blur-sm"
+			>
 				<span class="text-sm opacity-80">🔗</span>
-				<span class="text-xs text-white/80 leading-relaxed">Reference saved values: <strong class="text-white/95 font-semibold">o1 + o2 * 5</strong></span>
+				<span class="text-xs leading-relaxed text-white/80"
+					>Reference saved values: <strong class="font-semibold text-white/95">o1 + o2 * 5</strong
+					></span
+				>
 			</div>
 		{/if}
 	</div>
@@ -385,7 +395,6 @@
 				<span class="result">{result}</span>
 			</div>
 		{/if}
-
 	</div>
 
 	<!-- Desktop: Quick Action Buttons Only -->
@@ -415,7 +424,11 @@
 			<button class="action-btn" onclick={() => insertText('.')} title="Decimal">
 				<span>.</span>
 			</button>
-			<button class="action-btn bg-green-500/30 border-green-500/50 font-bold text-xl hover:bg-green-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0" onclick={evaluateAndSave} title="Calculate and save (Enter)">
+			<button
+				class="action-btn border-green-500/50 bg-green-500/30 text-xl font-bold hover:-translate-y-0.5 hover:bg-green-500/40 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0"
+				onclick={evaluateAndSave}
+				title="Calculate and save (Enter)"
+			>
 				<span>=</span>
 			</button>
 		</div>
@@ -423,26 +436,26 @@
 
 	<!-- Mobile: Full Number Pad -->
 	{#if isMobile}
-		<div class="p-4 bg-white/10 rounded-2xl mb-5 backdrop-blur-md border border-white/20">
-			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
+		<div class="mb-5 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+			<div class="mb-2.5 grid grid-cols-4 gap-2.5">
 				<button class="number-btn" onclick={() => insertNumber('7')}>7</button>
 				<button class="number-btn" onclick={() => insertNumber('8')}>8</button>
 				<button class="number-btn" onclick={() => insertNumber('9')}>9</button>
 				<button class="number-btn operator" onclick={() => insertText('/')}>÷</button>
 			</div>
-			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
+			<div class="mb-2.5 grid grid-cols-4 gap-2.5">
 				<button class="number-btn" onclick={() => insertNumber('4')}>4</button>
 				<button class="number-btn" onclick={() => insertNumber('5')}>5</button>
 				<button class="number-btn" onclick={() => insertNumber('6')}>6</button>
 				<button class="number-btn operator" onclick={() => insertText('*')}>×</button>
 			</div>
-			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
+			<div class="mb-2.5 grid grid-cols-4 gap-2.5">
 				<button class="number-btn" onclick={() => insertNumber('1')}>1</button>
 				<button class="number-btn" onclick={() => insertNumber('2')}>2</button>
 				<button class="number-btn" onclick={() => insertNumber('3')}>3</button>
 				<button class="number-btn operator" onclick={() => insertText('-')}>−</button>
 			</div>
-			<div class="grid grid-cols-4 gap-2.5 mb-2.5">
+			<div class="mb-2.5 grid grid-cols-4 gap-2.5">
 				<button class="number-btn col-span-2" onclick={() => insertNumber('0')}>0</button>
 				<button class="number-btn" onclick={() => insertText('.')}>.</button>
 				<button class="number-btn operator" onclick={() => insertText('+')}>+</button>
@@ -478,8 +491,12 @@
 					<span>^</span>
 				</button>
 			</div>
-			<div class="grid grid-cols-1 gap-2.5 mt-2.5">
-				<button class="number-btn bg-green-500/30 border-green-500/50 font-bold text-xl hover:bg-green-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0" onclick={evaluateAndSave} title="Calculate and save (Enter)">
+			<div class="mt-2.5 grid grid-cols-1 gap-2.5">
+				<button
+					class="number-btn border-green-500/50 bg-green-500/30 text-xl font-bold hover:-translate-y-0.5 hover:bg-green-500/40 hover:shadow-lg hover:shadow-green-500/30 active:translate-y-0"
+					onclick={evaluateAndSave}
+					title="Calculate and save (Enter)"
+				>
 					<span>=</span>
 				</button>
 			</div>
@@ -709,17 +726,6 @@
 		transform: translateY(0);
 	}
 
-	/* Number Pad Styles */
-	.number-pad {
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 16px;
-		padding: 16px;
-		margin-bottom: 20px;
-		backdrop-filter: blur(10px);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-	}
-
-
 	.number-row:last-child {
 		margin-bottom: 0;
 	}
@@ -752,7 +758,6 @@
 		transform: translateY(0);
 	}
 
-
 	.number-btn.operator {
 		background: rgba(255, 255, 255, 0.25);
 		font-weight: 700;
@@ -770,7 +775,6 @@
 	.number-btn.function:hover {
 		background: rgba(255, 255, 255, 0.25);
 	}
-
 
 	.history-section {
 		margin-top: 20px;
@@ -944,4 +948,4 @@
 			font-size: 11px;
 		}
 	}
-\n</style>
+</style>

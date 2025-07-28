@@ -698,7 +698,31 @@
 			}
 		};
 
+		// Add interaction listeners to request active tab status
+		const handleUserInteraction = () => {
+			globalPlaylistStore.requestActiveTab();
+		};
+
+		// Listen for clicks and key presses on the sound library component
+		const clickHandler = (e: Event) => {
+			// Check if click is within the sound library
+			const target = e.target as Element;
+			if (target && target.closest('[data-sound-library]')) {
+				handleUserInteraction();
+			}
+		};
+
+		const keyHandler = (_e: Event) => {
+			// Check if focus is within the sound library
+			const activeElement = document.activeElement;
+			if (activeElement && activeElement.closest('[data-sound-library]')) {
+				handleUserInteraction();
+			}
+		};
+
 		window.addEventListener('playlist-drop-request', handlePlaylistDropRequest);
+		document.addEventListener('click', clickHandler);
+		document.addEventListener('keydown', keyHandler);
 
 		return () => {
 			// Clean up playlist store subscription
@@ -713,8 +737,10 @@
 				}
 			});
 
-			// Clean up event listener
+			// Clean up event listeners
 			window.removeEventListener('playlist-drop-request', handlePlaylistDropRequest);
+			document.removeEventListener('click', clickHandler);
+			document.removeEventListener('keydown', keyHandler);
 		};
 	});
 
@@ -766,6 +792,7 @@
 </script>
 
 <div
+	data-sound-library
 	class="relative mx-auto max-w-7xl space-y-6"
 	class:bg-blue-50={dragOverExternal}
 	class:border-2={dragOverExternal}

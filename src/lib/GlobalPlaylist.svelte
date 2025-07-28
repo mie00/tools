@@ -93,15 +93,52 @@
 	// Audio event listeners are now handled by the SharedWorker in globalPlaylist.ts
 	// The $effect for currentAudio changes is no longer needed here
 
+	let cleanup: (() => void) | null = null;
+
 	onMount(() => {
 		unsubscribe = globalPlaylistStore.subscribe((state) => {
 			playlistState = { ...state }; // Force a new object to trigger reactivity
 		});
+
+		// Add interaction listeners to request active tab status
+		const handleUserInteraction = () => {
+			globalPlaylistStore.requestActiveTab();
+		};
+
+		// Listen for clicks and key presses on the playlist component
+		const clickHandler = (e: Event) => {
+			// Check if click is within the playlist panel
+			const target = e.target as Element;
+			if (target && target.closest('[data-playlist-panel]')) {
+				handleUserInteraction();
+			}
+		};
+
+		const keyHandler = (_e: Event) => {
+			// Check if focus is within the playlist panel
+			const activeElement = document.activeElement;
+			if (activeElement && activeElement.closest('[data-playlist-panel]')) {
+				handleUserInteraction();
+			}
+		};
+
+		document.addEventListener('click', clickHandler);
+		document.addEventListener('keydown', keyHandler);
+
+		// Cleanup function to remove event listeners
+		cleanup = () => {
+			document.removeEventListener('click', clickHandler);
+			document.removeEventListener('keydown', keyHandler);
+		};
 	});
 
 	onDestroy(() => {
 		if (unsubscribe) {
 			unsubscribe();
+		}
+		// Clean up event listeners
+		if (cleanup) {
+			cleanup();
 		}
 		// Audio cleanup is now handled by the SharedWorker
 	});
@@ -110,6 +147,7 @@
 {#if playlistState?.showPlaylistPanel}
 	<!-- Collapsible Playlist Panel -->
 	<div
+		data-playlist-panel
 		class="fixed top-0 right-0 z-40 h-full bg-white shadow-lg transition-transform duration-300 ease-in-out"
 		class:translate-x-0={!playlistState.playlistCollapsed}
 		class:translate-x-full={playlistState.playlistCollapsed}
@@ -483,7 +521,6 @@
 		</div>
 	</div>
 
-
 	<!-- Overlay when expanded (for mobile) -->
 	{#if !playlistState.playlistCollapsed}
 		<div
@@ -505,6 +542,7 @@
 <!-- Global playlist toggle button (when panel is hidden) -->
 {#if playlistState && !playlistState.showPlaylistPanel && playlistState.currentPlaylist.length > 0}
 	<button
+		data-playlist-panel
 		onclick={() => globalPlaylistStore.togglePlaylistPanel()}
 		class="fixed right-4 bottom-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all hover:scale-110 hover:bg-blue-700"
 		title="Show playlist"
