@@ -4,9 +4,7 @@
 </script>
 
 <ToolLayout title="LLM Chat">
-	<p class="mb-4 text-gray-600">
-		Chat with AI models - both local (WebGPU) and remote (Ollama)
-	</p>
+	<p class="mb-4 text-gray-600">Chat with AI models - both local (WebGPU) and remote (Ollama)</p>
 	<div class="min-h-0 flex-1">
 		<OllamaChat />
 	</div>

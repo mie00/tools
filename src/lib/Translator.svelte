@@ -485,244 +485,241 @@
 </script>
 
 <div class="space-y-6">
+	{#if error}
+		<div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+			<h3 class="mb-2 font-semibold text-red-800">⚠️ Error</h3>
+			<p class="mb-3 text-red-700">{error}</p>
+			<details>
+				<summary class="cursor-pointer font-medium text-red-600 hover:text-red-800"
+					><T>Requirements</T></summary
+				>
+				<ul class="mt-2 list-inside list-disc text-sm text-red-600">
+					<li>Chrome 138+ on desktop</li>
+					<li>Windows 10/11, macOS 13+, or Linux</li>
+					<li>At least 22 GB free storage</li>
+					<li>GPU with 4+ GB VRAM</li>
+					<li><T>Unmetered internet connection</T></li>
+				</ul>
+			</details>
+		</div>
+	{/if}
 
-			{#if error}
-				<div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-					<h3 class="mb-2 font-semibold text-red-800">⚠️ Error</h3>
-					<p class="mb-3 text-red-700">{error}</p>
-					<details>
-						<summary class="cursor-pointer font-medium text-red-600 hover:text-red-800"
-							><T>Requirements</T></summary
-						>
-						<ul class="mt-2 list-inside list-disc text-sm text-red-600">
-							<li>Chrome 138+ on desktop</li>
-							<li>Windows 10/11, macOS 13+, or Linux</li>
-							<li>At least 22 GB free storage</li>
-							<li>GPU with 4+ GB VRAM</li>
-							<li><T>Unmetered internet connection</T></li>
-						</ul>
-					</details>
-				</div>
-			{/if}
+	{#if isDownloading}
+		<div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+			<h3 class="mb-3 font-semibold text-blue-800">📥 Downloading AI Model...</h3>
+			<div class="mb-2 h-2 w-full rounded-full bg-blue-200">
+				<div
+					class="h-2 rounded-full bg-blue-600 transition-all duration-300"
+					style="width: {downloadProgress}%"
+				></div>
+			</div>
+			<p class="text-sm text-blue-700">{downloadProgress}% complete</p>
+		</div>
+	{/if}
 
-			{#if isDownloading}
-				<div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-					<h3 class="mb-3 font-semibold text-blue-800">📥 Downloading AI Model...</h3>
-					<div class="mb-2 h-2 w-full rounded-full bg-blue-200">
-						<div
-							class="h-2 rounded-full bg-blue-600 transition-all duration-300"
-							style="width: {downloadProgress}%"
-						></div>
-					</div>
-					<p class="text-sm text-blue-700">{downloadProgress}% complete</p>
-				</div>
-			{/if}
-
-			{#if detectorAvailable && translatorAvailable}
-				<div class="relative mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<!-- Source side -->
-					<div class="space-y-3">
-						<div>
-							<label for="source-language" class="mb-2 block text-sm font-medium text-gray-700"
-								><T>From:</T></label
-							>
-							<select
-								id="source-language"
-								bind:value={sourceLanguage}
-								onchange={handleLanguageChange}
-								disabled={isLoading}
-								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
-							>
-								{#each sourceLanguages as lang (lang.code)}
-									<option value={lang.code}>{lang.name}</option>
-								{/each}
-							</select>
-						</div>
-
-						<div class="relative">
-							<label for="input-text" class="mb-2 block text-sm font-medium text-gray-700"
-								><T>Enter text:</T></label
-							>
-							<textarea
-								id="input-text"
-								bind:value={inputText}
-								placeholder="Type or paste text here..."
-								rows="8"
-								disabled={isLoading}
-								class="w-full resize-none rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
-							></textarea>
-							{#if detectedLanguage}
-								<div
-									class="absolute -top-6 left-0 rounded bg-blue-100 px-2 py-1 text-xs text-blue-800"
-								>
-									🔍 {detectedLanguage}
-								</div>
-							{/if}
-							{#if speechSynthesisAvailable && inputText.trim()}
-								<button
-									onclick={isSpeakingInput ? stopSpeaking : handleSpeakInput}
-									disabled={isLoading}
-									class="absolute top-8 right-2 rounded bg-blue-500 p-1 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-									title={isSpeakingInput ? 'Stop speaking' : 'Speak text'}
-									aria-label={isSpeakingInput ? 'Stop speaking' : 'Speak text'}
-								>
-									{#if isSpeakingInput}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 4h4v16H6zM14 4h4v16h-4z"
-											></path>
-										</svg>
-									{:else}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a2.5 2.5 0 002.5-2.5S13 5 10.5 5 8 6.5 8 7.5V10zm6 0h1.5a2.5 2.5 0 002.5-2.5S16 5 13.5 5 11 6.5 11 7.5V10z"
-											></path>
-										</svg>
-									{/if}
-								</button>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Flip button -->
-					<div
-						class="flex items-center justify-center lg:absolute lg:top-1/2 lg:left-1/2 lg:z-10 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:transform"
+	{#if detectorAvailable && translatorAvailable}
+		<div class="relative mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+			<!-- Source side -->
+			<div class="space-y-3">
+				<div>
+					<label for="source-language" class="mb-2 block text-sm font-medium text-gray-700"
+						><T>From:</T></label
 					>
+					<select
+						id="source-language"
+						bind:value={sourceLanguage}
+						onchange={handleLanguageChange}
+						disabled={isLoading}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					>
+						{#each sourceLanguages as lang (lang.code)}
+							<option value={lang.code}>{lang.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="relative">
+					<label for="input-text" class="mb-2 block text-sm font-medium text-gray-700"
+						><T>Enter text:</T></label
+					>
+					<textarea
+						id="input-text"
+						bind:value={inputText}
+						placeholder="Type or paste text here..."
+						rows="8"
+						disabled={isLoading}
+						class="w-full resize-none rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					></textarea>
+					{#if detectedLanguage}
+						<div class="absolute -top-6 left-0 rounded bg-blue-100 px-2 py-1 text-xs text-blue-800">
+							🔍 {detectedLanguage}
+						</div>
+					{/if}
+					{#if speechSynthesisAvailable && inputText.trim()}
 						<button
-							onclick={flipLanguages}
-							disabled={(sourceLanguage === 'auto' && !actualSourceLanguage) || isLoading}
-							class="transform rounded-full border-2 border-blue-500 bg-white p-2 text-blue-600 shadow-md transition-all duration-200 hover:scale-105 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-							title="Flip languages and text"
-							aria-label="Flip languages and text"
+							onclick={isSpeakingInput ? stopSpeaking : handleSpeakInput}
+							disabled={isLoading}
+							class="absolute top-8 right-2 rounded bg-blue-500 p-1 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+							title={isSpeakingInput ? 'Stop speaking' : 'Speak text'}
+							aria-label={isSpeakingInput ? 'Stop speaking' : 'Speak text'}
 						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-								></path>
-							</svg>
+							{#if isSpeakingInput}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 4h4v16H6zM14 4h4v16h-4z"
+									></path>
+								</svg>
+							{:else}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a2.5 2.5 0 002.5-2.5S13 5 10.5 5 8 6.5 8 7.5V10zm6 0h1.5a2.5 2.5 0 002.5-2.5S16 5 13.5 5 11 6.5 11 7.5V10z"
+									></path>
+								</svg>
+							{/if}
 						</button>
-					</div>
+					{/if}
+				</div>
+			</div>
 
-					<!-- Target side -->
-					<div class="space-y-3">
-						<div>
-							<label for="target-language" class="mb-2 block text-sm font-medium text-gray-700"
-								><T>To:</T></label
-							>
-							<select
-								id="target-language"
-								bind:value={targetLanguage}
-								onchange={handleLanguageChange}
-								disabled={isLoading}
-								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
-							>
-								{#each supportedLanguages as lang (lang.code)}
-									<option value={lang.code}>{lang.name}</option>
-								{/each}
-							</select>
-						</div>
+			<!-- Flip button -->
+			<div
+				class="flex items-center justify-center lg:absolute lg:top-1/2 lg:left-1/2 lg:z-10 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:transform"
+			>
+				<button
+					onclick={flipLanguages}
+					disabled={(sourceLanguage === 'auto' && !actualSourceLanguage) || isLoading}
+					class="transform rounded-full border-2 border-blue-500 bg-white p-2 text-blue-600 shadow-md transition-all duration-200 hover:scale-105 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+					title="Flip languages and text"
+					aria-label="Flip languages and text"
+				>
+					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+						></path>
+					</svg>
+				</button>
+			</div>
 
-						<div class="relative">
-							<label for="output-text" class="mb-2 block text-sm font-medium text-gray-700"
-								><T>Translation:</T></label
-							>
-							<textarea
-								id="output-text"
-								bind:value={translatedText}
-								placeholder="Translation will appear here automatically..."
-								rows="8"
-								readonly
-								class="w-full resize-none rounded-md border border-gray-300 bg-gray-50 px-3 py-2"
-							></textarea>
-							{#if speechSynthesisAvailable && translatedText.trim()}
-								<button
-									onclick={isSpeakingOutput ? stopSpeaking : handleSpeakOutput}
-									disabled={isLoading}
-									class="absolute top-8 right-2 rounded bg-green-500 p-1 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
-									title={isSpeakingOutput ? 'Stop speaking' : 'Speak translation'}
-									aria-label={isSpeakingOutput ? 'Stop speaking' : 'Speak translation'}
-								>
-									{#if isSpeakingOutput}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 4h4v16H6zM14 4h4v16h-4z"
-											></path>
-										</svg>
-									{:else}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a2.5 2.5 0 002.5-2.5S13 5 10.5 5 8 6.5 8 7.5V10zm6 0h1.5a2.5 2.5 0 002.5-2.5S16 5 13.5 5 11 6.5 11 7.5V10z"
-											></path>
-										</svg>
-									{/if}
-								</button>
-							{/if}
-							{#if isLoading}
-								<div
-									class="bg-opacity-75 absolute inset-0 flex items-center justify-center rounded-md bg-gray-50"
-								>
-									<div class="flex items-center gap-2 text-blue-600">
-										<svg
-											class="h-4 w-4 animate-spin"
-											xmlns="http://www.w3.org/2000/svg"
-											fill="none"
-											viewBox="0 0 24 24"
-										>
-											<circle
-												class="opacity-25"
-												cx="12"
-												cy="12"
-												r="10"
-												stroke="currentColor"
-												stroke-width="4"
-											></circle>
-											<path
-												class="opacity-75"
-												fill="currentColor"
-												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-											></path>
-										</svg>
-										<span class="text-sm"><T>Translating...</T></span>
-									</div>
-								</div>
-							{/if}
-						</div>
-					</div>
+			<!-- Target side -->
+			<div class="space-y-3">
+				<div>
+					<label for="target-language" class="mb-2 block text-sm font-medium text-gray-700"
+						><T>To:</T></label
+					>
+					<select
+						id="target-language"
+						bind:value={targetLanguage}
+						onchange={handleLanguageChange}
+						disabled={isLoading}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+					>
+						{#each supportedLanguages as lang (lang.code)}
+							<option value={lang.code}>{lang.name}</option>
+						{/each}
+					</select>
 				</div>
 
-				<div class="rounded-lg bg-gray-50 p-4">
-					<h3 class="mb-2 font-semibold text-gray-800">ℹ️ About This Translator</h3>
-					<ul class="space-y-1 text-sm text-gray-600">
-						<li>
-							<strong><T>Privacy-first:</T></strong> All translation happens locally in your browser
-						</li>
-						<li>
-							<strong><T>Offline capable:</T></strong> Works without internet after initial model download
-						</li>
-						<li>
-							<strong><T>Auto-detection:</T></strong> Automatically detects the source language
-						</li>
-						<li><strong><T>High accuracy:</T></strong> Powered by Chrome's built-in AI models</li>
-						<li>
-							<strong><T>Text-to-speech:</T></strong> Click the play buttons to hear text in the appropriate
-							language
-						</li>
-					</ul>
+				<div class="relative">
+					<label for="output-text" class="mb-2 block text-sm font-medium text-gray-700"
+						><T>Translation:</T></label
+					>
+					<textarea
+						id="output-text"
+						bind:value={translatedText}
+						placeholder="Translation will appear here automatically..."
+						rows="8"
+						readonly
+						class="w-full resize-none rounded-md border border-gray-300 bg-gray-50 px-3 py-2"
+					></textarea>
+					{#if speechSynthesisAvailable && translatedText.trim()}
+						<button
+							onclick={isSpeakingOutput ? stopSpeaking : handleSpeakOutput}
+							disabled={isLoading}
+							class="absolute top-8 right-2 rounded bg-green-500 p-1 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+							title={isSpeakingOutput ? 'Stop speaking' : 'Speak translation'}
+							aria-label={isSpeakingOutput ? 'Stop speaking' : 'Speak translation'}
+						>
+							{#if isSpeakingOutput}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 4h4v16H6zM14 4h4v16h-4z"
+									></path>
+								</svg>
+							{:else}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a2.5 2.5 0 002.5-2.5S13 5 10.5 5 8 6.5 8 7.5V10zm6 0h1.5a2.5 2.5 0 002.5-2.5S16 5 13.5 5 11 6.5 11 7.5V10z"
+									></path>
+								</svg>
+							{/if}
+						</button>
+					{/if}
+					{#if isLoading}
+						<div
+							class="bg-opacity-75 absolute inset-0 flex items-center justify-center rounded-md bg-gray-50"
+						>
+							<div class="flex items-center gap-2 text-blue-600">
+								<svg
+									class="h-4 w-4 animate-spin"
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+								>
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+								<span class="text-sm"><T>Translating...</T></span>
+							</div>
+						</div>
+					{/if}
 				</div>
-			{/if}
+			</div>
+		</div>
+
+		<div class="rounded-lg bg-gray-50 p-4">
+			<h3 class="mb-2 font-semibold text-gray-800">ℹ️ About This Translator</h3>
+			<ul class="space-y-1 text-sm text-gray-600">
+				<li>
+					<strong><T>Privacy-first:</T></strong> All translation happens locally in your browser
+				</li>
+				<li>
+					<strong><T>Offline capable:</T></strong> Works without internet after initial model download
+				</li>
+				<li>
+					<strong><T>Auto-detection:</T></strong> Automatically detects the source language
+				</li>
+				<li><strong><T>High accuracy:</T></strong> Powered by Chrome's built-in AI models</li>
+				<li>
+					<strong><T>Text-to-speech:</T></strong> Click the play buttons to hear text in the appropriate
+					language
+				</li>
+			</ul>
+		</div>
+	{/if}
 </div>

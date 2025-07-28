@@ -41,7 +41,7 @@ const initialState: PlaybackState = {
 	repeatMode: 'none',
 	currentPlaylist: [],
 	currentIndex: -1,
-	showPlaylistPanel: true,
+	showPlaylistPanel: false,
 	playlistCollapsed: false,
 	playbackStateLoaded: false,
 	isActiveAudioTab: false

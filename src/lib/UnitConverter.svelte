@@ -340,7 +340,6 @@
 
 <div class="mx-auto max-w-4xl">
 	<div class="mb-6">
-
 		<!-- Category Selection -->
 		<div class="mb-6 flex flex-wrap gap-2">
 			{#each Object.entries(categories) as [key, category] (key)}

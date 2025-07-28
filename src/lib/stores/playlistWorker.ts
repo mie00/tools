@@ -49,7 +49,7 @@ class PlaylistWorkerManager {
 		repeatMode: 'none',
 		currentPlaylist: [],
 		currentIndex: -1,
-		showPlaylistPanel: true,
+		showPlaylistPanel: false,
 		playlistCollapsed: false
 	};
 
@@ -80,7 +80,7 @@ class PlaylistWorkerManager {
 				// Note: file and url properties are omitted as they can't be serialized
 			})),
 			// Don't save UI state across sessions
-			showPlaylistPanel: true,
+			showPlaylistPanel: false,
 			playlistCollapsed: false,
 			// Pause playback but preserve position for resume on refresh
 			isPlaying: false

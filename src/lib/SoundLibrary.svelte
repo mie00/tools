@@ -151,6 +151,7 @@
 	// File processing helper function
 	async function processFiles(fileList: FileList | File[]) {
 		const filesToProcess = Array.from(fileList);
+		const newAudioFiles: AudioFile[] = [];
 
 		for (const file of filesToProcess) {
 			if (file.type.startsWith('audio/')) {
@@ -178,10 +179,11 @@
 				});
 
 				files = [...files, audioFile];
+				newAudioFiles.push(audioFile);
 			}
 		}
 
-		await saveToStorage();
+		await saveToStorage(newAudioFiles);
 	}
 
 	// File management functions
@@ -501,7 +503,7 @@
 	// Playback state management is now handled by the global store
 
 	// Storage
-	async function saveToStorage() {
+	async function saveToStorage(filesToSave?: AudioFile[]) {
 		try {
 			// Check if OPFS is supported
 			if (!navigator.storage?.getDirectory) {
@@ -516,7 +518,8 @@
 			const soundLibraryDir = await opfsRoot.getDirectoryHandle('soundLibrary', { create: true });
 
 			// Save files with actual File objects
-			for (const file of files) {
+			const targetFiles = filesToSave || files;
+			for (const file of targetFiles) {
 				if (file.file) {
 					try {
 						const fileHandle = await soundLibraryDir.getFileHandle(`${file.id}.audio`, {
