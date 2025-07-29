@@ -82,6 +82,11 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		// Don't interfere with textarea input when editing
+		if (isEditing && (event.target as HTMLElement)?.tagName === 'TEXTAREA') {
+			return;
+		}
+
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			handleFocus();
