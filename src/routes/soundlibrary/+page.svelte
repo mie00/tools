@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SoundLibrary from '$lib/SoundLibrary.svelte';
+	import SoundLibrary from '$lib/sound-library/SoundLibrary.svelte';
 	import ToolLayout from '$lib/ToolLayout.svelte';
 </script>
 

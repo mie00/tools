@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import T from './T.svelte';
+	import T from '../T.svelte';
 	import { globalPlaylistStore, type AudioFile } from './stores/globalPlaylist';
 
 	interface Folder {

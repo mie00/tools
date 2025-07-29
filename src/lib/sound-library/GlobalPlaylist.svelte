@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { globalPlaylistStore, type AudioFile } from './stores/globalPlaylist';
-	import T from './T.svelte';
+	import T from '../T.svelte';
 
 	// Define the playback state type (matching the store interface)
 	interface PlaybackState {

@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { translationStore } from '$lib/translation';
-	import GlobalPlaylist from '$lib/GlobalPlaylist.svelte';
+	import GlobalPlaylist from '$lib/sound-library/GlobalPlaylist.svelte';
 	// import { page } from '$app/stores';
 
 	let { children } = $props();
