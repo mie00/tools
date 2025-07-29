@@ -103,6 +103,43 @@ class PlaylistWorkerManager {
 		}, 2000); // Save after 2 seconds of inactivity
 	}
 
+	private debouncedSaveMainState() {
+		// Debounce main state saving (excluding current time which is saved separately)
+		if (this.saveStateTimeout) {
+			clearTimeout(this.saveStateTimeout);
+		}
+		this.saveStateTimeout = setTimeout(() => {
+			this.saveMainState();
+		}, 2000); // Save after 2 seconds of inactivity
+	}
+
+	private async saveMainState() {
+		// Create a serializable version of the state for localStorage (excluding currentTime)
+		const stateToSave = {
+			...this.state,
+			// Convert AudioFile objects to serializable format (without File objects)
+			currentPlaylist: this.state.currentPlaylist.map((file) => ({
+				id: file.id,
+				name: file.name,
+				tags: file.tags,
+				folderId: file.folderId,
+				metadata: file.metadata
+				// Note: file and url properties are omitted as they can't be serialized
+			})),
+			// Don't save UI state across sessions
+			showPlaylistPanel: false,
+			playlistCollapsed: false,
+			// Pause playback but preserve position for resume on refresh
+			isPlaying: false
+			// Don't save currentTime - it's handled separately
+		};
+
+		this.broadcastToTabs({
+			type: 'SAVE_STATE_REQUEST',
+			data: { state: stateToSave }
+		});
+	}
+
 	private broadcastToTabs(message: any, excludeTabId?: string) {
 		this.tabs.forEach((tab, tabId) => {
 			if (tabId !== excludeTabId) {
@@ -490,13 +527,16 @@ class PlaylistWorkerManager {
 			// State updates from active audio tab
 			case 'UPDATE_TIME':
 				this.state.currentTime = data.currentTime;
-				// Debounced save to preserve position without excessive localStorage writes
-				this.debouncedSaveState();
-				// Broadcast time update to ALL tabs including the sender for UI consistency
-				this.broadcastToTabs({
-					type: 'TIME_UPDATE',
-					data: { currentTime: data.currentTime }
-				});
+				// Only save main state periodically, not time (which is saved separately by active tab)
+				this.debouncedSaveMainState();
+				// Broadcast time update to OTHER tabs (not sender) to reload from localStorage
+				this.broadcastToTabs(
+					{
+						type: 'TIME_UPDATE',
+						data: { currentTime: data.currentTime }
+					},
+					tabId
+				);
 				break;
 
 			case 'UPDATE_DURATION':

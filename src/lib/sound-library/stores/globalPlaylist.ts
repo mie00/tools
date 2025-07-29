@@ -164,7 +164,14 @@ function createGlobalPlaylistStore() {
 					return { ...state, playlistCollapsed: data.collapsed };
 
 				case 'TIME_UPDATE':
-					return { ...state, currentTime: data.currentTime };
+					// Read current time from localStorage instead of using broadcast data
+					try {
+						const savedTime = localStorage.getItem('soundLibrary_currentTime');
+						const currentTime = savedTime ? parseFloat(savedTime) : data.currentTime;
+						return { ...state, currentTime };
+					} catch (error) {
+						return { ...state, currentTime: data.currentTime };
+					}
 
 				case 'DURATION_UPDATE':
 					return { ...state, duration: data.duration };
@@ -182,6 +189,11 @@ function createGlobalPlaylistStore() {
 						const savedState = localStorage.getItem('soundLibrary_playbackState');
 						if (savedState) {
 							const parsedState = JSON.parse(savedState);
+							// Load current time from separate localStorage entry
+							const savedTime = localStorage.getItem('soundLibrary_currentTime');
+							if (savedTime) {
+								parsedState.currentTime = parseFloat(savedTime);
+							}
 							// Note: File objects and URLs can't be restored from localStorage
 							// The playlist will need to be rebuilt from the sound library when needed
 							sendToWorker('LOAD_STATE_RESPONSE', { state: parsedState });
@@ -247,9 +259,20 @@ function createGlobalPlaylistStore() {
 			}
 		}
 
-		// Set up event listeners
+		// Set up event listeners with debounced time updates
+		let timeUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
 		audio.addEventListener('timeupdate', () => {
-			sendToWorker('UPDATE_TIME', { currentTime: audio.currentTime });
+			const currentTime = audio.currentTime;
+			// Save current time locally with immediate update
+			localStorage.setItem('soundLibrary_currentTime', currentTime.toString());
+
+			// Debounce worker notification to 10ms
+			if (timeUpdateTimeout) {
+				clearTimeout(timeUpdateTimeout);
+			}
+			timeUpdateTimeout = setTimeout(() => {
+				sendToWorker('UPDATE_TIME', { currentTime });
+			}, 10);
 		});
 
 		audio.addEventListener('loadedmetadata', () => {
@@ -271,9 +294,8 @@ function createGlobalPlaylistStore() {
 	}
 
 	function cleanupAudio(audio: HTMLAudioElement) {
-		audio.removeEventListener('timeupdate', () => {});
-		audio.removeEventListener('loadedmetadata', () => {});
-		audio.removeEventListener('ended', () => {});
+		// Note: We can't remove the specific event listeners since they're anonymous functions
+		// But they will be garbage collected when the audio element is destroyed
 		audio.pause();
 	}
 
