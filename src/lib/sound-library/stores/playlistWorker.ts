@@ -210,6 +210,49 @@ class PlaylistWorkerManager {
 		}
 	}
 
+	private getFilesToLoad(): string[] {
+		// Only load current file and next file (if exists)
+		const filesToLoad: string[] = [];
+
+		if (this.state.currentFileId) {
+			filesToLoad.push(this.state.currentFileId);
+		}
+
+		// Add next file for preloading
+		if (
+			this.state.currentIndex >= 0 &&
+			this.state.currentIndex < this.state.currentPlaylist.length - 1
+		) {
+			const nextFile = this.state.currentPlaylist[this.state.currentIndex + 1];
+			if (nextFile && !filesToLoad.includes(nextFile.id)) {
+				filesToLoad.push(nextFile.id);
+			}
+		}
+
+		console.log(
+			`🎯  Need to load ${filesToLoad.length} files:`,
+			filesToLoad.map((id) => this.state.currentPlaylist.find((f) => f.id === id)?.name || id)
+		);
+
+		return filesToLoad;
+	}
+
+	private getFilesToUnload(): string[] {
+		// Get files that should be unloaded (not current or next)
+		const filesToKeep = this.getFilesToLoad();
+		const allPlaylistIds = this.state.currentPlaylist.map((f) => f.id);
+		const filesToUnload = allPlaylistIds.filter((id) => !filesToKeep.includes(id));
+
+		if (filesToUnload.length > 0) {
+			console.log(
+				`🗑️  Need to unload ${filesToUnload.length} files:`,
+				filesToUnload.map((id) => this.state.currentPlaylist.find((f) => f.id === id)?.name || id)
+			);
+		}
+
+		return filesToUnload;
+	}
+
 	handleMessage(message: WorkerMessage, port: MessagePort) {
 		const { type, tabId, data } = message;
 
@@ -281,27 +324,58 @@ class PlaylistWorkerManager {
 				// Restore playlist with serializable file objects when files become available
 				if (this.state.currentPlaylist.length > 0 && data.files) {
 					const fileMap = new Map(data.files.map((f: any) => [f.id, f]));
-					const restoredPlaylist = this.state.currentPlaylist
-						.map((playlistItem) => fileMap.get(playlistItem.id))
-						.filter(Boolean);
 
-					if (restoredPlaylist.length > 0) {
-						this.state.currentPlaylist = restoredPlaylist as AudioFile[];
-						// Update current index to match the restored playlist
-						this.state.currentIndex = this.state.currentPlaylist.findIndex(
-							(f) => f.id === this.state.currentFileId
-						);
+					const restoredPlaylist = this.state.currentPlaylist.map((playlistItem) => {
+						const fullFile = fileMap.get(playlistItem.id);
+						return fullFile || playlistItem; // Keep original if not found
+					});
 
-						// Broadcast updated state
+					this.state.currentPlaylist = restoredPlaylist as AudioFile[];
+
+					// Update current index to match the restored playlist
+					this.state.currentIndex = this.state.currentPlaylist.findIndex(
+						(f) => f.id === this.state.currentFileId
+					);
+
+					// Broadcast updated state to trigger audio reload if needed
+					this.broadcastToTabs({
+						type: 'STATE_UPDATE',
+						data: {
+							state: this.state,
+							activeAudioTabId: this.activeAudioTabId
+						}
+					});
+
+					// If we have a current file and it now has a URL, trigger a retry
+					const currentFile = this.state.currentPlaylist.find(
+						(f) => f.id === this.state.currentFileId
+					);
+					if (currentFile && currentFile.url && this.state.isPlaying) {
 						this.broadcastToTabs({
-							type: 'STATE_UPDATE',
-							data: {
-								state: this.state,
-								activeAudioTabId: this.activeAudioTabId
-							}
+							type: 'RETRY_AUDIO',
+							data: { fileId: this.state.currentFileId }
 						});
 					}
 				}
+				break;
+
+			case 'REQUEST_FILE_RELOAD':
+				// Request specific files to be loaded lazily and unload others
+				const reloadFileIds = this.getFilesToLoad();
+				const unloadFileIds = this.getFilesToUnload();
+
+				// Request unloading first, then loading
+				if (unloadFileIds.length > 0) {
+					this.broadcastToTabs({
+						type: 'UNLOAD_FILES',
+						data: { fileIds: unloadFileIds }
+					});
+				}
+
+				this.broadcastToTabs({
+					type: 'REQUEST_SPECIFIC_FILES',
+					data: { fileIds: reloadFileIds }
+				});
 				break;
 
 			// Playlist management
@@ -312,6 +386,23 @@ class PlaylistWorkerManager {
 					this.state.currentFileId = data.files[data.startIndex].id;
 					this.state.currentTime = 0; // Start new file from beginning
 				}
+
+				// Unload old files and load new ones
+				const replaceFileIds = this.getFilesToLoad();
+				const replaceUnloadFileIds = this.getFilesToUnload();
+
+				if (replaceUnloadFileIds.length > 0) {
+					this.broadcastToTabs({
+						type: 'UNLOAD_FILES',
+						data: { fileIds: replaceUnloadFileIds }
+					});
+				}
+
+				this.broadcastToTabs({
+					type: 'REQUEST_SPECIFIC_FILES',
+					data: { fileIds: replaceFileIds }
+				});
+
 				this.saveState();
 				this.broadcastToTabs({
 					type: 'STATE_UPDATE',
@@ -393,6 +484,13 @@ class PlaylistWorkerManager {
 				this.state.currentIndex = 0;
 				this.state.currentTime = 0; // Start new file from beginning
 				this.state.isPlaying = true;
+
+				// Request loading of the file
+				this.broadcastToTabs({
+					type: 'REQUEST_SPECIFIC_FILES',
+					data: { fileIds: [data.file.id] }
+				});
+
 				this.saveState();
 				this.broadcastToTabs({
 					type: 'STATE_UPDATE',
@@ -425,6 +523,23 @@ class PlaylistWorkerManager {
 					this.state.currentFileId = this.state.currentPlaylist[0].id;
 					this.state.currentTime = 0; // Start new file from beginning
 				}
+
+				// Unload old files and load new current file and next file
+				const nextFileIds = this.getFilesToLoad();
+				const unloadNextFileIds = this.getFilesToUnload();
+
+				if (unloadNextFileIds.length > 0) {
+					this.broadcastToTabs({
+						type: 'UNLOAD_FILES',
+						data: { fileIds: unloadNextFileIds }
+					});
+				}
+
+				this.broadcastToTabs({
+					type: 'REQUEST_SPECIFIC_FILES',
+					data: { fileIds: nextFileIds }
+				});
+
 				this.saveState();
 				this.broadcastToTabs({
 					type: 'STATE_UPDATE',
@@ -445,6 +560,23 @@ class PlaylistWorkerManager {
 					this.state.currentFileId = this.state.currentPlaylist[this.state.currentIndex].id;
 					this.state.currentTime = 0; // Start new file from beginning
 				}
+
+				// Unload old files and load new current file and next file
+				const prevFileIds = this.getFilesToLoad();
+				const unloadPrevFileIds = this.getFilesToUnload();
+
+				if (unloadPrevFileIds.length > 0) {
+					this.broadcastToTabs({
+						type: 'UNLOAD_FILES',
+						data: { fileIds: unloadPrevFileIds }
+					});
+				}
+
+				this.broadcastToTabs({
+					type: 'REQUEST_SPECIFIC_FILES',
+					data: { fileIds: prevFileIds }
+				});
+
 				this.saveState();
 				this.broadcastToTabs({
 					type: 'STATE_UPDATE',

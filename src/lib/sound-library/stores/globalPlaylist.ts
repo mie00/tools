@@ -1,9 +1,10 @@
 import { writable } from 'svelte/store';
+import { SoundLibraryStorage } from '../utils/storage';
 
 export interface AudioFile {
 	id: string;
 	name: string;
-	file: File;
+	file: File | null;
 	url: string;
 	tags: string[];
 	folderId: string;
@@ -55,6 +56,12 @@ function createGlobalPlaylistStore() {
 	let port: MessagePort | null = null;
 	let tabId: string = crypto.randomUUID();
 	let files: AudioFile[] = [];
+	let fileReloadTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Standalone file loader that works even if SoundLibrary component isn't mounted
+	async function loadSpecificFilesFromStorage(fileIds: string[]): Promise<AudioFile[]> {
+		return await SoundLibraryStorage.loadSpecificFiles(fileIds);
+	}
 
 	// Initialize SharedWorker connection
 	function initWorker() {
@@ -105,9 +112,21 @@ function createGlobalPlaylistStore() {
 					// Reconstruct full AudioFile objects with File references if needed
 					if (data.state.currentPlaylist && files.length > 0) {
 						const fileMap = new Map(files.map((f) => [f.id, f]));
-						newState.currentPlaylist = data.state.currentPlaylist
-							.map((playlistItem: any) => fileMap.get(playlistItem.id))
-							.filter(Boolean) as AudioFile[];
+						newState.currentPlaylist = data.state.currentPlaylist.map((playlistItem: any) => {
+							const fullFile = fileMap.get(playlistItem.id);
+							if (fullFile) {
+								return fullFile;
+							} else {
+								// Keep the serialized version if we don't have the full file yet
+								console.warn(
+									`File ${playlistItem.id} not found in loaded files, using serialized version`
+								);
+								return playlistItem;
+							}
+						}) as AudioFile[];
+					} else if (data.state.currentPlaylist) {
+						// If files aren't loaded yet, keep the serialized playlist
+						newState.currentPlaylist = data.state.currentPlaylist;
 					}
 
 					// Handle audio management
@@ -135,9 +154,21 @@ function createGlobalPlaylistStore() {
 					// Reconstruct full AudioFile objects with File references if needed
 					if (data.state.currentPlaylist && files.length > 0) {
 						const fileMap = new Map(files.map((f) => [f.id, f]));
-						startState.currentPlaylist = data.state.currentPlaylist
-							.map((playlistItem: any) => fileMap.get(playlistItem.id))
-							.filter(Boolean) as AudioFile[];
+						startState.currentPlaylist = data.state.currentPlaylist.map((playlistItem: any) => {
+							const fullFile = fileMap.get(playlistItem.id);
+							if (fullFile) {
+								return fullFile;
+							} else {
+								// Keep the serialized version if we don't have the full file yet
+								console.warn(
+									`File ${playlistItem.id} not found in loaded files, using serialized version`
+								);
+								return playlistItem;
+							}
+						}) as AudioFile[];
+					} else if (data.state.currentPlaylist) {
+						// If files aren't loaded yet, keep the serialized playlist
+						startState.currentPlaylist = data.state.currentPlaylist;
 					}
 
 					handleAudioForActiveTab(startState);
@@ -221,6 +252,90 @@ function createGlobalPlaylistStore() {
 				case 'REQUEST_ACTIVE_TAB_ACK':
 					return state;
 
+				case 'RETRY_AUDIO':
+					// Retry audio playback after files have been loaded
+					if (state.isActiveAudioTab && data?.fileId === state.currentFileId) {
+						// Force a new attempt to handle audio
+						handleAudioForActiveTab(state);
+					}
+					return state;
+
+				case 'UNLOAD_FILES':
+					// Unload specific files to free memory
+					const fileIdsToUnload = data.fileIds || [];
+					if (fileIdsToUnload.length > 0) {
+						SoundLibraryStorage.unloadFiles(files, fileIdsToUnload);
+
+						// Log current loaded file count
+						const loadedCount = files.filter((f) => f.file && f.url).length;
+						console.log(`💾  Current loaded files in memory: ${loadedCount}/${files.length}`);
+					}
+					return state;
+
+				case 'REQUEST_SPECIFIC_FILES':
+					// Debounce specific file requests to prevent spam
+					if (fileReloadTimeout) {
+						clearTimeout(fileReloadTimeout);
+					}
+
+					fileReloadTimeout = setTimeout(async () => {
+						const requestedFileIds = data.fileIds || [];
+						if (requestedFileIds.length === 0) return;
+
+						// Check which files we already have loaded
+						const loadedFileIds = new Set(files.filter((f) => f.file && f.url).map((f) => f.id));
+						const filesToLoad = requestedFileIds.filter((id: string) => !loadedFileIds.has(id));
+
+						console.log(
+							`📊  File loading stats: ${loadedFileIds.size} already loaded, ${filesToLoad.length} need loading`
+						);
+
+						if (filesToLoad.length > 0) {
+							try {
+								// Load specific files from storage
+								const newlyLoadedFiles = await loadSpecificFilesFromStorage(filesToLoad);
+
+								// Update our local files array with newly loaded files
+								for (const newFile of newlyLoadedFiles) {
+									const existingIndex = files.findIndex((f) => f.id === newFile.id);
+									if (existingIndex >= 0) {
+										files[existingIndex] = newFile; // Replace with loaded version
+									} else {
+										files.push(newFile); // Add new file
+									}
+								}
+
+								// Log updated count
+								const newLoadedCount = files.filter((f) => f.file && f.url).length;
+								console.log(`💾  Updated loaded files count: ${newLoadedCount}/${files.length}`);
+							} catch (error) {
+								console.error('Failed to load specific files from storage:', error);
+							}
+						}
+
+						// Dispatch event to request file data from sound library component (if mounted)
+						const event = new CustomEvent('file-data-request', {
+							detail: { fileIds: requestedFileIds }
+						});
+						window.dispatchEvent(event);
+
+						// Send requested files to worker (including any we loaded or already had)
+						const requestedFiles = files.filter((f) => requestedFileIds.includes(f.id));
+						if (requestedFiles.length > 0) {
+							const serializableFiles = requestedFiles.map((file) => ({
+								id: file.id,
+								name: file.name,
+								url: file.url,
+								tags: [...file.tags],
+								folderId: file.folderId,
+								metadata: { ...file.metadata }
+							}));
+							sendToWorker('FILES_AVAILABLE', { files: serializableFiles });
+						}
+					}, 100); // 100ms debounce
+
+					return state;
+
 				default:
 					return state;
 			}
@@ -231,16 +346,60 @@ function createGlobalPlaylistStore() {
 		if (!state.currentFileId || !state.isActiveAudioTab) return;
 
 		const currentFile = state.currentPlaylist.find((f) => f.id === state.currentFileId);
-		if (!currentFile) return;
+		if (!currentFile) {
+			console.error('Cannot play file: File not found in playlist');
+			return;
+		}
+
+		// If we don't have a URL but have the file object, create one
+		if (!currentFile.url && currentFile.file) {
+			try {
+				currentFile.url = URL.createObjectURL(currentFile.file);
+			} catch (error) {
+				console.error(`Failed to create blob URL for ${currentFile.name}:`, error);
+				return;
+			}
+		}
+
+		// If we still don't have a URL, request files to be loaded
+		if (!currentFile.url) {
+			console.error(
+				`Cannot play file ${currentFile.name}: No valid file or URL found. Files may not be loaded yet.`
+			);
+			// Request files to be loaded with debouncing to prevent spam
+			sendToWorker('REQUEST_FILE_RELOAD', { fileId: currentFile.id });
+			return;
+		}
 
 		// Clean up old audio
 		if (state.currentAudio) {
 			cleanupAudio(state.currentAudio);
 		}
 
-		// Create new audio element
-		const audio = new Audio(currentFile.url);
+		// Create new audio element with error handling for blob URLs
+		const audio = new Audio();
 		audio.volume = state.volume;
+
+		// Add error handling for blob URL issues with retry limit
+		let retryCount = 0;
+		const maxRetries = 1;
+
+		audio.addEventListener('error', (e) => {
+			if (retryCount < maxRetries && currentFile.file) {
+				retryCount++;
+				try {
+					URL.revokeObjectURL(currentFile.url);
+					currentFile.url = URL.createObjectURL(currentFile.file);
+					audio.src = currentFile.url;
+					audio.load();
+				} catch (recreateError) {
+					console.error(`Failed to recreate blob URL for ${currentFile.name}:`, recreateError);
+				}
+			}
+		});
+
+		// Set the source after error handlers are in place
+		audio.src = currentFile.url;
 
 		// Set up current time restoration for resuming playback
 		if (state.currentTime > 0) {
@@ -431,17 +590,22 @@ function createGlobalPlaylistStore() {
 
 		// State management
 		loadPlaybackState: async (loadedFiles: AudioFile[]) => {
+			// Store metadata for all files, but only send loaded files with data to worker
 			files = loadedFiles;
-			// Send serializable file data to worker so it can restore playlist
-			const serializableFiles = loadedFiles.map((file) => ({
-				id: file.id,
-				name: file.name,
-				url: file.url,
-				tags: [...file.tags],
-				folderId: file.folderId,
-				metadata: { ...file.metadata }
-			}));
-			sendToWorker('FILES_AVAILABLE', { files: serializableFiles });
+
+			// Only send files that have actual file data to the worker
+			const filesWithData = loadedFiles.filter((f) => f.file && f.url);
+			if (filesWithData.length > 0) {
+				const serializableFiles = filesWithData.map((file) => ({
+					id: file.id,
+					name: file.name,
+					url: file.url,
+					tags: [...file.tags],
+					folderId: file.folderId,
+					metadata: { ...file.metadata }
+				}));
+				sendToWorker('FILES_AVAILABLE', { files: serializableFiles });
+			}
 			update((state) => ({ ...state, playbackStateLoaded: true }));
 		},
 

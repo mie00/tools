@@ -2,6 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import T from '../T.svelte';
 	import { globalPlaylistStore, type AudioFile } from './stores/globalPlaylist';
+	import { SoundLibraryStorage } from './utils/storage';
 
 	interface Folder {
 		id: string;
@@ -57,6 +58,31 @@
 			});
 		}
 		return result;
+	}
+
+	// Helper function to validate and repair blob URLs
+	function validateAndRepairBlobUrl(audioFile: AudioFile): boolean {
+		if (!audioFile.url || !audioFile.file) {
+			return false;
+		}
+
+		// Check if URL looks like a valid blob URL
+		if (!audioFile.url.startsWith('blob:')) {
+			// Try to recreate from the file if we have one
+			if (audioFile.file) {
+				try {
+					audioFile.url = URL.createObjectURL(audioFile.file);
+					return true;
+				} catch (recreateError) {
+					console.error(`Failed to create blob URL for ${audioFile.name}:`, recreateError);
+					return false;
+				}
+			}
+			return false;
+		}
+
+		// If we have a blob URL, assume it's valid to avoid excessive testing
+		return true;
 	}
 
 	// getFilesFromFolder removed - drag and drop to playlist now handled by global component
@@ -132,17 +158,37 @@
 		});
 	});
 
+	// Note: File updates to global playlist are now handled only when needed
+	// to prevent excessive blob URL recreation
+
 	// Playlist management functions - now using global store
 	function playFile(file: AudioFile) {
-		globalPlaylistStore.playFile(file);
+		// Validate blob URL before playing
+		if (validateAndRepairBlobUrl(file)) {
+			globalPlaylistStore.playFile(file);
+		} else {
+			console.error(`Cannot play file ${file.name}: Invalid blob URL and unable to repair`);
+		}
 	}
 
 	function playAllFiltered() {
-		globalPlaylistStore.replacePlaylist(filteredFiles, 0);
+		// Validate all file URLs before playing
+		const validFiles = filteredFiles.filter((file) => validateAndRepairBlobUrl(file));
+		if (validFiles.length > 0) {
+			globalPlaylistStore.replacePlaylist(validFiles, 0);
+		} else {
+			console.error('No valid files to play');
+		}
 	}
 
 	function addAllFilteredToPlaylist() {
-		globalPlaylistStore.addToPlaylist(filteredFiles);
+		// Validate all file URLs before adding to playlist
+		const validFiles = filteredFiles.filter((file) => validateAndRepairBlobUrl(file));
+		if (validFiles.length > 0) {
+			globalPlaylistStore.addToPlaylist(validFiles);
+		} else {
+			console.error('No valid files to add to playlist');
+		}
 	}
 
 	// Audio functions - now handled by global store
@@ -170,13 +216,39 @@
 					}
 				};
 
-				// Get duration from audio
-				const audio = new Audio(audioFile.url);
+				// Get duration from audio with error handling
+				const audio = new Audio();
 				audio.addEventListener('loadedmetadata', async () => {
 					audioFile.metadata.duration = audio.duration;
 					files = [...files];
 					await saveToStorage();
 				});
+
+				// Add error handling for blob URL issues during initial processing
+				let newFileRetryCount = 0;
+				audio.addEventListener('error', (e) => {
+					if (newFileRetryCount < 1) {
+						newFileRetryCount++;
+						console.warn(`Failed to load metadata for new file ${audioFile.name}:`, e);
+						// Try to recreate the blob URL once
+						try {
+							URL.revokeObjectURL(audioFile.url);
+							audioFile.url = URL.createObjectURL(file);
+							audio.src = audioFile.url;
+							audio.load();
+						} catch (recreateError) {
+							console.error(
+								`Failed to recreate blob URL for new file ${audioFile.name}:`,
+								recreateError
+							);
+						}
+					} else {
+						console.error(`Max retries reached for new file ${audioFile.name}`);
+					}
+				});
+
+				// Set source after error handlers
+				audio.src = audioFile.url;
 
 				files = [...files, audioFile];
 				newAudioFiles.push(audioFile);
@@ -504,167 +576,32 @@
 
 	// Storage
 	async function saveToStorage(filesToSave?: AudioFile[]) {
-		try {
-			// Check if OPFS is supported
-			if (!navigator.storage?.getDirectory) {
-				console.warn('OPFS not supported, falling back to localStorage metadata only');
-				saveToLocalStorageOnly();
-				return;
-			}
-
-			const opfsRoot = await navigator.storage.getDirectory();
-
-			// Create soundLibrary directory if it doesn't exist
-			const soundLibraryDir = await opfsRoot.getDirectoryHandle('soundLibrary', { create: true });
-
-			// Save files with actual File objects
-			const targetFiles = filesToSave || files;
-			for (const file of targetFiles) {
-				if (file.file) {
-					try {
-						const fileHandle = await soundLibraryDir.getFileHandle(`${file.id}.audio`, {
-							create: true
-						});
-						const writable = await fileHandle.createWritable();
-						await writable.write(file.file);
-						await writable.close();
-					} catch (error) {
-						console.error(`Failed to save file ${file.id}:`, error);
-					}
-				}
-			}
-
-			// Save metadata to OPFS as well
-			const metadataHandle = await soundLibraryDir.getFileHandle('metadata.json', { create: true });
-			const metadataWritable = await metadataHandle.createWritable();
-			const metadata = {
-				files: files.map((f) => ({
-					...f,
-					file: null, // Don't duplicate file in metadata
-					url: null // URLs will be recreated
-				})),
-				folders
-			};
-			await metadataWritable.write(JSON.stringify(metadata));
-			await metadataWritable.close();
-
-			// Also save to localStorage as fallback
-			saveToLocalStorageOnly();
-		} catch (error) {
-			console.error('Failed to save to OPFS:', error);
-			// Fallback to localStorage
-			saveToLocalStorageOnly();
-		}
-	}
-
-	function saveToLocalStorageOnly() {
-		try {
-			localStorage.setItem(
-				'soundLibrary_files',
-				JSON.stringify(
-					files.map((f) => ({
-						...f,
-						file: null, // Don't store File objects
-						url: null // Don't store URLs
-					}))
-				)
-			);
-			localStorage.setItem('soundLibrary_folders', JSON.stringify(folders));
-		} catch (error) {
-			console.error('Failed to save to localStorage:', error);
-		}
+		await SoundLibraryStorage.saveFiles(files, folders, filesToSave);
 	}
 
 	async function loadFromStorage() {
-		try {
-			// Check if OPFS is supported
-			if (!navigator.storage?.getDirectory) {
-				console.warn('OPFS not supported, loading from localStorage only');
-				loadFromLocalStorageOnly();
-				return;
-			}
-
-			const opfsRoot = await navigator.storage.getDirectory();
-
-			try {
-				const soundLibraryDir = await opfsRoot.getDirectoryHandle('soundLibrary');
-
-				// Load metadata
-				const metadataHandle = await soundLibraryDir.getFileHandle('metadata.json');
-				const metadataFile = await metadataHandle.getFile();
-				const metadataText = await metadataFile.text();
-				const metadata = JSON.parse(metadataText);
-
-				if (metadata.folders) {
-					folders = metadata.folders;
-				}
-
-				// Load files with actual File objects
-				const restoredFiles: AudioFile[] = [];
-
-				for (const fileMetadata of metadata.files || []) {
-					try {
-						const fileHandle = await soundLibraryDir.getFileHandle(`${fileMetadata.id}.audio`);
-						const file = await fileHandle.getFile();
-
-						const audioFile: AudioFile = {
-							...fileMetadata,
-							file,
-							url: URL.createObjectURL(file)
-						};
-
-						// Re-extract duration from the restored audio file
-						const audio = new Audio(audioFile.url);
-						audio.addEventListener('loadedmetadata', () => {
-							audioFile.metadata.duration = audio.duration;
-							files = [...files]; // Trigger reactivity
-						});
-
-						restoredFiles.push(audioFile);
-					} catch (fileError) {
-						console.warn(`Failed to restore file ${fileMetadata.id}:`, fileError);
-						// Keep the metadata even if file is missing
-						restoredFiles.push({
-							...fileMetadata,
-							file: null,
-							url: ''
-						});
-					}
-				}
-
-				files = restoredFiles;
-			} catch (_dirError) {
-				console.warn('No soundLibrary directory found in OPFS, loading from localStorage');
-				loadFromLocalStorageOnly();
-			}
-		} catch (error) {
-			console.error('Failed to load from OPFS:', error);
-			// Fallback to localStorage
-			loadFromLocalStorageOnly();
-		}
+		// Load metadata only for lazy loading
+		const { files: loadedFiles, folders: loadedFolders } = await SoundLibraryStorage.loadMetadata();
+		files = loadedFiles;
+		folders = loadedFolders;
 	}
 
-	function loadFromLocalStorageOnly() {
-		try {
-			const savedFiles = localStorage.getItem('soundLibrary_files');
-			const savedFolders = localStorage.getItem('soundLibrary_folders');
+	async function loadSpecificFiles(fileIds: string[]) {
+		if (fileIds.length === 0) return;
 
-			if (savedFolders) {
-				folders = JSON.parse(savedFolders);
-			}
+		// Load specific files with actual data
+		const loadedFiles = await SoundLibraryStorage.loadSpecificFiles(fileIds);
 
-			if (savedFiles) {
-				const fileMetadata = JSON.parse(savedFiles);
-				// Can't restore actual File objects from localStorage, only metadata
-				files = fileMetadata.map((f: any) => ({
-					...f,
-					file: null,
-					url: ''
-				}));
+		// Update our files array with loaded data
+		for (const loadedFile of loadedFiles) {
+			const index = files.findIndex((f) => f.id === loadedFile.id);
+			if (index >= 0) {
+				files[index] = loadedFile;
 			}
-		} catch (error) {
-			console.error('Failed to load from localStorage:', error);
 		}
+
+		// Trigger reactivity
+		files = [...files];
 	}
 
 	// Storage
@@ -698,6 +635,34 @@
 			}
 		};
 
+		// Listen for file data requests from the global playlist
+		const handleFileDataRequest = async (event: Event) => {
+			const customEvent = event as CustomEvent;
+			const requestedFileIds = customEvent.detail?.fileIds || [];
+
+			if (files.length === 0) {
+				try {
+					await loadFromStorage();
+				} catch (error) {
+					console.error('Failed to load files from storage:', error);
+				}
+			}
+
+			// Load specific files if requested
+			if (requestedFileIds.length > 0) {
+				try {
+					await loadSpecificFiles(requestedFileIds);
+				} catch (error) {
+					console.error('Failed to load specific files:', error);
+				}
+			}
+
+			// Send current file data to the global playlist store
+			if (files.length > 0) {
+				globalPlaylistStore.loadPlaybackState(files);
+			}
+		};
+
 		// Add interaction listeners to request active tab status
 		const handleUserInteraction = () => {
 			globalPlaylistStore.requestActiveTab();
@@ -721,6 +686,7 @@
 		};
 
 		window.addEventListener('playlist-drop-request', handlePlaylistDropRequest);
+		window.addEventListener('file-data-request', handleFileDataRequest);
 		document.addEventListener('click', clickHandler);
 		document.addEventListener('keydown', keyHandler);
 
@@ -739,6 +705,7 @@
 
 			// Clean up event listeners
 			window.removeEventListener('playlist-drop-request', handlePlaylistDropRequest);
+			window.removeEventListener('file-data-request', handleFileDataRequest);
 			document.removeEventListener('click', clickHandler);
 			document.removeEventListener('keydown', keyHandler);
 		};
