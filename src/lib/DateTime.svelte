@@ -283,14 +283,11 @@
 		return city ? city.name : timezone.split('/').pop()?.replace(/_/g, ' ') || timezone;
 	}
 
-
 	function removeCity(timezone: string) {
 		selectedCities = selectedCities.filter((tz) => tz !== timezone);
 		// Save to localStorage
 		localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
 	}
-
-
 
 	function setMode(mode: TimeMode) {
 		timeMode = mode;

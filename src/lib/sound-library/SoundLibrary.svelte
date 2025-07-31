@@ -166,7 +166,7 @@
 		if (!file.file) {
 			await loadSpecificFiles([file.id]);
 			// Get the updated file from our files array
-			const updatedFile = files.find(f => f.id === file.id);
+			const updatedFile = files.find((f) => f.id === file.id);
 			if (updatedFile) {
 				return updatedFile;
 			}
@@ -176,13 +176,13 @@
 
 	// Helper function to ensure multiple files are loaded
 	async function ensureFilesLoaded(filesToCheck: AudioFile[]): Promise<AudioFile[]> {
-		const filesToLoad = filesToCheck.filter(file => !file.file).map(file => file.id);
+		const filesToLoad = filesToCheck.filter((file) => !file.file).map((file) => file.id);
 		if (filesToLoad.length > 0) {
 			await loadSpecificFiles(filesToLoad);
 		}
 		// Return updated files from our files array
-		return filesToCheck.map(file => {
-			const updatedFile = files.find(f => f.id === file.id);
+		return filesToCheck.map((file) => {
+			const updatedFile = files.find((f) => f.id === file.id);
 			return updatedFile || file;
 		});
 	}
