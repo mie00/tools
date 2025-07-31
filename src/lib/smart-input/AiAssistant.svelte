@@ -5,6 +5,10 @@
 	import { llmState, persistentLlmState, persistentConfig } from '../ollama/store';
 	import MarkdownRenderer from '../MarkdownRenderer.svelte';
 	import T from '../T.svelte';
+	import { StorageFactory } from '../storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	const { inputText = '', suggestions = [] } = $props<{
 		inputText?: string;
@@ -58,17 +62,16 @@
 	});
 
 	// Enhance onMount to load config and check WebGPU support
-	onMount(() => {
-		// NEW: Load saved config from localStorage and detect WebGPU support
+	onMount(async () => {
+		// NEW: Load saved config from storage API and detect WebGPU support
 		if (browser) {
-			const savedConfig = localStorage.getItem('ollamaChatConfig');
-			if (savedConfig) {
-				try {
-					const parsedConfig = JSON.parse(savedConfig);
-					persistentConfig.set(parsedConfig);
-				} catch (e) {
-					console.error('Failed to parse saved config:', e);
+			try {
+				const savedConfig = await uiSettingsStorage.getAiAssistantConfig();
+				if (savedConfig) {
+					persistentConfig.set(savedConfig);
 				}
+			} catch (e) {
+				console.error('Failed to load saved config:', e);
 			}
 
 			// Check WebGPU support and update config

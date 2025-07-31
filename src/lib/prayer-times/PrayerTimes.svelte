@@ -9,6 +9,10 @@
 	import EditProfileForm from './EditProfileForm.svelte';
 	import PrayerTimesDisplay from './PrayerTimesDisplay.svelte';
 	import T from '../T.svelte';
+	import { StorageFactory, type PrayerProfile } from '../storage-api';
+
+	// Initialize storage
+	const prayerStorage = StorageFactory.createPrayerProfileStorage();
 
 	let profiles: Profile[] | undefined = $state();
 	let showCreateForm = $state(false);
@@ -351,7 +355,7 @@
 							console.log('Found duplicate profile:', existingProfile.name);
 							// Switch to existing profile instead of showing save dialog
 							profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
-							saveProfiles();
+							await saveAllProfiles();
 
 							// Show message about switching to existing profile
 							duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}"`;
@@ -378,7 +382,7 @@
 						const existingProfile = findDuplicateProfile(tempConfig);
 						if (existingProfile) {
 							profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
-							saveProfiles();
+							await saveAllProfiles();
 
 							duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}" (Mawaqit data couldn't be loaded)`;
 							showDuplicateMessage = true;
@@ -405,7 +409,7 @@
 						console.log('Found duplicate calculated profile:', existingProfile.name);
 						// Switch to existing profile instead of showing save dialog
 						profiles = profiles?.map((p) => ({ ...p, isActive: p.id === existingProfile.id }));
-						saveProfiles();
+						await saveAllProfiles();
 
 						duplicateFoundMessage = `Switched to existing profile: "${existingProfile.name}"`;
 						showDuplicateMessage = true;
@@ -447,7 +451,7 @@
 		}
 	}
 
-	function saveSharedConfig() {
+	async function saveSharedConfig() {
 		if (sharedConfig) {
 			const newProfile: Profile = {
 				...sharedConfig,
@@ -462,7 +466,7 @@
 			}
 
 			profiles = [...(profiles || []), newProfile];
-			saveProfiles();
+			await saveAllProfiles();
 			calculateAllPrayerTimes();
 
 			// Clear shared config
@@ -499,30 +503,72 @@
 		}
 	}
 
-	function loadProfiles() {
+	async function loadProfiles() {
 		try {
-			const stored = localStorage.getItem('prayerProfiles');
-			if (stored) {
-				const loadedProfiles: Profile[] = JSON.parse(stored);
-				if (loadedProfiles.length > 0) {
-					const hasActiveProfile = loadedProfiles.some((p) => p.isActive);
-					if (!hasActiveProfile) {
-						// Ensure there's always an active profile if profiles exist
-						loadedProfiles[0].isActive = true;
-					}
+			const storedProfiles = await prayerStorage.list();
+			const loadedProfiles: Profile[] = storedProfiles.map((profile: any) => ({
+				id: profile.id,
+				name: profile.name,
+				latitude: profile.latitude,
+				longitude: profile.longitude,
+				calculationMethod: profile.calculationMethod,
+				timezone: profile.timezone,
+				madhab: profile.madhab,
+				highLatitudeRule: profile.highLatitudeRule,
+				adjustments: profile.adjustments,
+				isActive: profile.isActive,
+				profileType: profile.profileType || 'calculated',
+				mawaqitConfig: profile.mawaqitConfig
+			}));
+
+			if (loadedProfiles.length > 0) {
+				const hasActiveProfile = loadedProfiles.some((p) => p.isActive);
+				if (!hasActiveProfile) {
+					// Ensure there's always an active profile if profiles exist
+					loadedProfiles[0].isActive = true;
+					await updateProfile(loadedProfiles[0]);
 				}
-				profiles = loadedProfiles;
-			} else {
-				profiles = [];
 			}
+			profiles = loadedProfiles;
 		} catch (error) {
 			console.error('Error loading profiles:', error);
+			profiles = [];
 		}
 	}
 
-	function saveProfiles() {
+	async function saveProfile(profile: Profile) {
 		try {
-			localStorage.setItem('prayerProfiles', JSON.stringify(profiles));
+			const prayerProfile: PrayerProfile = {
+				name: profile.name,
+				latitude: profile.latitude,
+				longitude: profile.longitude,
+				calculationMethod: profile.calculationMethod,
+				timezone: profile.timezone,
+				madhab: profile.madhab,
+				highLatitudeRule: profile.highLatitudeRule,
+				adjustments: profile.adjustments,
+				isActive: profile.isActive,
+				profileType: profile.profileType || 'calculated',
+				mawaqitConfig: profile.mawaqitConfig
+			};
+
+			await prayerStorage.set(profile.id, prayerProfile);
+		} catch (error) {
+			console.error('Error saving profile:', error);
+		}
+	}
+
+	async function updateProfile(profile: Profile) {
+		await saveProfile(profile);
+	}
+
+	async function saveAllProfiles() {
+		if (!profiles) return;
+
+		try {
+			for (const profile of profiles) {
+				await saveProfile(profile);
+			}
 		} catch (error) {
 			console.error('Error saving profiles:', error);
 		}
@@ -542,44 +588,51 @@
 		profilePrayerTimes = newMap; // Trigger reactivity with a new reference
 	}
 
-	function handleCreateProfile(event: CustomEvent) {
+	async function handleCreateProfile(event: CustomEvent) {
 		const newProfile = event.detail;
 		profiles = [...(profiles || []), newProfile];
-		saveProfiles();
+		await saveAllProfiles();
 		calculateAllPrayerTimes();
 		showCreateForm = false;
 	}
 
-	function handleActivateProfile(event: CustomEvent<Profile>) {
+	async function handleActivateProfile(event: CustomEvent<Profile>) {
 		const profile = event.detail;
 		profiles = profiles?.map((p) => ({ ...p, isActive: p.id === profile.id }));
-		saveProfiles();
+		await saveAllProfiles();
 	}
 
 	function handleEditProfile(event: CustomEvent<Profile>) {
 		editingProfile = event.detail;
 	}
 
-	function handleSaveEditedProfile(event: CustomEvent<Profile>) {
+	async function handleSaveEditedProfile(event: CustomEvent<Profile>) {
 		const updatedProfile = event.detail;
 		profiles = profiles?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
-		saveProfiles();
+		await saveAllProfiles();
 		calculateAllPrayerTimes();
 		editingProfile = null;
 	}
 
-	function handleDeleteProfile(event: CustomEvent<string>) {
+	async function handleDeleteProfile(event: CustomEvent<string>) {
 		const profileId = event.detail;
 		const wasActive = profiles?.find((p) => p.id === profileId)?.isActive;
+
+		// Delete from storage
+		try {
+			await prayerStorage.delete(profileId);
+		} catch (error) {
+			console.error('Error deleting profile from storage:', error);
+		}
 
 		profiles = profiles?.filter((p) => p.id !== profileId);
 
 		// If we deleted the active profile, make the first remaining profile active
 		if (wasActive && profiles && profiles.length > 0) {
 			profiles[0].isActive = true;
+			await updateProfile(profiles[0]);
 		}
 
-		saveProfiles();
 		calculateAllPrayerTimes();
 	}
 

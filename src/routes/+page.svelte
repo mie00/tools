@@ -4,6 +4,10 @@
 	import SmartInputSuggestions from '$lib/SmartInputSuggestions.svelte';
 	import { translationStore, supportedLanguages, type Language } from '$lib/translation';
 	import { T } from '$lib';
+	import { StorageFactory } from '$lib/storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	let _selectedTool: string | null = $state(null);
 	let draggedIndex: number | null = $state(null);
@@ -198,7 +202,7 @@
 		draggedOverIndex = null;
 	}
 
-	function handleDrop(event: DragEvent, dropIndex: number) {
+	async function handleDrop(event: DragEvent, dropIndex: number) {
 		event.preventDefault();
 
 		if (draggedIndex !== null && draggedIndex !== dropIndex) {
@@ -208,8 +212,8 @@
 			newTools.splice(dropIndex, 0, draggedTool);
 			tools = newTools;
 
-			// Save to localStorage
-			localStorage.setItem('tools-order', JSON.stringify(tools.map((t) => t.id)));
+			// Save to storage API
+			await uiSettingsStorage.setToolsOrder(tools.map((t) => t.id));
 		}
 
 		// Clean up drag preview
@@ -255,27 +259,29 @@
 		}
 	}
 
-	// Load saved order from localStorage on mount
+	// Load saved order from storage API on mount
 	onMount(() => {
 		// Update current language (initialization handled in layout)
 		updateCurrentLanguage();
 
-		const savedOrder = localStorage.getItem('tools-order');
-		if (savedOrder) {
-			try {
-				const savedIds = JSON.parse(savedOrder);
-				const savedTools = savedIds
-					.map((id: string) => tools.find((tool) => tool.id === id))
-					.filter(Boolean);
+		// Load saved tools order asynchronously
+		uiSettingsStorage
+			.getToolsOrder()
+			.then((savedIds) => {
+				if (savedIds && savedIds.length > 0) {
+					const savedTools = savedIds
+						.map((id: string) => tools.find((tool) => tool.id === id))
+						.filter((tool): tool is (typeof tools)[0] => Boolean(tool));
 
-				// Add any new tools that weren't in the saved order
-				const newTools = tools.filter((tool) => !savedIds.includes(tool.id));
+					// Add any new tools that weren't in the saved order
+					const newTools = tools.filter((tool) => !savedIds.includes(tool.id));
 
-				tools = [...savedTools, ...newTools];
-			} catch (error) {
+					tools = [...savedTools, ...newTools];
+				}
+			})
+			.catch((error) => {
 				console.error('Error loading saved tool order:', error);
-			}
-		}
+			});
 		// Initialize tools
 		tools = tools;
 

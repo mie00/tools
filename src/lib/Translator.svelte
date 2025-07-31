@@ -5,6 +5,10 @@
 
 	import { onMount } from 'svelte';
 	import T from './T.svelte';
+	import { StorageFactory } from './storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	let inputText = $state('');
 	let translatedText = $state('');
@@ -18,31 +22,22 @@
 	let isDownloading = $state(false);
 	let autoTranslateFromUrl = $state(false);
 
-	// Persistent settings
-	const STORAGE_KEY = 'translator-settings';
-
-	function saveSettings() {
+	// Persistent settings using storage API
+	async function saveSettings() {
 		if (typeof window !== 'undefined') {
 			try {
-				localStorage.setItem(
-					STORAGE_KEY,
-					JSON.stringify({
-						sourceLanguage,
-						targetLanguage
-					})
-				);
+				await uiSettingsStorage.setTranslatorSettings(sourceLanguage, targetLanguage);
 			} catch (e) {
 				console.warn('Failed to save translator settings:', e);
 			}
 		}
 	}
 
-	function loadSettings() {
+	async function loadSettings() {
 		if (typeof window !== 'undefined') {
 			try {
-				const saved = localStorage.getItem(STORAGE_KEY);
-				if (saved) {
-					const settings = JSON.parse(saved);
+				const settings = await uiSettingsStorage.getTranslatorSettings();
+				if (settings) {
 					// Validate settings before applying
 					if (
 						settings.sourceLanguage &&
@@ -123,7 +118,7 @@
 	const sourceLanguages = [{ code: 'auto', name: 'Auto Detect' }, ...supportedLanguages];
 
 	onMount(async () => {
-		loadSettings();
+		await loadSettings();
 		await checkAPIAvailability();
 		initializeSpeechSynthesis();
 		loadFromUrl(); // Load URL parameters after settings are loaded
@@ -312,7 +307,7 @@
 			translator = null;
 		}
 		// Save settings when they change
-		saveSettings();
+		saveSettings().catch((e) => console.warn('Failed to save settings:', e));
 		// Trigger translation if there's input text
 		if (inputText.trim()) {
 			debouncedTranslate();
@@ -322,7 +317,7 @@
 	// Save settings when they change
 	$effect(() => {
 		if (typeof window !== 'undefined' && sourceLanguage && targetLanguage) {
-			saveSettings();
+			saveSettings().catch((e) => console.warn('Failed to save settings:', e));
 		}
 	});
 

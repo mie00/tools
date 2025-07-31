@@ -3,14 +3,19 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import T from './T.svelte';
+	import { StorageFactory } from './storage-api';
 
 	// Type definitions
 	interface HistoryItem {
-		id: number;
+		id: string;
 		name: string;
 		expression: string;
 		result: number;
+		timestamp: string;
 	}
+
+	// Initialize storage
+	const calculatorStorage = StorageFactory.createCalculatorHistoryStorage();
 
 	let expression: string = $state('');
 	let result: string = $state('');
@@ -19,12 +24,12 @@
 	let inputElement: HTMLInputElement | undefined = $state();
 	let isError: boolean = $state(false);
 	let isMobile: boolean = $state(false);
-	let historyLoaded: boolean = $state(false);
+	let _historyLoaded: boolean = $state(false);
 
 	// Detect mobile device
-	onMount(() => {
+	onMount(async () => {
 		loadFromUrl();
-		loadHistoryFromStorage();
+		await loadHistoryFromStorage();
 		// Simple mobile detection
 		isMobile =
 			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -54,60 +59,47 @@
 		}
 	}
 
-	// History persistence
-	function loadHistoryFromStorage() {
+	// History persistence using new storage API
+	async function loadHistoryFromStorage() {
 		if (typeof window !== 'undefined') {
 			try {
-				const storedHistory = localStorage.getItem('calculator-history');
-				const storedNextId = localStorage.getItem('calculator-next-id');
-				if (storedHistory) {
-					history = JSON.parse(storedHistory);
-					// Migrate old history items that don't have id field
-					history = history.map((item, index) => {
-						if (!item.id) {
-							return { ...item, id: index + 1 };
-						}
-						return item;
-					});
-				}
-				if (storedNextId) {
-					const parsedId = parseInt(storedNextId);
-					nextHistoryId = isNaN(parsedId) ? 1 : parsedId;
+				const items = await calculatorStorage.getRecentCalculations(10000);
+				history = items.map((item: any) => ({
+					id: item.id,
+					name: item.name,
+					expression: item.expression,
+					result: item.result,
+					timestamp: item.timestamp
+				}));
+
+				// Calculate next ID for legacy naming
+				if (history.length > 0) {
+					const maxNumericId = Math.max(
+						...history.map((h) => parseInt(h.name.replace('o', '')) || 0).filter((id) => !isNaN(id))
+					);
+					nextHistoryId = maxNumericId + 1;
 				} else {
-					// Calculate next ID from existing history
-					if (history.length > 0) {
-						const maxId = Math.max(...history.map((h) => h.id || 0));
-						nextHistoryId = isNaN(maxId) ? 1 : maxId + 1;
-					} else {
-						nextHistoryId = 1;
-					}
+					nextHistoryId = 1;
 				}
 			} catch (error) {
-				console.warn('Failed to load history from localStorage:', error);
+				console.warn('Failed to load history from storage:', error);
 				history = [];
 				nextHistoryId = 1;
 			}
-			historyLoaded = true;
+			_historyLoaded = true;
 		}
 	}
 
-	function saveHistoryToStorage() {
-		if (typeof window !== 'undefined') {
-			try {
-				localStorage.setItem('calculator-history', JSON.stringify(history));
-				localStorage.setItem('calculator-next-id', nextHistoryId.toString());
-			} catch (error) {
-				console.warn('Failed to save history to localStorage:', error);
-			}
+	async function saveHistoryItem(name: string, expression: string, result: number) {
+		try {
+			const id = await calculatorStorage.addCalculation(name, expression, result);
+			return id;
+		} catch (error) {
+			console.warn('Failed to save history item:', error);
 		}
 	}
 
-	// Watch for history changes and save to localStorage
-	$effect(() => {
-		if (typeof window !== 'undefined' && history && historyLoaded && nextHistoryId) {
-			saveHistoryToStorage();
-		}
-	});
+	// No need for $effect to save history - it's handled per-item now
 
 	// Watch for expression changes and update URL - debounced to prevent infinite loops
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
@@ -163,7 +155,7 @@
 	}
 
 	// Evaluate and save to history
-	function evaluateAndSave() {
+	async function evaluateAndSave() {
 		if (!expression.trim()) {
 			result = '';
 			isError = false;
@@ -206,20 +198,30 @@
 					nextHistoryId = history.length + 1;
 				}
 
-				const historyItem: HistoryItem = {
-					id: nextHistoryId,
-					name: `o${nextHistoryId}`,
-					expression: expression.trim(),
-					result: evaluated
-				};
+				const name = `o${nextHistoryId}`;
 
 				// Avoid duplicates
 				if (history.length === 0 || history[history.length - 1].expression !== expression.trim()) {
-					history = [...history, historyItem];
-					nextHistoryId++;
-					// Keep only last 10,000 items
-					if (history.length > 10000) {
-						history = history.slice(-10000);
+					// Save to storage
+					const savedId = await saveHistoryItem(name, expression.trim(), evaluated);
+
+					if (savedId) {
+						// Add to local history
+						const historyItem: HistoryItem = {
+							id: savedId,
+							name: name,
+							expression: expression.trim(),
+							result: evaluated,
+							timestamp: new Date().toISOString()
+						};
+
+						history = [...history, historyItem];
+						nextHistoryId++;
+
+						// Keep only last 10,000 items in memory
+						if (history.length > 10000) {
+							history = history.slice(-10000);
+						}
 					}
 				}
 			}
@@ -259,8 +261,8 @@
 	// Replace references to saved calculations (o1, o2, etc) with their values
 	function replaceReferences(expr: string): string {
 		return expr.replace(/o(\d+)/g, (match, num) => {
-			const targetId = parseInt(num);
-			const item = history.find((h) => h.id === targetId);
+			const targetName = `o${num}`;
+			const item = history.find((h) => h.name === targetName);
 			if (item) {
 				return item.result.toString();
 			}
@@ -318,15 +320,26 @@
 		}
 	}
 
-	function deleteHistoryItem(name: string) {
-		history = history.filter((item) => item.name !== name);
-		saveHistoryToStorage();
+	async function deleteHistoryItem(name: string) {
+		const item = history.find((h) => h.name === name);
+		if (item) {
+			try {
+				await calculatorStorage.delete(item.id);
+				history = history.filter((h) => h.name !== name);
+			} catch (error) {
+				console.warn('Failed to delete history item:', error);
+			}
+		}
 	}
 
-	function clearAllHistory() {
-		history = [];
-		nextHistoryId = 1;
-		saveHistoryToStorage();
+	async function clearAllHistory() {
+		try {
+			await calculatorStorage.clear();
+			history = [];
+			nextHistoryId = 1;
+		} catch (error) {
+			console.warn('Failed to clear history:', error);
+		}
 	}
 </script>
 

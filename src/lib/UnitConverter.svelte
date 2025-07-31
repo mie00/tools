@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import T from './T.svelte';
+	import { StorageFactory } from './storage-api';
 
 	// Type definitions
 	interface UnitInfo {
@@ -23,7 +24,13 @@
 		output: string;
 		conversion: string;
 		timestamp: string;
+		category: string;
+		fromUnit: string;
+		toUnit: string;
 	}
+
+	// Initialize storage
+	const conversionStorage = StorageFactory.createUnitConversionHistoryStorage();
 
 	let inputValue: string = $state('1');
 	let fromUnit: string = $state('meter');
@@ -236,12 +243,22 @@
 		const fromSymbol = categories[selectedCategory].units[fromUnit].symbol;
 		const toSymbol = categories[selectedCategory].units[toUnit].symbol;
 
+		const inputStr = `${value} ${fromSymbol}`;
+		const outputStr = `${result} ${toSymbol}`;
+
+		// Save to storage and update local history
+		saveConversionToStorage(inputStr, outputStr, selectedCategory, fromUnit, toUnit);
+
+		// Update local history
 		history = [
 			{
-				input: `${value} ${fromSymbol}`,
-				output: `${result} ${toSymbol}`,
+				input: inputStr,
+				output: outputStr,
 				conversion: `${fromUnitName} → ${toUnitName}`,
-				timestamp: new Date().toLocaleTimeString()
+				timestamp: new Date().toLocaleTimeString(),
+				category: selectedCategory,
+				fromUnit: fromUnit,
+				toUnit: toUnit
 			},
 			...history.slice(0, 9) // Keep last 10 conversions
 		];
@@ -262,31 +279,44 @@
 		}
 	}
 
-	function clearHistory() {
-		history = [];
-		saveHistoryToStorage();
-	}
-
-	// Persistence functions
-	function saveHistoryToStorage() {
+	async function clearHistory() {
 		try {
-			localStorage.setItem('unitConverter_history', JSON.stringify(history));
+			await conversionStorage.clear();
+			history = [];
 		} catch (error) {
-			console.warn('Failed to save history to localStorage:', error);
+			console.warn('Failed to clear history:', error);
 		}
 	}
 
-	function loadHistoryFromStorage() {
+	// Storage functions using new API
+	async function saveConversionToStorage(
+		input: string,
+		output: string,
+		category: string,
+		fromUnit: string,
+		toUnit: string
+	) {
 		try {
-			const saved = localStorage.getItem('unitConverter_history');
-			if (saved) {
-				const parsed = JSON.parse(saved);
-				if (Array.isArray(parsed)) {
-					history = parsed;
-				}
-			}
+			await conversionStorage.addConversion(input, output, category, fromUnit, toUnit);
 		} catch (error) {
-			console.warn('Failed to load history from localStorage:', error);
+			console.warn('Failed to save conversion to storage:', error);
+		}
+	}
+
+	async function loadHistoryFromStorage() {
+		try {
+			const items = await conversionStorage.getRecentConversions(10);
+			history = items.map((item: any) => ({
+				input: item.input,
+				output: item.output,
+				conversion: item.conversion,
+				timestamp: new Date(item.timestamp).toLocaleTimeString(),
+				category: item.category,
+				fromUnit: item.fromUnit,
+				toUnit: item.toUnit
+			}));
+		} catch (error) {
+			console.warn('Failed to load history from storage:', error);
 			history = [];
 		}
 	}
@@ -323,17 +353,12 @@
 		}
 	});
 
-	// Save history to localStorage whenever it changes (but only after initial load)
-	$effect(() => {
-		if (isLoaded && history) {
-			saveHistoryToStorage();
-		}
-	});
+	// History is now saved per conversion, no need for reactive saving
 
 	// Load history on component mount
-	onMount(() => {
+	onMount(async () => {
 		loadFromUrl();
-		loadHistoryFromStorage();
+		await loadHistoryFromStorage();
 		isLoaded = true;
 	});
 </script>

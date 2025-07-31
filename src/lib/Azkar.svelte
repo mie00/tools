@@ -3,6 +3,10 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import azkarJsonData from './azkar.json';
+	import { StorageFactory } from './storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	// Process the JSON data to organize by categories
 	function processAzkarData() {
@@ -83,22 +87,22 @@
 		}
 	}
 
-	// Load progress from localStorage
-	function loadProgress() {
+	// Load progress from storage API
+	async function loadProgress() {
 		try {
-			const saved = localStorage.getItem('azkar-progress');
+			const saved = await uiSettingsStorage.getAzkarProgress();
 			if (saved) {
-				progress = JSON.parse(saved);
+				progress = saved;
 			}
 		} catch (e) {
 			console.error('Error loading progress:', e);
 		}
 	}
 
-	// Save progress to localStorage
-	function saveProgress() {
+	// Save progress to storage API
+	async function saveProgress() {
 		try {
-			localStorage.setItem('azkar-progress', JSON.stringify(progress));
+			await uiSettingsStorage.setAzkarProgress(progress);
 		} catch (e) {
 			console.error('Error saving progress:', e);
 		}
@@ -107,13 +111,13 @@
 	// Increment counter for a specific azkar
 	function incrementCounter(azkarId: number) {
 		progress[azkarId] = (progress[azkarId] || 0) + 1;
-		saveProgress();
+		saveProgress().catch((e) => console.warn('Failed to save progress:', e));
 	}
 
 	// Reset counter for a specific azkar
 	function resetCounter(azkarId: number) {
 		progress[azkarId] = 0;
-		saveProgress();
+		saveProgress().catch((e) => console.warn('Failed to save progress:', e));
 	}
 
 	// Reset all counters in a category
@@ -121,7 +125,7 @@
 		azkarData[category as keyof typeof azkarData].forEach((azkar) => {
 			progress[azkar.id] = 0;
 		});
-		saveProgress();
+		saveProgress().catch((e) => console.warn('Failed to save progress:', e));
 	}
 
 	// Reset all counters
@@ -129,7 +133,7 @@
 		Object.keys(progress).forEach((key) => {
 			progress[parseInt(key)] = 0;
 		});
-		saveProgress();
+		saveProgress().catch((e) => console.warn('Failed to save progress:', e));
 	}
 
 	// Get completion percentage for a category

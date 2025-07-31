@@ -32,11 +32,13 @@ export interface TimeWindow {
 	days: number;
 }
 
+import { StorageFactory } from '../storage-api';
+
 export class StockApiManager {
 	private static instance: StockApiManager;
 	private apiKey: string = '';
 	private readonly baseUrl = 'https://www.alphavantage.co/query';
-	private readonly storageKey = 'stockTrackerApiKey';
+	private readonly uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	static getInstance(): StockApiManager {
 		if (!StockApiManager.instance) {
@@ -46,26 +48,27 @@ export class StockApiManager {
 	}
 
 	constructor() {
-		this.loadApiKey();
+		// Load API key asynchronously - fire and forget
+		this.loadApiKey().catch((e) => console.warn('Failed to load API key:', e));
 	}
 
-	private loadApiKey(): void {
+	private async loadApiKey(): Promise<void> {
 		try {
-			const saved = localStorage.getItem(this.storageKey);
+			const saved = await this.uiSettingsStorage.getStockApiKey();
 			if (saved) {
 				this.apiKey = saved;
 			}
 		} catch (error) {
-			console.warn('Failed to load API key from localStorage:', error);
+			console.warn('Failed to load API key from storage:', error);
 		}
 	}
 
-	setApiKey(key: string): void {
+	async setApiKey(key: string): Promise<void> {
 		this.apiKey = key.trim();
 		try {
-			localStorage.setItem(this.storageKey, this.apiKey);
+			await this.uiSettingsStorage.setStockApiKey(this.apiKey);
 		} catch (error) {
-			console.warn('Failed to save API key to localStorage:', error);
+			console.warn('Failed to save API key to storage:', error);
 		}
 	}
 
@@ -77,12 +80,12 @@ export class StockApiManager {
 		return this.apiKey.length > 0;
 	}
 
-	clearApiKey(): void {
+	async clearApiKey(): Promise<void> {
 		this.apiKey = '';
 		try {
-			localStorage.removeItem(this.storageKey);
+			await this.uiSettingsStorage.removeStockApiKey();
 		} catch (error) {
-			console.warn('Failed to remove API key from localStorage:', error);
+			console.warn('Failed to remove API key from storage:', error);
 		}
 	}
 

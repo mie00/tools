@@ -1,4 +1,5 @@
 import type { StockQuote, StockSearchResult } from './StockApiManager';
+import { StorageFactory, type StockPortfolio, type StockPosition } from '../storage-api';
 
 export interface PortfolioStock extends StockQuote {
 	addedDate: string;
@@ -10,7 +11,8 @@ export interface PortfolioStock extends StockQuote {
 
 export class PortfolioManager {
 	private static instance: PortfolioManager;
-	private readonly storageKey = 'stockTrackerPortfolio';
+	private portfolioStorage = StorageFactory.createStockPortfolioStorage();
+	private defaultPortfolioId: string | null = null;
 	private portfolio: PortfolioStock[] = [];
 
 	static getInstance(): PortfolioManager {
@@ -21,26 +23,73 @@ export class PortfolioManager {
 	}
 
 	constructor() {
-		this.loadPortfolio();
+		this.initializePortfolio();
 	}
 
-	private loadPortfolio(): void {
+	private async initializePortfolio(): Promise<void> {
 		try {
-			const saved = localStorage.getItem(this.storageKey);
-			if (saved) {
-				this.portfolio = JSON.parse(saved);
+			// Get or create default portfolio
+			let defaultPortfolio = await this.portfolioStorage.getDefaultPortfolio();
+
+			if (!defaultPortfolio) {
+				// Create default portfolio
+				this.defaultPortfolioId = await this.portfolioStorage.createPortfolio(
+					'My Portfolio',
+					'Default stock portfolio',
+					true
+				);
+				defaultPortfolio = (await this.portfolioStorage.get(this.defaultPortfolioId)) as any;
+			} else {
+				this.defaultPortfolioId = defaultPortfolio?.id || '';
+			}
+
+			// Load portfolio positions
+			if (defaultPortfolio) {
+				this.portfolio = defaultPortfolio.positions.map((pos: any) => ({
+					symbol: pos.symbol,
+					name: pos.name,
+					price: pos.price,
+					change: pos.change,
+					changePercent: pos.changePercent,
+					lastUpdate: pos.lastUpdate,
+					addedDate: pos.addedDate,
+					notes: pos.notes,
+					purchasePrice: pos.purchasePrice,
+					shares: pos.shares
+				}));
 			}
 		} catch (error) {
-			console.warn('Failed to load portfolio from localStorage:', error);
+			console.warn('Failed to initialize portfolio:', error);
 			this.portfolio = [];
 		}
 	}
 
-	private savePortfolio(): void {
+	private async savePortfolio(): Promise<void> {
+		if (!this.defaultPortfolioId) return;
+
 		try {
-			localStorage.setItem(this.storageKey, JSON.stringify(this.portfolio));
+			const positions: StockPosition[] = this.portfolio.map((stock) => ({
+				symbol: stock.symbol,
+				name: stock.name,
+				price: stock.price,
+				change: stock.change,
+				changePercent: stock.changePercent,
+				lastUpdate: stock.lastUpdate,
+				addedDate: stock.addedDate,
+				notes: stock.notes,
+				purchasePrice: stock.purchasePrice,
+				shares: stock.shares
+			}));
+
+			const portfolio = await this.portfolioStorage.get(this.defaultPortfolioId);
+			if (portfolio) {
+				await this.portfolioStorage.update(this.defaultPortfolioId, {
+					positions,
+					updatedAt: new Date().toISOString()
+				});
+			}
 		} catch (error) {
-			console.warn('Failed to save portfolio to localStorage:', error);
+			console.warn('Failed to save portfolio:', error);
 		}
 	}
 
@@ -48,7 +97,7 @@ export class PortfolioManager {
 		return [...this.portfolio];
 	}
 
-	addStock(searchResult: StockSearchResult): PortfolioStock {
+	async addStock(searchResult: StockSearchResult): Promise<PortfolioStock> {
 		// Check if stock already exists
 		const existingIndex = this.portfolio.findIndex((stock) => stock.symbol === searchResult.symbol);
 		if (existingIndex >= 0) {
@@ -67,39 +116,39 @@ export class PortfolioManager {
 		};
 
 		this.portfolio.push(newStock);
-		this.savePortfolio();
+		await this.savePortfolio();
 		return newStock;
 	}
 
-	removeStock(symbol: string): boolean {
+	async removeStock(symbol: string): Promise<boolean> {
 		const initialLength = this.portfolio.length;
 		this.portfolio = this.portfolio.filter((stock) => stock.symbol !== symbol);
 
 		if (this.portfolio.length !== initialLength) {
-			this.savePortfolio();
+			await this.savePortfolio();
 			return true;
 		}
 		return false;
 	}
 
-	updateStock(updatedStock: StockQuote): boolean {
+	async updateStock(updatedStock: StockQuote): Promise<boolean> {
 		const index = this.portfolio.findIndex((stock) => stock.symbol === updatedStock.symbol);
 		if (index >= 0) {
 			this.portfolio[index] = {
 				...this.portfolio[index],
 				...updatedStock
 			};
-			this.savePortfolio();
+			await this.savePortfolio();
 			return true;
 		}
 		return false;
 	}
 
-	updateStockNotes(symbol: string, notes: string): boolean {
+	async updateStockNotes(symbol: string, notes: string): Promise<boolean> {
 		const index = this.portfolio.findIndex((stock) => stock.symbol === symbol);
 		if (index >= 0) {
 			this.portfolio[index].notes = notes;
-			this.savePortfolio();
+			await this.savePortfolio();
 			return true;
 		}
 		return false;
@@ -206,21 +255,21 @@ export class PortfolioManager {
 		);
 	}
 
-	clearPortfolio(): void {
+	async clearPortfolio(): Promise<void> {
 		this.portfolio = [];
-		this.savePortfolio();
+		await this.savePortfolio();
 	}
 
 	exportPortfolio(): string {
 		return JSON.stringify(this.portfolio, null, 2);
 	}
 
-	importPortfolio(jsonData: string): boolean {
+	async importPortfolio(jsonData: string): Promise<boolean> {
 		try {
 			const imported = JSON.parse(jsonData);
 			if (Array.isArray(imported)) {
 				this.portfolio = imported;
-				this.savePortfolio();
+				await this.savePortfolio();
 				return true;
 			}
 			return false;

@@ -4,6 +4,10 @@
 	import { goto } from '$app/navigation';
 	import T from './T.svelte';
 	import TimezoneSelect from './TimezoneSelect.svelte';
+	import { StorageFactory } from './storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	// Type definitions
 	interface AvailableCity {
@@ -136,18 +140,17 @@
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		// Load from URL parameters first
 		loadFromUrl();
 
-		// Load saved cities from localStorage
-		const savedCities = localStorage.getItem('selectedCities');
-		if (savedCities) {
-			try {
-				selectedCities = JSON.parse(savedCities);
-			} catch (e) {
-				// If parsing fails, use default cities
-				console.warn('Failed to parse saved cities from localStorage:', e);
+		// Load saved cities from storage API
+		try {
+			const savedCities = await uiSettingsStorage.getSelectedCities();
+			if (savedCities && savedCities.length > 0) {
+				selectedCities = savedCities;
+			} else {
+				// Default cities for first time users
 				selectedCities = [
 					'Africa/Cairo',
 					'Asia/Dubai',
@@ -158,8 +161,9 @@
 					'America/Los_Angeles'
 				];
 			}
-		} else {
-			// Default cities for first time users
+		} catch (e) {
+			// If loading fails, use default cities
+			console.warn('Failed to load saved cities from storage:', e);
 			selectedCities = [
 				'Africa/Cairo',
 				'Asia/Dubai',
@@ -283,10 +287,14 @@
 		return city ? city.name : timezone.split('/').pop()?.replace(/_/g, ' ') || timezone;
 	}
 
-	function removeCity(timezone: string) {
+	async function removeCity(timezone: string) {
 		selectedCities = selectedCities.filter((tz) => tz !== timezone);
-		// Save to localStorage
-		localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
+		// Save to storage API
+		try {
+			await uiSettingsStorage.setSelectedCities(selectedCities);
+		} catch (e) {
+			console.warn('Failed to save selected cities:', e);
+		}
 	}
 
 	function setMode(mode: TimeMode) {
@@ -570,10 +578,14 @@
 						value=""
 						placeholder="Select a timezone to add..."
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
-						onchange={(timezone) => {
+						onchange={async (timezone) => {
 							if (timezone && !selectedCities.includes(timezone)) {
 								selectedCities = [...selectedCities, timezone];
-								localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
+								try {
+									await uiSettingsStorage.setSelectedCities(selectedCities);
+								} catch (e) {
+									console.warn('Failed to save selected cities:', e);
+								}
 							}
 						}}
 					/>

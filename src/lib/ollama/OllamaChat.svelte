@@ -6,6 +6,16 @@
 	import 'highlight.js/styles/atom-one-light.css';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
+	import { StorageFactory } from '../storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
+	let _chatStorage: Awaited<ReturnType<typeof StorageFactory.createChatSessionStorage>>;
+
+	// Initialize chat storage asynchronously
+	StorageFactory.createChatSessionStorage().then((storage) => {
+		_chatStorage = storage;
+	});
 
 	import {
 		persistentTopics,
@@ -208,10 +218,11 @@ CONVERSATION:
 			persistentTopics.set(loadedTopics);
 		}
 
-		const savedConfig = localStorage.getItem('ollamaChatConfig');
-		if (savedConfig) {
-			try {
-				const parsedConfig = JSON.parse(savedConfig);
+		// Load config from storage API
+		try {
+			const savedConfig = await uiSettingsStorage.getOllamaChatConfig();
+			if (savedConfig) {
+				const parsedConfig = savedConfig;
 				// Migration: Handle old config structure
 				if (parsedConfig.endpoint) {
 					// Old structure, migrate to new structure
@@ -236,9 +247,9 @@ CONVERSATION:
 				} else {
 					persistentConfig.set(parsedConfig);
 				}
-			} catch (e) {
-				console.error('Failed to parse config:', e);
 			}
+		} catch (e) {
+			console.error('Failed to load config:', e);
 		}
 
 		persistentTopics.subscribe((value) => {
@@ -246,31 +257,37 @@ CONVERSATION:
 			if (!currentActiveTopicId && topics.length > 0) {
 				activeTopicId.set(topics[0].id);
 			}
+			// TODO: Migrate topics to proper chat storage
 			localStorage.setItem('ollamaChatTopics', JSON.stringify(value));
 		});
 
 		persistentConfig.subscribe((value) => {
 			config = value;
-			localStorage.setItem('ollamaChatConfig', JSON.stringify(value));
+			// Save config to storage API (fire-and-forget)
+			uiSettingsStorage
+				.setOllamaChatConfig(value)
+				.catch((e: any) => console.warn('Failed to save config:', e));
 		});
 
 		activeTopicId.subscribe((value) => {
 			currentActiveTopicId = value;
 		});
 
-		// Load and persist LLM state
-		const savedLlmState = localStorage.getItem('ollamaChatLlmState');
-		if (savedLlmState) {
-			try {
-				const parsedLlmState = JSON.parse(savedLlmState);
-				persistentLlmState.set(parsedLlmState);
-			} catch (e) {
-				console.error('Failed to parse LLM state:', e);
+		// Load and persist LLM state from storage API
+		try {
+			const savedLlmState = await uiSettingsStorage.getOllamaChatLlmState();
+			if (savedLlmState) {
+				persistentLlmState.set(savedLlmState);
 			}
+		} catch (e) {
+			console.error('Failed to load LLM state:', e);
 		}
 
 		persistentLlmState.subscribe((value) => {
-			localStorage.setItem('ollamaChatLlmState', JSON.stringify(value));
+			// Save LLM state to storage API (fire-and-forget)
+			uiSettingsStorage
+				.setOllamaChatLlmState(value)
+				.catch((e: any) => console.warn('Failed to save LLM state:', e));
 		});
 
 		if (topics.length === 0 && !draftTopic) {

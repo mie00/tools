@@ -3,6 +3,10 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import T from './T.svelte';
+	import { StorageFactory } from './storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	// Type definitions
 	interface CurrencyInfo {
@@ -98,34 +102,34 @@
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		loadFromUrl();
-		loadRecentConversions();
+		await loadRecentConversions();
 		// Auto-convert on mount if we have valid currencies
 		if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
 			convertAndSync();
 		}
 	});
 
-	function loadRecentConversions() {
+	async function loadRecentConversions() {
 		try {
-			const stored = localStorage.getItem('recentCurrencyConversions');
-			if (stored) {
-				recentConversions = JSON.parse(stored);
+			const stored = await uiSettingsStorage.getRecentCurrencyConversions();
+			if (stored && Array.isArray(stored)) {
+				recentConversions = stored;
 			}
 		} catch (err) {
 			console.warn('Failed to load recent conversions:', err);
 		}
 	}
 
-	function saveRecentConversion(from: string, to: string) {
+	async function saveRecentConversion(from: string, to: string) {
 		const conversionPair = `${from}-${to}`;
 		recentConversions = recentConversions.filter((item) => item !== conversionPair);
 		recentConversions.unshift(conversionPair);
 		recentConversions = recentConversions.slice(0, 5); // Keep only 5 recent
 
 		try {
-			localStorage.setItem('recentCurrencyConversions', JSON.stringify(recentConversions));
+			await uiSettingsStorage.setRecentCurrencyConversions(recentConversions);
 		} catch (err: unknown) {
 			console.warn('Failed to save recent conversions:', err);
 		}
@@ -182,7 +186,9 @@
 
 			exchangeRate = rate;
 			result = (numAmount * exchangeRate).toFixed(2);
-			saveRecentConversion(fromCurrency, toCurrency);
+			saveRecentConversion(fromCurrency, toCurrency).catch((e) =>
+				console.warn('Failed to save recent conversion:', e)
+			);
 		} catch (err: unknown) {
 			error = (err as Error).message || 'Failed to fetch exchange rates';
 			result = '';

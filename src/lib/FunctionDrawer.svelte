@@ -3,6 +3,10 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { T } from '$lib';
+	import { StorageFactory } from '$lib/storage-api';
+
+	// Initialize UI settings storage
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	let pyodide: any;
 	let canvas: HTMLCanvasElement;
@@ -96,14 +100,14 @@
 		if (history.length > 50) {
 			history = history.slice(-50);
 		}
-		// Save to localStorage
-		saveHistoryToStorage();
+		// Save to storage API
+		saveHistoryToStorage().catch((e) => console.warn('Failed to save history:', e));
 	}
 
 	function updateHistoryEntry(id: string, updates: Partial<HistoryEntry>) {
 		history = history.map((entry) => (entry.id === id ? { ...entry, ...updates } : entry));
-		// Save to localStorage
-		saveHistoryToStorage();
+		// Save to storage API
+		saveHistoryToStorage().catch((e) => console.warn('Failed to save history:', e));
 	}
 
 	function removeHistoryEntry(id: string) {
@@ -111,40 +115,36 @@
 		if (currentHistoryId === id) {
 			currentHistoryId = null;
 		}
-		// Save to localStorage
-		saveHistoryToStorage();
+		// Save to storage API
+		saveHistoryToStorage().catch((e) => console.warn('Failed to save history:', e));
 	}
 
-	// localStorage functions
-	function saveHistoryToStorage() {
+	// Storage API functions
+	async function saveHistoryToStorage() {
 		if (browser) {
 			try {
-				localStorage.setItem('functionDrawerHistory', JSON.stringify(history));
-				localStorage.setItem('functionDrawerCurrentHistoryId', currentHistoryId || '');
+				await uiSettingsStorage.setFunctionDrawerHistory(history, currentHistoryId || '');
 			} catch (e) {
-				console.warn('Failed to save history to localStorage:', e);
+				console.warn('Failed to save history to storage:', e);
 			}
 		}
 	}
 
-	function loadHistoryFromStorage() {
+	async function loadHistoryFromStorage() {
 		if (browser) {
 			try {
-				const savedHistory = localStorage.getItem('functionDrawerHistory');
-				const savedCurrentId = localStorage.getItem('functionDrawerCurrentHistoryId');
+				const { history: savedHistory, currentId: savedCurrentId } =
+					await uiSettingsStorage.getFunctionDrawerHistory();
 
-				if (savedHistory) {
-					const parsed = JSON.parse(savedHistory);
-					if (Array.isArray(parsed)) {
-						history = parsed;
-					}
+				if (savedHistory && Array.isArray(savedHistory)) {
+					history = savedHistory;
 				}
 
 				if (savedCurrentId) {
 					currentHistoryId = savedCurrentId || null;
 				}
 			} catch (e) {
-				console.warn('Failed to load history from localStorage:', e);
+				console.warn('Failed to load history from storage:', e);
 			}
 		}
 	}
@@ -276,8 +276,8 @@ result
 	onMount(async () => {
 		if (browser) {
 			try {
-				// Load history from localStorage first
-				loadHistoryFromStorage();
+				// Load history from storage API first
+				await loadHistoryFromStorage();
 
 				// Check for URL parameter expression
 				const urlExpression = $page.url.searchParams.get('expression');

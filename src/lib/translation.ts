@@ -2,6 +2,7 @@
 // Uses Chrome's experimental AI APIs similar to Translator.svelte
 
 import { writable } from 'svelte/store';
+import { StorageFactory } from './storage-api';
 
 // Language definitions
 export interface Language {
@@ -38,8 +39,10 @@ interface TranslationState {
 
 // Create the translation store
 function createTranslationStore() {
-	const STORAGE_KEY = 'app-language';
 	const DEFAULT_LANGUAGE = 'en';
+
+	// Initialize UI settings storage for language preference
+	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
 
 	const initialState: TranslationState = {
 		currentLanguage: DEFAULT_LANGUAGE,
@@ -54,11 +57,11 @@ function createTranslationStore() {
 	let translator: any = null;
 	let currentTranslatorPair: string | null = null;
 
-	// Load saved language from localStorage
-	function loadSavedLanguage(): string {
+	// Load saved language from storage API
+	async function loadSavedLanguage(): Promise<string> {
 		if (typeof window !== 'undefined') {
 			try {
-				const saved = localStorage.getItem(STORAGE_KEY);
+				const saved = await uiSettingsStorage.getAppLanguage();
 				if (saved && supportedLanguages.some((lang) => lang.code === saved)) {
 					return saved;
 				}
@@ -69,11 +72,11 @@ function createTranslationStore() {
 		return DEFAULT_LANGUAGE;
 	}
 
-	// Save language to localStorage
-	function saveLanguage(code: string) {
+	// Save language to storage API
+	async function saveLanguage(code: string) {
 		if (typeof window !== 'undefined') {
 			try {
-				localStorage.setItem(STORAGE_KEY, code);
+				await uiSettingsStorage.setAppLanguage(code);
 			} catch (e) {
 				console.warn('Failed to save language:', e);
 			}
@@ -82,7 +85,7 @@ function createTranslationStore() {
 
 	// Initialize the translation system
 	async function initialize() {
-		const savedLanguage = loadSavedLanguage();
+		const savedLanguage = await loadSavedLanguage();
 
 		update((state) => ({
 			...state,
@@ -120,7 +123,7 @@ function createTranslationStore() {
 			currentLanguage: code
 		}));
 
-		saveLanguage(code);
+		await saveLanguage(code);
 
 		// Reset translator if language changed
 		if (translator && currentTranslatorPair !== `en-${code}`) {
