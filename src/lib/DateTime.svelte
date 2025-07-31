@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import T from './T.svelte';
+	import TimezoneSelect from './TimezoneSelect.svelte';
 
 	// Type definitions
 	interface AvailableCity {
@@ -282,16 +283,6 @@
 		return city ? city.name : timezone.split('/').pop()?.replace(/_/g, ' ') || timezone;
 	}
 
-	function addCity(event: Event) {
-		const select = event.target as HTMLSelectElement;
-		const timezone = select.value;
-		if (timezone && !selectedCities.includes(timezone)) {
-			selectedCities = [...selectedCities, timezone];
-			// Save to localStorage
-			localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
-		}
-		select.value = '';
-	}
 
 	function removeCity(timezone: string) {
 		selectedCities = selectedCities.filter((tz) => tz !== timezone);
@@ -299,39 +290,7 @@
 		localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
 	}
 
-	function getTimezoneAbbreviation(timezone: string): string {
-		try {
-			// Use current time to get the correct seasonal abbreviation
-			const now = new Date();
-			const formatter = new Intl.DateTimeFormat('en-US', {
-				timeZone: timezone,
-				timeZoneName: 'shortGeneric'
-			});
-			const parts = formatter.formatToParts(now);
-			const timeZoneName = parts.find((part) => part.type === 'timeZoneName');
 
-			// If shortGeneric doesn't work well, try short
-			if (!timeZoneName || timeZoneName.value.includes('GMT')) {
-				const shortFormatter = new Intl.DateTimeFormat('en-US', {
-					timeZone: timezone,
-					timeZoneName: 'short'
-				});
-				const shortParts = shortFormatter.formatToParts(now);
-				const shortTimeZoneName = shortParts.find((part) => part.type === 'timeZoneName');
-				return shortTimeZoneName ? shortTimeZoneName.value : '';
-			}
-
-			return timeZoneName ? timeZoneName.value : '';
-		} catch (e) {
-			console.warn('Failed to get timezone abbreviation:', e);
-			return '';
-		}
-	}
-
-	function getCityWithTimezone(city: AvailableCity): string {
-		const abbreviation = getTimezoneAbbreviation(city.timezone);
-		return abbreviation ? `${city.name} (${abbreviation})` : city.name;
-	}
 
 	function setMode(mode: TimeMode) {
 		timeMode = mode;
@@ -503,18 +462,15 @@
 					<label for="custom-timezone-select" class="mb-2 block text-sm font-medium"
 						><T>Source Timezone</T></label
 					>
-					<select
-						id="custom-timezone-select"
-						bind:value={customTimezone}
+					<TimezoneSelect
+						value={customTimezone}
+						placeholder="Select source timezone..."
 						class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur focus:border-white/40 focus:ring-2 focus:ring-white/20"
-						onchange={updateUrl}
-					>
-						<option value="Local"><T>Local</T></option>
-						<option value="UTC"><T>UTC</T></option>
-						{#each availableCities as city (city.timezone)}
-							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
-						{/each}
-					</select>
+						onchange={(timezone) => {
+							customTimezone = timezone;
+							updateUrl();
+						}}
+					/>
 				</div>
 			</div>
 		{:else if timeMode === 'epoch'}
@@ -613,15 +569,17 @@
 			<div class="mb-6">
 				<label class="block">
 					<span class="text-sm font-medium text-gray-700"><T>Add City</T></span>
-					<select
-						onchange={addCity}
+					<TimezoneSelect
+						value=""
+						placeholder="Select a timezone to add..."
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 md:w-auto"
-					>
-						<option value=""><T>Select a city to add...</T></option>
-						{#each availableCities.filter((city) => !selectedCities.includes(city.timezone)) as city (city.timezone)}
-							<option value={city.timezone}>{getCityWithTimezone(city)}</option>
-						{/each}
-					</select>
+						onchange={(timezone) => {
+							if (timezone && !selectedCities.includes(timezone)) {
+								selectedCities = [...selectedCities, timezone];
+								localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
+							}
+						}}
+					/>
 				</label>
 			</div>
 
