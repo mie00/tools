@@ -161,19 +161,58 @@
 	// Note: File updates to global playlist are now handled only when needed
 	// to prevent excessive blob URL recreation
 
+	// Helper function to ensure file data is loaded
+	async function ensureFileLoaded(file: AudioFile): Promise<AudioFile> {
+		if (!file.file) {
+			await loadSpecificFiles([file.id]);
+			// Get the updated file from our files array
+			const updatedFile = files.find(f => f.id === file.id);
+			if (updatedFile) {
+				return updatedFile;
+			}
+		}
+		return file;
+	}
+
+	// Helper function to ensure multiple files are loaded
+	async function ensureFilesLoaded(filesToCheck: AudioFile[]): Promise<AudioFile[]> {
+		const filesToLoad = filesToCheck.filter(file => !file.file).map(file => file.id);
+		if (filesToLoad.length > 0) {
+			await loadSpecificFiles(filesToLoad);
+		}
+		// Return updated files from our files array
+		return filesToCheck.map(file => {
+			const updatedFile = files.find(f => f.id === file.id);
+			return updatedFile || file;
+		});
+	}
+
+	// Helper function to load files and validate them
+	async function loadAndValidateFiles(filesToCheck: AudioFile[]): Promise<AudioFile[]> {
+		const loadedFiles = await ensureFilesLoaded(filesToCheck);
+		return loadedFiles.filter((file) => validateAndRepairBlobUrl(file));
+	}
+
+	// Helper function to ensure file is loaded before adding to playlist
+	async function addFileToPlaylist(file: AudioFile) {
+		const loadedFile = await ensureFileLoaded(file);
+		globalPlaylistStore.addToPlaylist([loadedFile]);
+	}
+
 	// Playlist management functions - now using global store
-	function playFile(file: AudioFile) {
+	async function playFile(file: AudioFile) {
+		const loadedFile = await ensureFileLoaded(file);
+
 		// Validate blob URL before playing
-		if (validateAndRepairBlobUrl(file)) {
-			globalPlaylistStore.playFile(file);
+		if (validateAndRepairBlobUrl(loadedFile)) {
+			globalPlaylistStore.playFile(loadedFile);
 		} else {
-			console.error(`Cannot play file ${file.name}: Invalid blob URL and unable to repair`);
+			console.error(`Cannot play file ${loadedFile.name}: Invalid blob URL and unable to repair`);
 		}
 	}
 
-	function playAllFiltered() {
-		// Validate all file URLs before playing
-		const validFiles = filteredFiles.filter((file) => validateAndRepairBlobUrl(file));
+	async function playAllFiltered() {
+		const validFiles = await loadAndValidateFiles(filteredFiles);
 		if (validFiles.length > 0) {
 			globalPlaylistStore.replacePlaylist(validFiles, 0);
 		} else {
@@ -181,9 +220,8 @@
 		}
 	}
 
-	function addAllFilteredToPlaylist() {
-		// Validate all file URLs before adding to playlist
-		const validFiles = filteredFiles.filter((file) => validateAndRepairBlobUrl(file));
+	async function addAllFilteredToPlaylist() {
+		const validFiles = await loadAndValidateFiles(filteredFiles);
 		if (validFiles.length > 0) {
 			globalPlaylistStore.addToPlaylist(validFiles);
 		} else {
@@ -626,12 +664,12 @@
 		});
 
 		// Listen for playlist drop requests
-		const handlePlaylistDropRequest = (event: Event) => {
+		const handlePlaylistDropRequest = async (event: Event) => {
 			const customEvent = event as CustomEvent;
 			const { fileId } = customEvent.detail;
 			const file = files.find((f) => f.id === fileId);
 			if (file) {
-				globalPlaylistStore.addToPlaylist([file]);
+				await addFileToPlaylist(file);
 			}
 		};
 
@@ -1096,7 +1134,7 @@
 
 									<!-- Add to playlist button -->
 									<button
-										onclick={() => globalPlaylistStore.addToPlaylist([file])}
+										onclick={() => addFileToPlaylist(file)}
 										class="flex h-8 w-8 items-center justify-center rounded bg-purple-100 text-purple-700 hover:bg-purple-200"
 										title="Add to playlist"
 										aria-label="Add to playlist"
