@@ -38,6 +38,10 @@ import { ChatSessionStorage } from './entities/chat-sessions';
 import { SavedFunctionStorage } from './entities/saved-functions';
 import { InputSuggestionStorage } from './entities/input-suggestions';
 import { UISettingsStorage } from './entities/ui-settings';
+import { SoundLibrarySettingsStorage } from './entities/sound-library-settings';
+import { NoteTakingSettingsStorage } from './entities/note-taking-settings';
+import { OllamaChatSettingsStorage } from './entities/ollama-chat-settings';
+import { FunctionDrawerSettingsStorage } from './entities/function-drawer-settings';
 
 // Entity storage classes
 export {
@@ -85,6 +89,26 @@ export {
 } from './entities/input-suggestions';
 
 export { UISettingsStorage, type UISettings } from './entities/ui-settings';
+
+export {
+	SoundLibrarySettingsStorage,
+	type SoundLibrarySettings
+} from './entities/sound-library-settings';
+
+export {
+	NoteTakingSettingsStorage,
+	type NoteTakingSettings
+} from './entities/note-taking-settings';
+
+export {
+	OllamaChatSettingsStorage,
+	type OllamaChatSettings
+} from './entities/ollama-chat-settings';
+
+export {
+	FunctionDrawerSettingsStorage,
+	type FunctionDrawerSettings
+} from './entities/function-drawer-settings';
 
 // Storage factory and initialization
 export class StorageFactory {
@@ -211,6 +235,30 @@ export class StorageFactory {
 
 	static createUISettingsStorage(adapterName: string = 'localStorage'): UISettingsStorage {
 		return new UISettingsStorage(this.getAdapter(adapterName));
+	}
+
+	static createSoundLibrarySettingsStorage(
+		adapterName: string = 'localStorage'
+	): SoundLibrarySettingsStorage {
+		return new SoundLibrarySettingsStorage(this.getAdapter(adapterName));
+	}
+
+	static createNoteTakingSettingsStorage(
+		adapterName: string = 'localStorage'
+	): NoteTakingSettingsStorage {
+		return new NoteTakingSettingsStorage(this.getAdapter(adapterName));
+	}
+
+	static createOllamaChatSettingsStorage(
+		adapterName: string = 'localStorage'
+	): OllamaChatSettingsStorage {
+		return new OllamaChatSettingsStorage(this.getAdapter(adapterName));
+	}
+
+	static createFunctionDrawerSettingsStorage(
+		adapterName: string = 'localStorage'
+	): FunctionDrawerSettingsStorage {
+		return new FunctionDrawerSettingsStorage(this.getAdapter(adapterName));
 	}
 
 	// Initialize default adapters

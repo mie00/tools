@@ -48,7 +48,8 @@
 		// Load initial data
 		portfolio = portfolioManager.getPortfolio();
 
-		// Check if API key is available
+		// Load API key first, then check if it's available
+		await apiManager.loadApiKey();
 		if (!apiManager.hasApiKey()) {
 			showApiKeyPrompt = true;
 		} else {
@@ -102,7 +103,7 @@
 		try {
 			const isValid = await apiManager.validateApiKey(key);
 			if (isValid) {
-				apiManager.setApiKey(key);
+				await apiManager.setApiKey(key);
 				showApiKeyPrompt = false;
 				apiKeyInput = '';
 				await refreshPortfolio();

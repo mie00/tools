@@ -1,3 +1,5 @@
+import { StorageFactory } from '../storage-api';
+
 export interface StorageInfo {
 	used: number;
 	quota: number;
@@ -6,12 +8,17 @@ export interface StorageInfo {
 
 export class StorageManager {
 	private static instance: StorageManager;
+	private noteTakingStorage: ReturnType<typeof StorageFactory.createNoteTakingSettingsStorage>;
 
 	static getInstance(): StorageManager {
 		if (!StorageManager.instance) {
 			StorageManager.instance = new StorageManager();
 		}
 		return StorageManager.instance;
+	}
+
+	constructor() {
+		this.noteTakingStorage = StorageFactory.createNoteTakingSettingsStorage();
 	}
 
 	async initializeStorage(): Promise<void> {
@@ -63,26 +70,71 @@ export class StorageManager {
 		return usagePercentage > 80;
 	}
 
-	saveToLocalStorage<T>(key: string, data: T): void {
+	async saveToStorage<T>(key: string, data: T): Promise<void> {
 		try {
-			localStorage.setItem(key, JSON.stringify(data));
+			// Use the note taking storage based on key
+			if (key === 'noteTakingNotes') {
+				await this.noteTakingStorage.setNotes(data as any);
+			} else if (key === 'noteTakingTopics') {
+				await this.noteTakingStorage.setTopics(data as any);
+			} else {
+				// Fallback for unknown keys - use generic setting update
+				await this.noteTakingStorage.updateSetting(key as any, data);
+			}
 		} catch (error: unknown) {
 			const err = error as Error;
 			console.error(`Error saving ${key}:`, error);
 
-			if (err.name === 'QuotaExceededError' || err.message?.includes('quota')) {
-				throw new Error('Storage quota exceeded');
-			} else {
-				throw new Error(`Error saving ${key}: ${err.message || 'Unknown error'}`);
+			// Fallback to localStorage for backward compatibility
+			try {
+				localStorage.setItem(key, JSON.stringify(data));
+			} catch (localStorageError: unknown) {
+				const lsErr = localStorageError as Error;
+				if (lsErr.name === 'QuotaExceededError' || lsErr.message?.includes('quota')) {
+					throw new Error('Storage quota exceeded');
+				} else {
+					throw new Error(`Error saving ${key}: ${lsErr.message || 'Unknown error'}`);
+				}
 			}
 		}
 	}
 
-	loadFromLocalStorage<T>(key: string, defaultValue: T): T {
+	async loadFromStorage<T>(key: string, defaultValue: T): Promise<T> {
 		try {
-			const saved = localStorage.getItem(key);
-			if (saved) {
-				return JSON.parse(saved);
+			// Use the note taking storage based on key
+			let saved: T | undefined;
+			if (key === 'noteTakingNotes') {
+				saved = (await this.noteTakingStorage.getNotes()) as T;
+			} else if (key === 'noteTakingTopics') {
+				saved = (await this.noteTakingStorage.getTopics()) as T;
+			} else {
+				// Fallback for unknown keys
+				saved = (await this.noteTakingStorage.getSetting(key as any)) as T;
+			}
+
+			if (saved !== undefined) {
+				return saved;
+			}
+
+			// Fallback to localStorage for migration
+			const localSaved = localStorage.getItem(key);
+			if (localSaved) {
+				const parsed = JSON.parse(localSaved);
+				// Migrate to storage API and remove from localStorage
+				try {
+					if (key === 'noteTakingNotes') {
+						await this.noteTakingStorage.setNotes(parsed);
+					} else if (key === 'noteTakingTopics') {
+						await this.noteTakingStorage.setTopics(parsed);
+					} else {
+						await this.noteTakingStorage.updateSetting(key as any, parsed);
+					}
+					localStorage.removeItem(key);
+					console.log(`Migrated ${key} from localStorage to storage-api`);
+				} catch (e) {
+					console.warn(`Failed to migrate ${key}:`, e);
+				}
+				return parsed;
 			}
 		} catch (error: unknown) {
 			console.error(`Error loading ${key}:`, error);
@@ -90,11 +142,19 @@ export class StorageManager {
 		return defaultValue;
 	}
 
-	removeFromLocalStorage(key: string): void {
+	async removeFromStorage(key: string): Promise<void> {
 		try {
+			// Remove from both storage API and localStorage
+			if (key === 'noteTakingNotes') {
+				await this.noteTakingStorage.setNotes([]);
+			} else if (key === 'noteTakingTopics') {
+				await this.noteTakingStorage.setTopics([]);
+			} else {
+				await this.noteTakingStorage.updateSetting(key as any, undefined);
+			}
 			localStorage.removeItem(key);
 		} catch (error) {
-			console.warn(`Failed to remove ${key} from localStorage:`, error);
+			console.warn(`Failed to remove ${key} from storage:`, error);
 		}
 	}
 
@@ -110,6 +170,6 @@ export class StorageManager {
 			throw new Error('Storage quota would be exceeded');
 		}
 
-		this.saveToLocalStorage(key, data);
+		await this.saveToStorage(key, data);
 	}
 }

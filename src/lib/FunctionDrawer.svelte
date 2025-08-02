@@ -5,8 +5,8 @@
 	import { T } from '$lib';
 	import { StorageFactory } from '$lib/storage-api';
 
-	// Initialize UI settings storage
-	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
+	// Initialize function drawer settings storage
+	const functionDrawerStorage = StorageFactory.createFunctionDrawerSettingsStorage();
 
 	let pyodide: any;
 	let canvas: HTMLCanvasElement;
@@ -123,7 +123,7 @@
 	async function saveHistoryToStorage() {
 		if (browser) {
 			try {
-				await uiSettingsStorage.setFunctionDrawerHistory(history, currentHistoryId || '');
+				await functionDrawerStorage.setHistory(history, currentHistoryId || '');
 			} catch (e) {
 				console.warn('Failed to save history to storage:', e);
 			}
@@ -134,7 +134,7 @@
 		if (browser) {
 			try {
 				const { history: savedHistory, currentId: savedCurrentId } =
-					await uiSettingsStorage.getFunctionDrawerHistory();
+					await functionDrawerStorage.getHistory();
 
 				if (savedHistory && Array.isArray(savedHistory)) {
 					history = savedHistory;

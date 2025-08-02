@@ -1,13 +1,9 @@
 // UI Settings Storage Entity
 // Handles user interface preferences like tool ordering, layout settings, etc.
 
-import { BaseEntityStorage } from '../storage-client';
 import type { StorageAdapter } from '../types';
-import { EntityIdGenerator } from '../entity-id';
 
 export interface UISettings {
-	id?: string;
-
 	// Tools page settings
 	toolsOrder?: string[];
 
@@ -24,68 +20,64 @@ export interface UISettings {
 	// Azkar progress
 	azkarProgress?: Record<string, any>;
 
-	// Function drawer history and current ID
-	functionDrawerHistory?: any[];
-	functionDrawerCurrentHistoryId?: string;
-
 	// Currency converter recent conversions
 	recentCurrencyConversions?: any[];
 
-	// Chat configurations
-	ollamaChatConfig?: any;
-	ollamaChatLlmState?: any;
+	// AI Assistant configuration
 	aiAssistantConfig?: any;
 
 	// API keys and sensitive data
 	stockApiKey?: string;
-
-	// Sound library playback state
-	soundLibraryPlaybackState?: any;
-	soundLibraryCurrentTime?: number;
 
 	// Timestamps
 	createdAt?: string;
 	updatedAt?: string;
 }
 
-export class UISettingsStorage extends BaseEntityStorage<UISettings> {
+export class UISettingsStorage {
+	private adapter: StorageAdapter;
+	private readonly key = 'ui-settings';
+
 	constructor(adapter: StorageAdapter) {
-		super({
-			adapter,
-			keyPrefix: 'ui-settings',
-			generateId: () => EntityIdGenerator.generateUuid()
-		});
+		this.adapter = adapter;
 	}
 
-	// Get or create the main UI settings object
-	async getMainSettings(): Promise<UISettings> {
-		const settings = await this.list();
-		if (settings.length > 0) {
-			return settings[0];
+	// Get the UI settings object
+	async getSettings(): Promise<UISettings> {
+		try {
+			const data = await this.adapter.get(this.key);
+			return data ? JSON.parse(data as string) : {};
+		} catch (error) {
+			console.warn('Failed to load UI settings:', error);
+			return {};
 		}
-
-		// Create default settings
-		const defaultSettings: UISettings = {
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString()
-		};
-
-		const id = await this.create(defaultSettings);
-		return { ...defaultSettings, id };
 	}
 
 	// Update specific setting
 	async updateSetting<K extends keyof UISettings>(key: K, value: UISettings[K]): Promise<void> {
-		const settings = await this.getMainSettings();
-		await this.update(settings.id!, {
-			[key]: value,
-			updatedAt: new Date().toISOString()
-		});
+		try {
+			const settings = await this.getSettings();
+			const updatedSettings = {
+				...settings,
+				[key]: value,
+				updatedAt: new Date().toISOString()
+			};
+
+			// Set createdAt if this is the first time
+			if (!settings.createdAt) {
+				updatedSettings.createdAt = new Date().toISOString();
+			}
+
+			await this.adapter.set(this.key, JSON.stringify(updatedSettings));
+		} catch (error) {
+			console.warn(`Failed to update UI setting ${String(key)}:`, error);
+			throw error;
+		}
 	}
 
 	// Get specific setting
 	async getSetting<K extends keyof UISettings>(key: K): Promise<UISettings[K] | undefined> {
-		const settings = await this.getMainSettings();
+		const settings = await this.getSettings();
 		return settings[key];
 	}
 
@@ -109,16 +101,23 @@ export class UISettingsStorage extends BaseEntityStorage<UISettings> {
 
 	// Translator settings
 	async setTranslatorSettings(sourceLanguage: string, targetLanguage: string): Promise<void> {
-		const settings = await this.getMainSettings();
-		await this.update(settings.id!, {
+		const settings = await this.getSettings();
+		const updatedSettings = {
+			...settings,
 			translatorSourceLanguage: sourceLanguage,
 			translatorTargetLanguage: targetLanguage,
 			updatedAt: new Date().toISOString()
-		});
+		};
+
+		if (!settings.createdAt) {
+			updatedSettings.createdAt = new Date().toISOString();
+		}
+
+		await this.adapter.set(this.key, JSON.stringify(updatedSettings));
 	}
 
 	async getTranslatorSettings(): Promise<{ sourceLanguage?: string; targetLanguage?: string }> {
-		const settings = await this.getMainSettings();
+		const settings = await this.getSettings();
 		return {
 			sourceLanguage: settings.translatorSourceLanguage,
 			targetLanguage: settings.translatorTargetLanguage
@@ -147,24 +146,6 @@ export class UISettingsStorage extends BaseEntityStorage<UISettings> {
 		await this.updateSetting('stockApiKey', undefined);
 	}
 
-	// Function drawer history
-	async setFunctionDrawerHistory(history: any[], currentId?: string): Promise<void> {
-		const settings = await this.getMainSettings();
-		await this.update(settings.id!, {
-			functionDrawerHistory: history,
-			functionDrawerCurrentHistoryId: currentId,
-			updatedAt: new Date().toISOString()
-		});
-	}
-
-	async getFunctionDrawerHistory(): Promise<{ history?: any[]; currentId?: string }> {
-		const settings = await this.getMainSettings();
-		return {
-			history: settings.functionDrawerHistory,
-			currentId: settings.functionDrawerCurrentHistoryId
-		};
-	}
-
 	// Currency converter recent conversions
 	async setRecentCurrencyConversions(conversions: any[]): Promise<void> {
 		await this.updateSetting('recentCurrencyConversions', conversions);
@@ -183,45 +164,12 @@ export class UISettingsStorage extends BaseEntityStorage<UISettings> {
 		return this.getSetting('azkarProgress');
 	}
 
-	// Chat configurations
-	async setOllamaChatConfig(config: any): Promise<void> {
-		await this.updateSetting('ollamaChatConfig', config);
-	}
-
-	async getOllamaChatConfig(): Promise<any | undefined> {
-		return this.getSetting('ollamaChatConfig');
-	}
-
-	async setOllamaChatLlmState(state: any): Promise<void> {
-		await this.updateSetting('ollamaChatLlmState', state);
-	}
-
-	async getOllamaChatLlmState(): Promise<any | undefined> {
-		return this.getSetting('ollamaChatLlmState');
-	}
-
+	// AI Assistant configuration
 	async setAiAssistantConfig(config: any): Promise<void> {
 		await this.updateSetting('aiAssistantConfig', config);
 	}
 
 	async getAiAssistantConfig(): Promise<any | undefined> {
 		return this.getSetting('aiAssistantConfig');
-	}
-
-	// Sound library settings
-	async setSoundLibraryPlaybackState(state: any): Promise<void> {
-		await this.updateSetting('soundLibraryPlaybackState', state);
-	}
-
-	async getSoundLibraryPlaybackState(): Promise<any | undefined> {
-		return this.getSetting('soundLibraryPlaybackState');
-	}
-
-	async setSoundLibraryCurrentTime(time: number): Promise<void> {
-		await this.updateSetting('soundLibraryCurrentTime', time);
-	}
-
-	async getSoundLibraryCurrentTime(): Promise<number | undefined> {
-		return this.getSetting('soundLibraryCurrentTime');
 	}
 }

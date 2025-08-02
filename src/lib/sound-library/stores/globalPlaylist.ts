@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { SoundLibraryStorage } from '../utils/storage';
+import { StorageFactory } from '../../storage-api';
 
 export interface AudioFile {
 	id: string;
@@ -57,6 +58,9 @@ function createGlobalPlaylistStore() {
 	let tabId: string = crypto.randomUUID();
 	let files: AudioFile[] = [];
 	let fileReloadTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Initialize storage
+	const soundLibraryStorage = StorageFactory.createSoundLibrarySettingsStorage();
 
 	// Standalone file loader that works even if SoundLibrary component isn't mounted
 	async function loadSpecificFilesFromStorage(fileIds: string[]): Promise<AudioFile[]> {
@@ -195,11 +199,18 @@ function createGlobalPlaylistStore() {
 					return { ...state, playlistCollapsed: data.collapsed };
 
 				case 'TIME_UPDATE':
-					// Read current time from localStorage instead of using broadcast data
+					// Read current time from storage-api instead of using broadcast data
 					try {
-						const savedTime = localStorage.getItem('soundLibrary_currentTime');
-						const currentTime = savedTime ? parseFloat(savedTime) : data.currentTime;
-						return { ...state, currentTime };
+						soundLibraryStorage
+							.getCurrentTime()
+							.then((savedTime) => {
+								const currentTime = savedTime !== undefined ? savedTime : data.currentTime;
+								update((state) => ({ ...state, currentTime }));
+							})
+							.catch(() => {
+								update((state) => ({ ...state, currentTime: data.currentTime }));
+							});
+						return { ...state, currentTime: data.currentTime };
 					} catch (error) {
 						return { ...state, currentTime: data.currentTime };
 					}
@@ -215,29 +226,62 @@ function createGlobalPlaylistStore() {
 					return state;
 
 				case 'LOAD_STATE_REQUEST':
-					// Load state from localStorage and send it back to the worker
+					// Load state from storage-api and send it back to the worker
 					try {
-						const savedState = localStorage.getItem('soundLibrary_playbackState');
-						if (savedState) {
-							const parsedState = JSON.parse(savedState);
-							// Load current time from separate localStorage entry
-							const savedTime = localStorage.getItem('soundLibrary_currentTime');
-							if (savedTime) {
-								parsedState.currentTime = parseFloat(savedTime);
-							}
-							// Note: File objects and URLs can't be restored from localStorage
-							// The playlist will need to be rebuilt from the sound library when needed
-							sendToWorker('LOAD_STATE_RESPONSE', { state: parsedState });
-						}
+						soundLibraryStorage
+							.getPlaybackState()
+							.then(async (savedState) => {
+								if (savedState) {
+									const parsedState = savedState;
+									// Load current time from separate storage entry
+									const savedTime = await soundLibraryStorage.getCurrentTime();
+									if (savedTime !== undefined) {
+										parsedState.currentTime = savedTime;
+									}
+									// Note: File objects and URLs can't be restored from storage
+									// The playlist will need to be rebuilt from the sound library when needed
+									sendToWorker('LOAD_STATE_RESPONSE', { state: parsedState });
+								} else {
+									// Try to migrate from old localStorage format
+									const oldSavedState = localStorage.getItem('soundLibrary_playbackState');
+									if (oldSavedState) {
+										const parsedState = JSON.parse(oldSavedState);
+										const savedTime = localStorage.getItem('soundLibrary_currentTime');
+										if (savedTime) {
+											parsedState.currentTime = parseFloat(savedTime);
+										}
+										// Migrate to storage-api and remove from localStorage
+										try {
+											await soundLibraryStorage.setPlaybackState(parsedState);
+											if (savedTime) {
+												await soundLibraryStorage.setCurrentTime(parseFloat(savedTime));
+											}
+											localStorage.removeItem('soundLibrary_playbackState');
+											localStorage.removeItem('soundLibrary_currentTime');
+											console.log(
+												'Successfully migrated sound library playback state to storage-api'
+											);
+										} catch (e) {
+											console.warn('Failed to migrate playback state:', e);
+										}
+										sendToWorker('LOAD_STATE_RESPONSE', { state: parsedState });
+									}
+								}
+							})
+							.catch((error) => {
+								console.warn('Failed to load saved state:', error);
+							});
 					} catch (error) {
 						console.warn('Failed to load saved state:', error);
 					}
 					return state;
 
 				case 'SAVE_STATE_REQUEST':
-					// Save the provided state to localStorage
+					// Save the provided state to storage-api
 					try {
-						localStorage.setItem('soundLibrary_playbackState', JSON.stringify(data.state));
+						soundLibraryStorage.setPlaybackState(data.state).catch((error) => {
+							console.warn('Failed to save state:', error);
+						});
 					} catch (error) {
 						console.warn('Failed to save state:', error);
 					}
@@ -422,8 +466,10 @@ function createGlobalPlaylistStore() {
 		let timeUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
 		audio.addEventListener('timeupdate', () => {
 			const currentTime = audio.currentTime;
-			// Save current time locally with immediate update
-			localStorage.setItem('soundLibrary_currentTime', currentTime.toString());
+			// Save current time to storage-api with immediate update (fire-and-forget)
+			soundLibraryStorage
+				.setCurrentTime(currentTime)
+				.catch((e) => console.warn('Failed to save current time:', e));
 
 			// Debounce worker notification to 10ms
 			if (timeUpdateTimeout) {

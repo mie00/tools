@@ -56,8 +56,8 @@
 
 	async function loadNotes() {
 		try {
-			notes = storageManager.loadFromLocalStorage('noteTakingNotes', []);
-			topics = storageManager.loadFromLocalStorage('noteTakingTopics', ['Main']);
+			notes = await storageManager.loadFromStorage('noteTakingNotes', []);
+			topics = await storageManager.loadFromStorage('noteTakingTopics', ['Main']);
 		} catch (error) {
 			console.error('Error loading notes:', error);
 		}
@@ -229,8 +229,8 @@
 			notes = [];
 			topics = ['Main'];
 			selectedTopic = 'Main';
-			storageManager.removeFromLocalStorage('noteTakingNotes');
-			storageManager.removeFromLocalStorage('noteTakingTopics');
+			await storageManager.removeFromStorage('noteTakingNotes');
+			await storageManager.removeFromStorage('noteTakingTopics');
 			await updateStorageInfo();
 			showStorageWarning = false;
 		}

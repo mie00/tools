@@ -8,8 +8,8 @@
 	import { browser } from '$app/environment';
 	import { StorageFactory } from '../storage-api';
 
-	// Initialize UI settings storage
-	const uiSettingsStorage = StorageFactory.createUISettingsStorage();
+	// Initialize ollama chat settings storage
+	const ollamaChatStorage = StorageFactory.createOllamaChatSettingsStorage();
 	let _chatStorage: Awaited<ReturnType<typeof StorageFactory.createChatSessionStorage>>;
 
 	// Initialize chat storage asynchronously
@@ -196,31 +196,61 @@ CONVERSATION:
 
 	onMount(async () => {
 		// Load from localStorage and migrate old data
-		const savedTopics = localStorage.getItem('ollamaChatTopics');
-		if (savedTopics) {
-			const loadedTopics: ChatTopic[] = JSON.parse(savedTopics);
-			// Migration: Ensure all messages have a unique ID and modelSource
-			loadedTopics.forEach((topic) => {
-				topic.messages.forEach((message) => {
-					if (!message.id) {
-						message.id = crypto.randomUUID();
+		try {
+			const savedTopics = await ollamaChatStorage.getTopics();
+			if (savedTopics) {
+				const loadedTopics: ChatTopic[] = savedTopics;
+				// Migration: Ensure all messages have a unique ID and modelSource
+				loadedTopics.forEach((topic) => {
+					topic.messages.forEach((message) => {
+						if (!message.id) {
+							message.id = crypto.randomUUID();
+						}
+					});
+					// Migration: Add modelSource if it doesn't exist
+					if (!topic.modelSource) {
+						topic.modelSource = 'remote'; // Default to remote for existing topics
+					}
+					// Migration: Add lastUpdated if it doesn't exist
+					if (!topic.lastUpdated) {
+						topic.lastUpdated = topic.createdAt;
 					}
 				});
-				// Migration: Add modelSource if it doesn't exist
-				if (!topic.modelSource) {
-					topic.modelSource = 'remote'; // Default to remote for existing topics
+				persistentTopics.set(loadedTopics);
+			} else {
+				// Try to migrate from old localStorage format
+				const oldSavedTopics = localStorage.getItem('ollamaChatTopics');
+				if (oldSavedTopics) {
+					const loadedTopics: ChatTopic[] = JSON.parse(oldSavedTopics);
+					// Migration: Ensure all messages have a unique ID and modelSource
+					loadedTopics.forEach((topic) => {
+						topic.messages.forEach((message) => {
+							if (!message.id) {
+								message.id = crypto.randomUUID();
+							}
+						});
+						// Migration: Add modelSource if it doesn't exist
+						if (!topic.modelSource) {
+							topic.modelSource = 'remote'; // Default to remote for existing topics
+						}
+						// Migration: Add lastUpdated if it doesn't exist
+						if (!topic.lastUpdated) {
+							topic.lastUpdated = topic.createdAt;
+						}
+					});
+					persistentTopics.set(loadedTopics);
+					// Save to new storage format and remove old
+					await ollamaChatStorage.setTopics(loadedTopics);
+					localStorage.removeItem('ollamaChatTopics');
 				}
-				// Migration: Add lastUpdated if it doesn't exist
-				if (!topic.lastUpdated) {
-					topic.lastUpdated = topic.createdAt;
-				}
-			});
-			persistentTopics.set(loadedTopics);
+			}
+		} catch (e) {
+			console.error('Failed to load topics:', e);
 		}
 
 		// Load config from storage API
 		try {
-			const savedConfig = await uiSettingsStorage.getOllamaChatConfig();
+			const savedConfig = await ollamaChatStorage.getConfig();
 			if (savedConfig) {
 				const parsedConfig = savedConfig;
 				// Migration: Handle old config structure
@@ -257,15 +287,17 @@ CONVERSATION:
 			if (!currentActiveTopicId && topics.length > 0) {
 				activeTopicId.set(topics[0].id);
 			}
-			// TODO: Migrate topics to proper chat storage
-			localStorage.setItem('ollamaChatTopics', JSON.stringify(value));
+			// Save topics to storage API (fire-and-forget)
+			ollamaChatStorage
+				.setTopics(value)
+				.catch((e: any) => console.warn('Failed to save topics:', e));
 		});
 
 		persistentConfig.subscribe((value) => {
 			config = value;
 			// Save config to storage API (fire-and-forget)
-			uiSettingsStorage
-				.setOllamaChatConfig(value)
+			ollamaChatStorage
+				.setConfig(value)
 				.catch((e: any) => console.warn('Failed to save config:', e));
 		});
 
@@ -275,7 +307,7 @@ CONVERSATION:
 
 		// Load and persist LLM state from storage API
 		try {
-			const savedLlmState = await uiSettingsStorage.getOllamaChatLlmState();
+			const savedLlmState = await ollamaChatStorage.getLlmState();
 			if (savedLlmState) {
 				persistentLlmState.set(savedLlmState);
 			}
@@ -285,8 +317,8 @@ CONVERSATION:
 
 		persistentLlmState.subscribe((value) => {
 			// Save LLM state to storage API (fire-and-forget)
-			uiSettingsStorage
-				.setOllamaChatLlmState(value)
+			ollamaChatStorage
+				.setLlmState(value)
 				.catch((e: any) => console.warn('Failed to save LLM state:', e));
 		});
 

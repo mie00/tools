@@ -1,4 +1,5 @@
 import type { AudioFile } from '../stores/globalPlaylist';
+import { StorageFactory } from '../../storage-api';
 
 interface Folder {
 	id: string;
@@ -12,6 +13,20 @@ interface StorageMetadata {
 	folders: Folder[];
 }
 
+// Initialize storage instances
+let soundLibraryStorage: ReturnType<typeof StorageFactory.createSoundLibrarySettingsStorage>;
+let audioFileStorage: Awaited<ReturnType<typeof StorageFactory.createAudioFileStorage>>;
+
+// Initialize storage on first use
+async function initializeStorage() {
+	if (!soundLibraryStorage) {
+		soundLibraryStorage = StorageFactory.createSoundLibrarySettingsStorage();
+	}
+	if (!audioFileStorage) {
+		audioFileStorage = await StorageFactory.createAudioFileStorage();
+	}
+}
+
 /**
  * Shared storage utilities for the sound library
  */
@@ -21,9 +36,15 @@ export class SoundLibraryStorage {
 	 */
 	static async loadMetadata(): Promise<{ files: AudioFile[]; folders: Folder[] }> {
 		try {
-			// Check if OPFS is supported
+			// Try storage-api first
+			const storageApiResult = await this.loadFromStorageApi();
+			if (storageApiResult.files.length > 0 || storageApiResult.folders.length > 1) {
+				return storageApiResult;
+			}
+
+			// Check if OPFS is supported for file data
 			if (!navigator.storage?.getDirectory) {
-				return this.loadFromLocalStorage();
+				return storageApiResult;
 			}
 
 			const opfsRoot = await navigator.storage.getDirectory();
@@ -50,19 +71,53 @@ export class SoundLibraryStorage {
 
 				return { files, folders };
 			} catch (_dirError) {
-				return this.loadFromLocalStorage();
+				return storageApiResult;
 			}
 		} catch (error) {
 			console.error('Failed to load from OPFS:', error);
-			// Fallback to localStorage
-			return this.loadFromLocalStorage();
+			// Fallback to storage-api
+			return this.loadFromStorageApi();
 		}
 	}
 
 	/**
-	 * Load from localStorage only (fallback)
+	 * Load from storage-api (with localStorage fallback for migration)
 	 */
-	static loadFromLocalStorage(): { files: AudioFile[]; folders: Folder[] } {
+	static async loadFromStorageApi(): Promise<{ files: AudioFile[]; folders: Folder[] }> {
+		try {
+			await initializeStorage();
+
+			// Try to load from storage-api first
+			const savedFiles = await soundLibraryStorage.getFiles();
+			const savedFolders = await soundLibraryStorage.getFolders();
+
+			const folders = savedFolders
+				? savedFolders
+				: [{ id: 'root', name: 'Library', parentId: null, children: [] }];
+
+			if (savedFiles) {
+				// Can't restore actual File objects from storage, only metadata
+				const files = savedFiles.map((f: any) => ({
+					...f,
+					file: null,
+					url: ''
+				}));
+				return { files, folders };
+			} else {
+				// Try to migrate from old localStorage format
+				return this.loadFromLocalStorageForMigration();
+			}
+		} catch (error) {
+			console.error('Failed to load from storage-api:', error);
+			// Fallback to localStorage
+			return this.loadFromLocalStorageForMigration();
+		}
+	}
+
+	/**
+	 * Load from localStorage only (fallback and migration)
+	 */
+	static loadFromLocalStorageForMigration(): { files: AudioFile[]; folders: Folder[] } {
 		try {
 			const savedFiles = localStorage.getItem('soundLibrary_files');
 			const savedFolders = localStorage.getItem('soundLibrary_folders');
@@ -79,6 +134,20 @@ export class SoundLibraryStorage {
 					file: null,
 					url: ''
 				}));
+
+				// Migrate to storage-api and remove from localStorage
+				initializeStorage().then(async () => {
+					try {
+						await soundLibraryStorage.setFiles(fileMetadata);
+						await soundLibraryStorage.setFolders(folders);
+						localStorage.removeItem('soundLibrary_files');
+						localStorage.removeItem('soundLibrary_folders');
+						console.log('Successfully migrated sound library data to storage-api');
+					} catch (e) {
+						console.warn('Failed to migrate sound library data:', e);
+					}
+				});
+
 				return { files, folders };
 			}
 		} catch (error) {
@@ -102,7 +171,7 @@ export class SoundLibraryStorage {
 		try {
 			// Check if OPFS is supported
 			if (!navigator.storage?.getDirectory) {
-				this.saveToLocalStorageOnly(files, folders);
+				await this.saveToStorageApiOnly(files, folders);
 				return;
 			}
 
@@ -142,33 +211,32 @@ export class SoundLibraryStorage {
 			await metadataWritable.write(JSON.stringify(metadata));
 			await metadataWritable.close();
 
-			// Also save to localStorage as fallback
-			this.saveToLocalStorageOnly(files, folders);
+			// Also save to storage-api as fallback
+			await this.saveToStorageApiOnly(files, folders);
 		} catch (error) {
 			console.error('Failed to save to OPFS:', error);
-			// Fallback to localStorage
-			this.saveToLocalStorageOnly(files, folders);
+			// Fallback to storage-api
+			await this.saveToStorageApiOnly(files, folders);
 		}
 	}
 
 	/**
-	 * Save to localStorage only
+	 * Save to storage-api only
 	 */
-	static saveToLocalStorageOnly(files: AudioFile[], folders: Folder[]): void {
+	static async saveToStorageApiOnly(files: AudioFile[], folders: Folder[]): Promise<void> {
 		try {
-			localStorage.setItem(
-				'soundLibrary_files',
-				JSON.stringify(
-					files.map((f) => ({
-						...f,
-						file: null, // Don't store File objects
-						url: null // Don't store URLs
-					}))
-				)
-			);
-			localStorage.setItem('soundLibrary_folders', JSON.stringify(folders));
+			await initializeStorage();
+
+			const fileMetadata = files.map((f) => ({
+				...f,
+				file: null, // Don't store File objects
+				url: null // Don't store URLs
+			}));
+
+			await soundLibraryStorage.setFiles(fileMetadata);
+			await soundLibraryStorage.setFolders(folders);
 		} catch (error) {
-			console.error('Failed to save to localStorage:', error);
+			console.error('Failed to save to storage-api:', error);
 		}
 	}
 
@@ -290,7 +358,7 @@ export class SoundLibraryStorage {
 	}
 
 	/**
-	 * Load files from storage (OPFS or localStorage fallback) - DEPRECATED, use loadMetadata instead
+	 * Load files from storage (OPFS or storage-api fallback) - DEPRECATED, use loadMetadata instead
 	 */
 	static async loadFiles(): Promise<{ files: AudioFile[]; folders: Folder[] }> {
 		return this.loadMetadata();

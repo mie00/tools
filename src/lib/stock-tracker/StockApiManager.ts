@@ -48,11 +48,10 @@ export class StockApiManager {
 	}
 
 	constructor() {
-		// Load API key asynchronously - fire and forget
-		this.loadApiKey().catch((e) => console.warn('Failed to load API key:', e));
+		// API key will be loaded explicitly by calling loadApiKey()
 	}
 
-	private async loadApiKey(): Promise<void> {
+	async loadApiKey(): Promise<void> {
 		try {
 			const saved = await this.uiSettingsStorage.getStockApiKey();
 			if (saved) {

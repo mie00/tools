@@ -95,8 +95,8 @@
 			toUnit = to;
 		}
 
-		// Convert if we have all parameters
-		if (value) {
+		// Convert if we have a valid input value
+		if (inputValue && inputValue !== '1') {
 			convert();
 		}
 	}
@@ -334,18 +334,19 @@
 	// Debounce conversion
 	let convertTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
-		if (isLoaded) {
+		if (isLoaded && inputValue && fromUnit && toUnit) {
 			clearTimeout(convertTimeout);
 			convertTimeout = setTimeout(() => {
 				convert();
+				updateUrl();
 			}, 200);
 		}
 	});
 
-	// Debounce URL update
+	// Debounce URL update for category changes
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
 	$effect(() => {
-		if (isLoaded) {
+		if (isLoaded && selectedCategory) {
 			clearTimeout(urlUpdateTimeout);
 			urlUpdateTimeout = setTimeout(() => {
 				updateUrl();
@@ -360,6 +361,10 @@
 		loadFromUrl();
 		await loadHistoryFromStorage();
 		isLoaded = true;
+		// Ensure conversion runs if we have a valid input value
+		if (inputValue && inputValue !== '1') {
+			convert();
+		}
 	});
 </script>
 
