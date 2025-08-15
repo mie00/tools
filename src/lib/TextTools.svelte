@@ -15,6 +15,7 @@
 		{ id: 'reverse', name: 'esreveR', description: 'Reverse the text' },
 		{ id: 'removeSpaces', name: 'RemoveSpaces', description: 'Remove all spaces' },
 		{ id: 'slugify', name: 'slug-ify', description: 'Convert to URL-friendly slug' },
+		{ id: 'cleanupPaste', name: 'Fix Pasted Text', description: 'Fix clipped lines and trailing spaces' },
 		{ id: 'wordCount', name: 'Word Count', description: 'Count words, characters, etc.' },
 		{ id: 'encode', name: 'URL Encode', description: 'URL encode the text' },
 		{ id: 'decode', name: 'URL Decode', description: 'URL decode the text' }
@@ -91,6 +92,8 @@
 					.replace(/[^\w\s-]/g, '')
 					.replace(/[\s_-]+/g, '-')
 					.replace(/^-+|-+$/g, '');
+			case 'cleanupPaste':
+				return fixClippedLinesAndTrailingSpaces(text);
 			case 'encode':
 				return encodeURIComponent(text);
 			case 'decode':
@@ -103,6 +106,64 @@
 				return text;
 		}
 	}
+	
+	function fixClippedLinesAndTrailingSpaces(text: string): string {
+		// Split the text into lines
+		let lines = text.split('\n');
+		
+		// Skip if there aren't enough lines to analyze
+		if (lines.length < 3) {
+			return text.replace(/[ \t]+$/gm, '');
+		}
+		
+		// Step 1: Check if all lines (except first and last) have the same length with spaces
+		const linesWithSpaces = lines.slice(1, -1).map(line => line.length);
+		const commonLength = linesWithSpaces[0];
+		const allSameLength = linesWithSpaces.every(len => len === commonLength);
+		
+		if (allSameLength && commonLength > 2) {
+			// Step 2: Check if lines should be combined based on the specified conditions
+			const processedLines = [];
+			let i = 0;
+			
+			// Always keep the first line as is
+			processedLines.push(lines[0]);
+			i = 1;
+			
+			// Process middle lines
+			while (i < lines.length - 1) {
+				const currentLine = lines[i];
+				
+				// Check if this line should be combined with the next
+				if (currentLine.length === commonLength) {
+					const lastChar = currentLine.charAt(currentLine.length - 1);
+					const secondLastChar = currentLine.length > 1 ? currentLine.charAt(currentLine.length - 2) : '';
+					
+					// Combine if last char is not space OR second-last char is not space
+					if (lastChar !== ' ' || secondLastChar !== ' ') {
+						const nextLine = lines[i + 1];
+						processedLines.push(currentLine + nextLine.trimStart());
+						i += 2; // Skip the next line
+						continue;
+					}
+				}
+				
+				// If no combining was done, add the line as is
+				processedLines.push(currentLine);
+				i++;
+			}
+			
+			// Add the last line if we didn't combine it
+			if (i < lines.length) {
+				processedLines.push(lines[i]);
+			}
+			
+			lines = processedLines;
+		}
+		
+		// Step 3: Always remove trailing spaces from all lines
+		return lines.map(line => line.replace(/[ \t]+$/g, '')).join('\n');
+	}
 
 	function getStats(text: string) {
 		const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -110,8 +171,9 @@
 		const charactersNoSpaces = text.replace(/\s/g, '').length;
 		const lines = text.split('\n').length;
 		const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim()).length;
+		const bytes = new TextEncoder().encode(text).length;
 
-		return { words, characters, charactersNoSpaces, lines, paragraphs };
+		return { words, characters, charactersNoSpaces, lines, paragraphs, bytes };
 	}
 
 	$effect(() => {
@@ -120,6 +182,7 @@
 			outputText = `Words: ${stats.words}
 Characters: ${stats.characters}
 Characters (no spaces): ${stats.charactersNoSpaces}
+Bytes: ${stats.bytes}
 Lines: ${stats.lines}
 Paragraphs: ${stats.paragraphs}`;
 		} else {
