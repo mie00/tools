@@ -70,25 +70,27 @@ function createGlobalPlaylistStore() {
 	// Initialize SharedWorker connection
 	function initWorker() {
 		try {
-			worker = new SharedWorker(new URL('./playlistWorker.ts', import.meta.url), {
-				type: 'module'
-			});
-			port = worker.port;
+			if (typeof window !== 'undefined' && typeof SharedWorker !== 'undefined') {
+				worker = new SharedWorker(new URL('./playlistWorker.ts', import.meta.url), {
+					type: 'module'
+				});
+				port = worker.port;
 
-			port.addEventListener('message', handleWorkerMessage);
-			port.start();
+				port.addEventListener('message', handleWorkerMessage);
+				port.start();
 
-			// Register this tab with the worker
-			sendToWorker('REGISTER_TAB', {
-				canPlayAudio: true // Assume we can play audio until proven otherwise
-			});
+				// Register this tab with the worker
+				sendToWorker('REGISTER_TAB', {
+					canPlayAudio: true // Assume we can play audio until proven otherwise
+				});
 
-			// Set up tab lifecycle event listeners
-			window.addEventListener('beforeunload', handleTabUnload);
+				// Set up tab lifecycle event listeners
+				window.addEventListener('beforeunload', handleTabUnload);
 
-			// Try to enable audio after user interaction
-			document.addEventListener('click', tryEnableAudio, { once: true });
-			document.addEventListener('keydown', tryEnableAudio, { once: true });
+				// Try to enable audio after user interaction
+				document.addEventListener('click', tryEnableAudio, { once: true });
+				document.addEventListener('keydown', tryEnableAudio, { once: true });
+			}
 		} catch (error) {
 			console.error('Failed to initialize SharedWorker:', error);
 		}

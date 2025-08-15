@@ -119,6 +119,12 @@ export class StorageFactory {
 	}
 
 	static getAdapter(name: string): StorageAdapter {
+		// During SSR, adapters might not be initialized yet, but it's fine since adapters check for 'window'
+		if (typeof window === 'undefined') {
+			// In SSR context, return a silent no-op adapter
+			return new LocalStorageAdapter();
+		}
+
 		const adapter = this.adapters.get(name);
 		if (!adapter) {
 			console.warn(`Storage adapter '${name}' not registered, falling back to localStorage`);
@@ -269,7 +275,6 @@ export class StorageFactory {
 	}
 }
 
-// Auto-initialize on import
-if (typeof window !== 'undefined') {
-	StorageFactory.initializeDefaults();
-}
+// Auto-initialize on import regardless of environment
+// This ensures adapters are registered before they're accessed
+StorageFactory.initializeDefaults();

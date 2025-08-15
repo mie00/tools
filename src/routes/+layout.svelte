@@ -5,6 +5,7 @@
 	import { translationStore } from '$lib/translation';
 	import GlobalPlaylist from '$lib/sound-library/GlobalPlaylist.svelte';
 	// import { page } from '$app/stores';
+	import { StorageFactory } from '$lib/storage-api';
 
 	let { children } = $props();
 	let isRTL = $state(false);
@@ -72,25 +73,3 @@
 <!-- Global playlist component available on all pages -->
 <GlobalPlaylist />
 
-<style>
-	/* Global RTL support - applied to html element via JavaScript */
-	:global(html.rtl) {
-		direction: rtl;
-		text-align: right;
-	}
-
-	:global(html.rtl) :global(body) {
-		direction: rtl;
-		text-align: right;
-	}
-
-	/* Adjust specific layout elements for RTL */
-	:global(html.rtl) :global(.language-dropdown .absolute) {
-		left: auto;
-		right: 0;
-	}
-
-	:global(html.rtl) :global(.justify-center) {
-		flex-direction: row;
-	}
-</style>
