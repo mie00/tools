@@ -4,11 +4,13 @@
 	let {
 		leftInput = $bindable(''),
 		rightInput = $bindable(''),
-		wrapLines = true
+		wrapLines = true,
+		ignoreMaxCharLimit = false
 	}: {
 		leftInput: string;
 		rightInput: string;
 		wrapLines?: boolean;
+		ignoreMaxCharLimit?: boolean;
 	} = $props();
 
 	interface DiffItem {

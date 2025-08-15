@@ -6,11 +6,13 @@
 	let {
 		leftInput = $bindable(''),
 		rightInput = $bindable(''),
-		wrapLines = true
+		wrapLines = true,
+		ignoreMaxCharLimit = false
 	}: {
 		leftInput: string;
 		rightInput: string;
 		wrapLines?: boolean;
+		ignoreMaxCharLimit?: boolean;
 	} = $props();
 
 	// Configuration options
@@ -72,8 +74,10 @@
 
 	function checkSizeWarnings() {
 		const { totalSize } = getInputSizes();
-		showLargeSizeWarning = totalSize > LARGE_SIZE_WARNING;
-		return totalSize <= MAX_SAFE_SIZE;
+		// Only show large input warning if we're below the MAX_SAFE_SIZE
+		// This prevents duplicate warnings in both cases
+		showLargeSizeWarning = totalSize > LARGE_SIZE_WARNING && totalSize <= MAX_SAFE_SIZE;
+		return ignoreMaxCharLimit || totalSize <= MAX_SAFE_SIZE;
 	}
 
 	async function calculateDiff() {
@@ -260,7 +264,7 @@
 	{/if}
 
 	<!-- Max Size Exceeded Warning -->
-	{#if getInputSizes().totalSize > MAX_SAFE_SIZE}
+	{#if getInputSizes().totalSize > MAX_SAFE_SIZE && !ignoreMaxCharLimit}
 		<div class="rounded-lg border border-red-200 bg-red-50 p-4">
 			<div class="flex items-start">
 				<div class="flex-shrink-0">
@@ -278,7 +282,31 @@
 						<p>
 							Input size ({getInputSizes().totalSize.toLocaleString()} characters) exceeds the maximum
 							safe limit ({MAX_SAFE_SIZE.toLocaleString()} characters). Please reduce the input size
-							to enable diff calculation.
+							or click "Ignore Limit" to proceed anyway (may cause performance issues).
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{:else if getInputSizes().totalSize > MAX_SAFE_SIZE && ignoreMaxCharLimit}
+		<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+			<div class="flex items-start">
+				<div class="flex-shrink-0">
+					<svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+						<path
+							fill-rule="evenodd"
+							d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</div>
+				<div class="ml-3">
+					<h3 class="text-sm font-medium text-yellow-800"><T>Size Limit Ignored</T></h3>
+					<div class="mt-2 text-sm text-yellow-700">
+						<p>
+							Input size ({getInputSizes().totalSize.toLocaleString()} characters) exceeds the maximum
+							safe limit ({MAX_SAFE_SIZE.toLocaleString()} characters). Proceeding with diff calculation,
+							which may be slow or cause performance issues.
 						</p>
 					</div>
 				</div>
@@ -506,9 +534,9 @@
 					></div>
 					<p class="text-gray-500"><T>Calculating differences...</T></p>
 				</div>
-			{:else if getInputSizes().totalSize > MAX_SAFE_SIZE}
+			{:else if getInputSizes().totalSize > MAX_SAFE_SIZE && !ignoreMaxCharLimit}
 				<p class="py-8 text-center text-red-500">
-					Input size too large for diff calculation. Please reduce input size.
+					Input size too large for diff calculation. Please reduce input size or use "Ignore Limit".
 				</p>
 			{:else if diffResult.length === 0}
 				<p class="py-8 text-center text-gray-500">

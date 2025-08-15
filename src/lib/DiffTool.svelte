@@ -12,6 +12,7 @@
 	let leftInput = $state('');
 	let rightInput = $state('');
 	let wrapLines = $state(true);
+	let ignoreMaxCharLimit = $state(false);
 
 	// URL parameter sync
 	let urlUpdateTimeout: ReturnType<typeof setTimeout>;
@@ -27,6 +28,7 @@
 			if (leftInput.trim()) params.set('left', encodeURIComponent(leftInput));
 			if (rightInput.trim()) params.set('right', encodeURIComponent(rightInput));
 			if (!wrapLines) params.set('wrap', 'false');
+			if (ignoreMaxCharLimit) params.set('ignorelimit', 'true');
 
 			const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
 			goto(newUrl, { replaceState: true, noScroll: true });
@@ -41,6 +43,7 @@
 		const urlLeft = urlParams.get('left');
 		const urlRight = urlParams.get('right');
 		const urlWrap = urlParams.get('wrap');
+		const urlIgnoreLimit = urlParams.get('ignorelimit');
 
 		if (urlMode && ['text', 'json', 'yaml'].includes(urlMode)) {
 			mode = urlMode;
@@ -56,6 +59,10 @@
 
 		if (urlWrap !== null) {
 			wrapLines = urlWrap !== 'false';
+		}
+
+		if (urlIgnoreLimit !== null) {
+			ignoreMaxCharLimit = urlIgnoreLimit === 'true';
 		}
 	}
 
@@ -165,6 +172,15 @@ email: john@example.com`;
 					{wrapLines ? '📝' : '📄'} Wrap
 				</button>
 				<button
+					onclick={() => (ignoreMaxCharLimit = !ignoreMaxCharLimit)}
+					class="rounded-md px-3 py-2 text-sm transition-colors {ignoreMaxCharLimit
+						? 'bg-red-100 text-red-700 hover:bg-red-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+					title="Ignore size limit (may cause performance issues)"
+				>
+					{ignoreMaxCharLimit ? '⚠️' : '🔒'} Ignore Limit
+				</button>
+				<button
 					onclick={clearInputs}
 					class="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200"
 					title="Clear both inputs"
@@ -219,10 +235,10 @@ email: john@example.com`;
 
 	<!-- Mode-specific Diff Component -->
 	{#if mode === 'text'}
-		<TextDiff bind:leftInput bind:rightInput {wrapLines} />
+		<TextDiff bind:leftInput bind:rightInput {wrapLines} {ignoreMaxCharLimit} />
 	{:else if mode === 'json'}
-		<JsonDiff bind:leftInput bind:rightInput {wrapLines} />
+		<JsonDiff bind:leftInput bind:rightInput {wrapLines} {ignoreMaxCharLimit} />
 	{:else if mode === 'yaml'}
-		<YamlDiff bind:leftInput bind:rightInput {wrapLines} />
+		<YamlDiff bind:leftInput bind:rightInput {wrapLines} {ignoreMaxCharLimit} />
 	{/if}
 </div>
