@@ -26,6 +26,7 @@
 	let rightParsed: any = $state(null);
 	let diffResult: DiffItem[] = $state([]);
 	let diffStats = $state({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	// Configuration options
 	let config = $state({
@@ -142,30 +143,6 @@
 
 		// Return as string
 		return value;
-	}
-
-	function parseInputs() {
-		parseError = '';
-		leftParsed = null;
-		rightParsed = null;
-
-		try {
-			if (leftInput.trim()) {
-				leftParsed = parseYaml(leftInput);
-			}
-		} catch (err) {
-			parseError = 'Left YAML parsing error: ' + (err as Error).message;
-			return;
-		}
-
-		try {
-			if (rightInput.trim()) {
-				rightParsed = parseYaml(rightInput);
-			}
-		} catch (err) {
-			parseError = 'Right YAML parsing error: ' + (err as Error).message;
-			return;
-		}
 	}
 
 	function getValueType(value: any): string {
@@ -328,6 +305,32 @@
 	}
 
 	function calculateDiff() {
+		parseError = '';
+		leftParsed = null;
+		rightParsed = null;
+
+		try {
+			if (leftInput.trim()) {
+				leftParsed = parseYaml(leftInput);
+			}
+		} catch (err) {
+			parseError = 'Left YAML parsing error: ' + (err as Error).message;
+			diffResult = [];
+			diffStats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
+			return;
+		}
+
+		try {
+			if (rightInput.trim()) {
+				rightParsed = parseYaml(rightInput);
+			}
+		} catch (err) {
+			parseError = 'Right YAML parsing error: ' + (err as Error).message;
+			diffResult = [];
+			diffStats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
+			return;
+		}
+
 		if (parseError) return;
 
 		const results = deepCompare(leftParsed, rightParsed);
@@ -346,15 +349,28 @@
 		diffStats = stats;
 	}
 
-	// Reactive calculation
-	$effect(() => {
-		parseInputs();
-		if (!parseError) {
+	function debouncedCalculateDiff() {
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
 			calculateDiff();
-		} else {
-			diffResult = [];
-			diffStats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
-		}
+		}, 300);
+	}
+
+	// Reactive calculation with debouncing
+	$effect(() => {
+		// Track the reactive dependencies
+		leftInput;
+		rightInput;
+		config.showUnchanged;
+		config.sortByPath;
+		config.ignoreArrayOrder;
+		config.maxDepth;
+		config.ignoreCase;
+		config.treatNullAsUndefined;
+		config.showValueTypes;
+		config.preserveWhitespace;
+
+		debouncedCalculateDiff();
 	});
 
 	function formatValue(value: any): string {
